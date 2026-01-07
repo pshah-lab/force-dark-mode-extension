@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Force Dark Mode",
+  "version": "0.1.0",
+  "description": "Enable dark mode on any website.",
+  "permissions": ["storage", "activeTab", "scripting"],
+  "background": {
+    "service_worker": "src/background/serviceWorker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "src/content/themeEngine/cssOverrideEngine.js",
+        "src/content/index.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/popup.html"
+  }
+}

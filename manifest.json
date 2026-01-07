@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Force Dark Mode",
-  "version": "0.1.0",
-  "description": "Enable dark mode on any website.",
+  "version": "1.0.0",
+  "description": "Apply dark mode to websites that do not natively support it. Choose between CSS-based and invert-based dark themes per site.",
   "permissions": ["storage", "activeTab", "scripting"],
   "background": {
     "service_worker": "src/background/serviceWorker.js",
@@ -13,6 +13,7 @@
       "matches": ["<all_urls>"],
       "js": [
         "src/content/themeEngine/cssOverrideEngine.js",
+        "src/content/themeEngine/invertEngine.js",
         "src/content/index.js"
       ],
       "run_at": "document_start"

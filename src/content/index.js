@@ -1,12 +1,34 @@
 const host = location.hostname;
 
-chrome.storage.sync.get(host, data => {
-  if (data[host]?.enabled) {
+function applyEngine(config) {
+  disableDarkMode();
+  disableInvert();
+
+  if (!config?.enabled) return;
+
+  if (config.engine === "invert") {
+    enableInvert();
+  } else {
     enableDarkMode();
   }
+}
+
+// Initial load
+chrome.storage.sync.get(host, data => {
+  applyEngine(data[host]);
 });
 
+// 🔑 THIS IS THE FIX
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "sync") return;
+  if (!changes[host]) return;
+
+  applyEngine(changes[host].newValue);
+});
+
+// Optional but fine
 chrome.runtime.onMessage.addListener(msg => {
-  if (msg.type === "ENABLE") enableDarkMode();
-  if (msg.type === "DISABLE") disableDarkMode();
+  if (msg.type === "APPLY_CONFIG") {
+    applyEngine(msg.config);
+  }
 });

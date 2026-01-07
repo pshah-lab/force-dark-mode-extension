@@ -1,10 +1,19 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <link rel="stylesheet" href="popup.css" />
-  </head>
-  <body>
-    <button id="toggle">Toggle Dark Mode</button>
-    <script src="popup.js"></script>
-  </body>
-</html>
+<body>
+  <div class="container">
+    <button id="toggle">Loading…</button>
+
+    <div class="engine-section">
+      <label>
+        <input type="radio" name="engine" value="css" />
+        CSS Engine
+      </label>
+
+      <label>
+        <input type="radio" name="engine" value="invert" />
+        Invert Engine
+      </label>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>

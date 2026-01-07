@@ -4,3 +4,20 @@ body {
     font-family: system-ui;
     padding: 10px;
   }
+
+  .container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .engine-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 14px;
+  }
+  
+  label {
+    cursor: pointer;
+  }

@@ -1,19 +1,30 @@
-<body>
-  <div class="container">
-    <button id="toggle">Loading…</button>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
 
-    <div class="engine-section">
-      <label>
-        <input type="radio" name="engine" value="css" />
-        CSS Engine
-      </label>
+  <body>
+    <div class="popup">
+      <button id="toggle" class="toggle-btn">
+        <span class="status-dot"></span>
+        <span class="label">Loading…</span>
+      </button>
 
-      <label>
-        <input type="radio" name="engine" value="invert" />
-        Invert Engine
-      </label>
+      <div class="engine-group">
+        <label class="engine-option">
+          <input type="radio" name="engine" value="css" />
+          <span>CSS Engine</span>
+        </label>
+
+        <label class="engine-option">
+          <input type="radio" name="engine" value="invert" />
+          <span>Invert Engine</span>
+        </label>
+      </div>
     </div>
-  </div>
 
-  <script src="popup.js"></script>
-</body>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,23 +1,77 @@
+/* Base */
 body {
-    background: #121212;
-    color: #fff;
-    font-family: system-ui;
-    padding: 10px;
-  }
+  margin: 0;
+  padding: 12px;
+  background: #121212;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+}
 
-  .container {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  
-  .engine-section {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    font-size: 14px;
-  }
-  
-  label {
-    cursor: pointer;
-  }
+.popup {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 220px;
+}
+
+/* Toggle Button */
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: none;
+  background: #1f1f1f;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.15s ease;
+}
+
+.toggle-btn:hover {
+  background: #2a2a2a;
+}
+
+.toggle-btn.active {
+  background: #2d3a2f;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #666;
+  flex-shrink: 0;
+}
+
+.toggle-btn.active .status-dot {
+  background: #4caf50;
+}
+
+/* Engine selector */
+.engine-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.engine-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1a1a1a;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s ease;
+}
+
+.engine-option:hover {
+  background: #242424;
+}
+
+.engine-option input {
+  accent-color: #4caf50;
+}

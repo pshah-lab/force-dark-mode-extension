@@ -7,12 +7,22 @@
 
   <body>
     <div class="popup">
+      <div class="site" id="site">Loading...</div>
+      <div class="recommendation" id="recommendation" hidden>
+        Recommendation unavailable
+      </div>
+
       <button id="toggle" class="toggle-btn">
         <span class="status-dot"></span>
         <span class="label">Loading…</span>
       </button>
 
       <div class="engine-group">
+        <label class="engine-option">
+          <input type="radio" name="engine" value="auto" />
+          <span>Auto Engine</span>
+        </label>
+
         <label class="engine-option">
           <input type="radio" name="engine" value="css" />
           <span>CSS Engine</span>
@@ -23,6 +33,11 @@
           <span>Invert Engine</span>
         </label>
       </div>
+
+      <label class="color-control">
+        <span>CSS background</span>
+        <input id="background-color" type="color" value="#0f1115" />
+      </label>
     </div>
 
     <script src="popup.js"></script>

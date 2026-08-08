@@ -1,80 +1,208 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const button = document.getElementById("toggle");
   const label = button.querySelector(".label");
+  const site = document.getElementById("site");
+  const recommendation = document.getElementById("recommendation");
+  const backgroundColorInput = document.getElementById("background-color");
   const radios = document.querySelectorAll('input[name="engine"]');
+  const defaultBackgroundColor = "#0f1115";
+  const defaultEngine = "auto";
+  const hexColorPattern = /^#[0-9a-f]{6}$/i;
+  let colorDebounceTimer = null;
+  let userHasInteractedWithEngine = false;
+
+  const engineLabels = {
+    auto: "Auto Engine",
+    css: "CSS Engine",
+    invert: "Invert Engine",
+  };
+
+  const restrictedProtocols = new Set([
+    "about:",
+    "chrome:",
+    "chrome-extension:",
+    "edge:",
+    "moz-extension:",
+    "opera:",
+    "view-source:",
+  ]);
 
   const [tab] = await chrome.tabs.query({
     active: true,
     currentWindow: true,
   });
 
-  if (!tab?.url) return;
-
-  // Restricted pages
-  if (
-    tab.url.startsWith("chrome://") ||
-    tab.url.startsWith("chrome-extension://")
-  ) {
+  function setUnavailable(text = "Unavailable on this page") {
+    site.textContent = "Restricted page";
+    recommendation.hidden = true;
     button.disabled = true;
-    label.textContent = "Unavailable on this page";
+    label.textContent = text;
     button.classList.remove("active");
+    backgroundColorInput.disabled = true;
+    radios.forEach((radio) => {
+      radio.disabled = true;
+    });
+  }
+
+  if (!tab?.url) {
+    setUnavailable();
     return;
   }
 
-  const host = new URL(tab.url).hostname;
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(tab.url);
+  } catch {
+    setUnavailable();
+    return;
+  }
 
-  function updateToggleUI(enabled) {
+  const isLocalFile = parsedUrl.protocol === "file:";
+  if (restrictedProtocols.has(parsedUrl.protocol) || (!parsedUrl.hostname && !isLocalFile)) {
+    setUnavailable();
+    return;
+  }
+
+  const host = isLocalFile ? "local_files" : parsedUrl.hostname;
+  site.textContent = isLocalFile ? "Local Files" : host;
+
+  function updateToggleUI(
+    enabled,
+    engine = defaultEngine,
+    backgroundColor = defaultBackgroundColor
+  ) {
     button.classList.toggle("active", enabled);
     label.textContent = enabled ? "Dark mode enabled" : "Enable dark mode";
+    backgroundColorInput.value = normalizeColor(backgroundColor);
+    if (!userHasInteractedWithEngine) {
+      radios.forEach((radio) => {
+        radio.checked = radio.value === engine;
+      });
+    }
+  }
+
+  function getSelectedEngine() {
+    return (
+      document.querySelector('input[name="engine"]:checked')?.value ||
+      defaultEngine
+    );
+  }
+
+  function normalizeColor(color) {
+    return hexColorPattern.test(color || "") ? color.toLowerCase() : defaultBackgroundColor;
+  }
+
+  function showRecommendation(analysis) {
+    const engineLabel = analysis.nativeDark
+      ? "No change needed"
+      : engineLabels[analysis.engine] || engineLabels.css;
+    const confidence = `${analysis.confidence || "low"} confidence`;
+    recommendation.hidden = false;
+    recommendation.innerHTML = `Auto: <strong>${engineLabel}</strong> · ${escapeHtml(
+      analysis.reason || "CSS is the safer default"
+    )} <span class="confidence">(${escapeHtml(confidence)})</span>`;
+  }
+
+  function showRecommendationUnavailable() {
+    recommendation.hidden = false;
+    recommendation.textContent = "Recommendation unavailable";
+  }
+
+  function requestRecommendation(hasSavedConfig) {
+    if (!tab.id) {
+      showRecommendationUnavailable();
+      return;
+    }
+
+    chrome.tabs.sendMessage(tab.id, { type: "ANALYZE_PAGE" }, (analysis) => {
+      if (chrome.runtime.lastError || !isValidAnalysis(analysis)) {
+        showRecommendationUnavailable();
+        return;
+      }
+
+      showRecommendation(analysis);
+
+      if (!hasSavedConfig && !userHasInteractedWithEngine) {
+        updateSelectedEngine(defaultEngine);
+      }
+    });
+  }
+
+  function updateSelectedEngine(engine) {
+    radios.forEach((radio) => {
+      radio.checked = radio.value === engine;
+    });
+  }
+
+  function isValidAnalysis(analysis) {
+    return (
+      analysis &&
+      (analysis.engine === "css" || analysis.engine === "invert") &&
+      ["high", "medium", "low"].includes(analysis.confidence) &&
+      typeof analysis.nativeDark === "boolean"
+    );
+  }
+
+  function escapeHtml(value) {
+    return String(value).replace(/[&<>"']/g, (char) => {
+      return {
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;",
+      }[char];
+    });
   }
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "sync") return;
     if (!changes[host]) return;
 
-    const enabled = changes[host].newValue?.enabled === true;
-    updateToggleUI(enabled);
+    const config = changes[host].newValue || {};
+    updateToggleUI(
+      config.enabled === true,
+      config.engine || defaultEngine,
+      config.backgroundColor || defaultBackgroundColor
+    );
   });
 
   function updateUI() {
     chrome.storage.sync.get(host, (data) => {
       const config = data[host] || {};
+      const hasSavedConfig = Boolean(data[host]?.engine);
       const enabled = config.enabled === true;
-      const engine = config.engine || "css";
+      const engine = config.engine || defaultEngine;
+      const backgroundColor = config.backgroundColor || defaultBackgroundColor;
 
-      updateToggleUI(enabled);
-
-      radios.forEach((radio) => {
-        radio.checked = radio.value === engine;
-      });
+      updateToggleUI(enabled, engine, backgroundColor);
+      requestRecommendation(hasSavedConfig);
     });
   }
 
-  // Toggle dark mode ON / OFF
   button.onclick = () => {
-    const selectedEngine =
-      document.querySelector('input[name="engine"]:checked')?.value || "css";
+    const selectedEngine = getSelectedEngine();
+    const backgroundColor = normalizeColor(backgroundColorInput.value);
 
-    // Read current state first
     chrome.storage.sync.get(host, (data) => {
       const currentlyEnabled = data[host]?.enabled === true;
       const nextEnabled = !currentlyEnabled;
 
-      // Optimistically update UI
-      updateToggleUI(nextEnabled);
+      updateToggleUI(nextEnabled, selectedEngine, backgroundColor);
 
       chrome.runtime.sendMessage({
         type: "TOGGLE",
         tabId: tab.id,
         url: tab.url,
         engine: selectedEngine,
+        backgroundColor,
       });
     });
   };
 
-  // Change engine without toggling enabled state
   radios.forEach((radio) => {
     radio.onchange = () => {
+      userHasInteractedWithEngine = true;
       chrome.storage.sync.get(host, (data) => {
         const enabled = data[host]?.enabled === true;
 
@@ -83,11 +211,35 @@ document.addEventListener("DOMContentLoaded", async () => {
           tabId: tab.id,
           url: tab.url,
           engine: radio.value,
+          backgroundColor: normalizeColor(backgroundColorInput.value),
           forceEnabled: enabled,
         });
       });
     };
   });
+
+  backgroundColorInput.oninput = () => {
+    const backgroundColor = normalizeColor(backgroundColorInput.value);
+
+    if (colorDebounceTimer) {
+      clearTimeout(colorDebounceTimer);
+    }
+
+    colorDebounceTimer = setTimeout(() => {
+      chrome.storage.sync.get(host, (data) => {
+        const enabled = data[host]?.enabled === true;
+
+        chrome.runtime.sendMessage({
+          type: "TOGGLE",
+          tabId: tab.id,
+          url: tab.url,
+          engine: getSelectedEngine(),
+          backgroundColor,
+          forceEnabled: enabled,
+        });
+      });
+    }, 200);
+  };
 
   updateUI();
 });

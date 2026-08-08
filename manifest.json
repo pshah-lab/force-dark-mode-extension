@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Force Dark Mode",
-  "version": "1.0.1",
-  "description": "Apply dark mode to websites that do not natively support it. Choose between CSS-based and invert-based dark themes per site.",
+  "version": "1.4.1",
+  "description": "Apply smart dark mode to websites with Auto, CSS, and Invert engines, native dark detection, and custom CSS backgrounds.",
   "permissions": ["storage", "activeTab"],
   "background": {
     "service_worker": "src/background/serviceWorker.js",
@@ -12,6 +12,7 @@
     {
       "matches": ["<all_urls>"],
       "js": [
+        "src/shared/colorUtils.js",
         "src/content/themeEngine/cssOverrideEngine.js",
         "src/content/themeEngine/invertEngine.js",
         "src/content/index.js"

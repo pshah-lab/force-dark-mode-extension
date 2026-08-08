@@ -1,36 +1,56 @@
 import { setSiteConfig, getSiteConfig } from "../shared/storage.js";
+import {
+  DEFAULT_ENGINE,
+  VALID_ENGINES,
+  DEFAULT_BACKGROUND_COLOR,
+  HEX_COLOR_PATTERN,
+} from "../shared/constants.js";
 
-chrome.runtime.onMessage.addListener(async (msg, sender) => {
+function getHostFromUrl(url) {
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol === "file:") {
+      return "local_files";
+    }
+    return parsedUrl.hostname;
+  } catch {
+    return "";
+  }
+}
+
+chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type !== "TOGGLE") return;
 
+  handleToggleMessage(msg, sender);
+});
+
+async function handleToggleMessage(msg, sender) {
   const tabId = msg.tabId || sender.tab?.id;
   const url = msg.url || sender.tab?.url;
-  if (!tabId || !url) return;
+  if (!url) return;
 
-  const host = new URL(url).hostname;
+  const host = getHostFromUrl(url);
+  if (!host) return;
+
   const currentConfig = await getSiteConfig(host);
   const newEnabled =
-  typeof msg.forceEnabled === "boolean"
-    ? msg.forceEnabled
-    : !currentConfig?.enabled;
+    typeof msg.forceEnabled === "boolean"
+      ? msg.forceEnabled
+      : !currentConfig?.enabled;
 
-  const engine = msg.engine || currentConfig?.engine || "css";
+  const requestedEngine = msg.engine || currentConfig?.engine || DEFAULT_ENGINE;
+  const engine = VALID_ENGINES.has(requestedEngine)
+    ? requestedEngine
+    : DEFAULT_ENGINE;
+  const requestedBackgroundColor =
+    msg.backgroundColor || currentConfig?.backgroundColor || DEFAULT_BACKGROUND_COLOR;
+  const backgroundColor = HEX_COLOR_PATTERN.test(requestedBackgroundColor)
+    ? requestedBackgroundColor
+    : DEFAULT_BACKGROUND_COLOR;
 
   await setSiteConfig(host, {
     enabled: newEnabled,
-    engine
+    engine,
+    backgroundColor,
   });
-
-  chrome.tabs.sendMessage(tabId, {
-    type: "APPLY_CONFIG",
-    config: {
-      enabled: newEnabled,
-      engine
-    }
-  }).catch(err => {
-    console.warn(
-      "[ForceDark] Could not send message to tab (content script may not be ready or page is restricted):",
-      err
-    );
-  });
-});
+}

@@ -3,6 +3,7 @@ const ROOT_MODE_ATTR = "data-force-dark-mode";
 const SURFACE_ATTR = "data-force-dark-surface";
 const TEXT_ATTR = "data-force-dark-text";
 const BORDER_ATTR = "data-force-dark-border";
+const IMAGE_ATTR = "data-force-dark-image";
 const DEFAULT_BACKGROUND_COLOR = "#0f1115";
 const CUSTOM_PROPERTIES = [
   "--force-dark-bg",
@@ -92,11 +93,12 @@ function enableDarkMode(config = {}) {
       border-color: var(--force-dark-border) !important;
     }
 
-    :root[${ROOT_MODE_ATTR}="css"] [${TEXT_ATTR}="true"]:not(a) {
+    :root[${ROOT_MODE_ATTR}="css"] [${TEXT_ATTR}="true"] {
       color: var(--force-dark-text) !important;
     }
 
-    :root[${ROOT_MODE_ATTR}="css"] :is(a, [role="link"]) {
+    :root[${ROOT_MODE_ATTR}="css"] :is(p, li, td, th, span, dt, dd) > :is(a, [role="link"]),
+    :root[${ROOT_MODE_ATTR}="css"] :is(a, [role="link"]):not(:has(div, p, span, h1, h2, h3, h4, h5, h6)) {
       color: var(--force-dark-link) !important;
     }
 
@@ -131,6 +133,10 @@ function enableDarkMode(config = {}) {
     :root[${ROOT_MODE_ATTR}="css"] :is(img, picture, video, canvas, iframe, embed, object, svg) {
       filter: none !important;
       background-color: transparent !important;
+    }
+
+    :root[${ROOT_MODE_ATTR}="css"] :is(img, svg)[${IMAGE_ATTR}="invert"] {
+      filter: invert(0.9) hue-rotate(180deg) !important;
     }
   `;
 
@@ -221,6 +227,7 @@ function batchScanTrees(roots) {
   elementsToScan.forEach((element) => {
     if (!(element instanceof Element) || shouldSkipElement(element)) return;
 
+    const tag = element.tagName.toLowerCase();
     const styles = getComputedStyle(element);
     const background = parseCssColor(styles.backgroundColor);
     const text = parseCssColor(styles.color);
@@ -242,11 +249,48 @@ function batchScanTrees(roots) {
 
     const borderAttr = hasLightBorder(styles, parseCssColor, getLuminance);
 
-    updates.push({ element, surfaceAttr, textAttr, borderAttr });
+    // Smart logo / SVG inversion check
+    let imageAttr = null;
+    if (tag === "img" || tag === "svg") {
+      const src = (element.getAttribute("src") || "").toLowerCase();
+      const className = (element.getAttribute("class") || "").toLowerCase();
+      const id = (element.getAttribute("id") || "").toLowerCase();
+      const alt = (element.getAttribute("alt") || "").toLowerCase();
+
+      const isLogoOrTextGraphic =
+        tag === "svg" ||
+        src.includes("logo") ||
+        src.includes("brand") ||
+        src.includes("text") ||
+        src.includes(".svg") ||
+        className.includes("logo") ||
+        className.includes("brand") ||
+        className.includes("text") ||
+        id.includes("logo") ||
+        id.includes("brand") ||
+        id.includes("text") ||
+        alt.includes("logo") ||
+        alt.includes("wikipedia");
+
+      if (isLogoOrTextGraphic) {
+        const fill = parseCssColor(styles.fill);
+        const color = parseCssColor(styles.color);
+        const fillLum = fill ? getLuminance(fill) : 0;
+        const colorLum = color ? getLuminance(color) : 0;
+        const isDarkGraphic =
+          (fill && fillLum < 0.45) || (color && colorLum < 0.45) || (!fill && !color);
+
+        if (isDarkGraphic) {
+          imageAttr = "invert";
+        }
+      }
+    }
+
+    updates.push({ element, surfaceAttr, textAttr, borderAttr, imageAttr });
   });
 
   // WRITE PASS: Apply all DOM attribute updates in a single batch
-  updates.forEach(({ element, surfaceAttr, textAttr, borderAttr }) => {
+  updates.forEach(({ element, surfaceAttr, textAttr, borderAttr, imageAttr }) => {
     if (surfaceAttr) {
       element.setAttribute(SURFACE_ATTR, surfaceAttr);
     } else {
@@ -263,6 +307,12 @@ function batchScanTrees(roots) {
       element.setAttribute(BORDER_ATTR, "true");
     } else {
       element.removeAttribute(BORDER_ATTR);
+    }
+
+    if (imageAttr) {
+      element.setAttribute(IMAGE_ATTR, imageAttr);
+    } else {
+      element.removeAttribute(IMAGE_ATTR);
     }
   });
 }
@@ -307,10 +357,16 @@ function clearCustomPalette() {
 function clearDarkAttributes(root) {
   if (!root) return;
 
-  [root, ...root.querySelectorAll(`[${SURFACE_ATTR}], [${TEXT_ATTR}], [${BORDER_ATTR}]`)].forEach((element) => {
+  [
+    root,
+    ...root.querySelectorAll(
+      `[${SURFACE_ATTR}], [${TEXT_ATTR}], [${BORDER_ATTR}], [${IMAGE_ATTR}]`
+    ),
+  ].forEach((element) => {
     element.removeAttribute(SURFACE_ATTR);
     element.removeAttribute(TEXT_ATTR);
     element.removeAttribute(BORDER_ATTR);
+    element.removeAttribute(IMAGE_ATTR);
   });
 }
 

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Force Dark Mode",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Apply smart dark mode to websites with Auto, CSS, and Invert engines, native dark detection, and custom CSS backgrounds.",
   "permissions": ["storage", "activeTab"],
   "background": {

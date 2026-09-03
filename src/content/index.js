@@ -80,6 +80,9 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (sender.id && sender.id !== chrome.runtime.id) return;
+  if (!msg || typeof msg !== "object") return;
+
   if (msg.type === "APPLY_CONFIG") {
     applyEngine(msg.config);
   }
@@ -201,80 +204,33 @@ function analyzePageForEngine() {
   if (nativeDark) {
     return {
       engine: FALLBACK_ENGINE,
-      confidence: darkSurfaceRatio >= 0.82 ? "high" : "medium",
+      confidence: darkSurfaceRatio >= 0.75 ? "high" : "medium",
       reason: "site already appears dark",
       nativeDark: true,
       signals,
     };
   }
 
+  // Pure media / photo galleries without heavy textual/app UI
   if (
-    mediaAreaRatio >= 0.42 ||
-    backgroundImageAreaRatio >= 0.38 ||
-    mediaRatio >= 0.22 ||
-    visualEmbedCount >= 10 ||
-    canvasCount >= 3 ||
-    iframeCount >= 4
-  ) {
-    return {
-      engine: "invert",
-      confidence: "high",
-      reason: "best for media-heavy pages",
-      nativeDark: false,
-      signals,
-    };
-  }
-
-  if (
-    (mediaAreaRatio >= 0.24 ||
-      backgroundImageAreaRatio >= 0.22 ||
-      mediaRatio >= 0.14 ||
-      visualEmbedCount >= 5 ||
-      canvasCount >= 1) &&
-    textAreaRatio < 0.42
+    mediaAreaRatio >= 0.55 &&
+    textRatio < 0.15 &&
+    lightSurfaceRatio >= 0.30
   ) {
     return {
       engine: "invert",
       confidence: "medium",
-      reason: "better for visual-heavy layouts",
+      reason: "best for media gallery layouts",
       nativeDark: false,
       signals,
     };
   }
 
-  if (
-    (mediaAreaRatio >= 0.18 || mediaRatio >= 0.1) &&
-    textAreaRatio >= 0.28
-  ) {
-    return {
-      engine: FALLBACK_ENGINE,
-      confidence: "low",
-      reason: "mixed content; CSS is safer",
-      nativeDark: false,
-      signals,
-    };
-  }
-
-  if (
-    lightSurfaceRatio >= 0.24 ||
-    textRatio >= 0.24 ||
-    textAreaRatio >= 0.28 ||
-    formCount >= 3
-  ) {
-    return {
-      engine: FALLBACK_ENGINE,
-      confidence:
-        lightSurfaceRatio >= 0.42 || textAreaRatio >= 0.42 ? "high" : "medium",
-      reason: "best for text-heavy pages",
-      nativeDark: false,
-      signals,
-    };
-  }
-
+  // For almost all modern web apps, websites, text, and SPAs, CSS engine is safest
   return {
     engine: FALLBACK_ENGINE,
-    confidence: "low",
-    reason: "CSS is the safer default",
+    confidence: lightSurfaceRatio >= 0.35 || textRatio >= 0.2 ? "high" : "medium",
+    reason: "best for layout stability & readability",
     nativeDark: false,
     signals,
   };
@@ -295,8 +251,29 @@ function isNativeDarkPage({
   const bodyBackground = parseCssColor(bodyStyles.backgroundColor);
   const rootColorScheme = rootStyles.colorScheme || "";
   const bodyColorScheme = bodyStyles.colorScheme || "";
+
+  const htmlEl = document.documentElement;
+  const bodyEl = document.body;
+  const hasDarkAttr =
+    htmlEl.hasAttribute("dark") ||
+    htmlEl.getAttribute("data-theme") === "dark" ||
+    htmlEl.getAttribute("data-mode") === "dark" ||
+    htmlEl.getAttribute("data-color-mode") === "dark" ||
+    htmlEl.classList.contains("dark") ||
+    htmlEl.classList.contains("dark-theme") ||
+    htmlEl.classList.contains("theme-dark") ||
+    (bodyEl && (
+      bodyEl.hasAttribute("dark") ||
+      bodyEl.getAttribute("data-theme") === "dark" ||
+      bodyEl.getAttribute("data-mode") === "dark" ||
+      bodyEl.classList.contains("dark") ||
+      bodyEl.classList.contains("dark-theme") ||
+      bodyEl.classList.contains("theme-dark")
+    ));
+
   const declaresDarkScheme =
-    rootColorScheme.includes("dark") || bodyColorScheme.includes("dark");
+    rootColorScheme.includes("dark") || bodyColorScheme.includes("dark") || hasDarkAttr;
+
   const hasDarkRoot =
     (rootBackground &&
       rootBackground.a > 0.35 &&
@@ -305,12 +282,31 @@ function isNativeDarkPage({
       bodyBackground.a > 0.35 &&
       getLuminance(bodyBackground) < 0.28);
 
-  if (lightSurfaceRatio > 0.18 || mediaAreaRatio > 0.5) return false;
+  // Check top-level app containers (like YouTube ytd-app, #app, #root, main)
+  let hasDarkAppContainer = false;
+  if (!hasDarkRoot) {
+    const mainContainer = document.querySelector("ytd-app, #app, #root, #__next, main, #main");
+    if (mainContainer) {
+      const containerBg = parseCssColor(getComputedStyle(mainContainer).backgroundColor);
+      if (containerBg && containerBg.a > 0.35 && getLuminance(containerBg) < 0.28) {
+        hasDarkAppContainer = true;
+      }
+    }
+  }
 
-  return (
-    (declaresDarkScheme && darkSurfaceRatio >= 0.72) ||
-    (hasDarkRoot && darkSurfaceRatio >= 0.68 && textAreaRatio >= 0.12)
-  );
+  // If too many light surfaces exist, it's not a dark page
+  if (lightSurfaceRatio > 0.25) return false;
+
+  // If site declares dark mode or has dark root/app container, and dark surfaces dominate
+  if (declaresDarkScheme && (darkSurfaceRatio >= 0.55 || hasDarkRoot || hasDarkAppContainer)) {
+    return true;
+  }
+
+  if ((hasDarkRoot || hasDarkAppContainer) && darkSurfaceRatio >= 0.60) {
+    return true;
+  }
+
+  return false;
 }
 
 function getVisibleSample() {
@@ -352,7 +348,7 @@ function getVisibleSample() {
 
 function getPriorityVisualElements() {
   return Array.from(
-    document.querySelectorAll("img, video, canvas, iframe, embed, object, svg")
+    document.querySelectorAll("img, video, canvas, iframe, embed, object")
   )
     .filter(isVisibleElement)
     .slice(0, 80);
@@ -380,7 +376,6 @@ function isMediaElement(tag) {
     "img",
     "object",
     "picture",
-    "svg",
     "video",
   ].includes(tag);
 }

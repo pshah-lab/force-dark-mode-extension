@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const site = document.getElementById("site");
   const recommendation = document.getElementById("recommendation");
   const backgroundColorInput = document.getElementById("background-color");
+  const openPdfViewerButton = document.getElementById("open-pdf-viewer");
+  const openDocumentViewerButton = document.getElementById("open-document-viewer");
   const radios = document.querySelectorAll('input[name="engine"]');
   const defaultBackgroundColor = "#0f1115";
   const defaultEngine = "auto";
@@ -31,6 +33,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     active: true,
     currentWindow: true,
   });
+
+  openDocumentViewerButton.onclick = () => {
+    chrome.tabs.create({
+      url: chrome.runtime.getURL("src/viewer/viewer.html"),
+    });
+  };
 
   function setUnavailable(text = "Unavailable on this page") {
     site.textContent = "Restricted page";
@@ -66,6 +74,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   const host = isLocalFile ? "local_files" : parsedUrl.hostname;
   site.textContent = isLocalFile ? "Local Files" : host;
 
+  if (isPdfUrl(parsedUrl)) {
+    openPdfViewerButton.hidden = false;
+    openPdfViewerButton.onclick = () => {
+      const viewerUrl = new URL(chrome.runtime.getURL("src/viewer/viewer.html"));
+      viewerUrl.searchParams.set("src", tab.url);
+      viewerUrl.searchParams.set("name", getNameFromUrl(parsedUrl) || "PDF document");
+      chrome.tabs.create({ url: viewerUrl.href });
+    };
+  }
+
   function updateToggleUI(
     enabled,
     engine = defaultEngine,
@@ -92,15 +110,38 @@ document.addEventListener("DOMContentLoaded", async () => {
     return hexColorPattern.test(color || "") ? color.toLowerCase() : defaultBackgroundColor;
   }
 
+  function isPdfUrl(url) {
+    return (
+      url.pathname.toLowerCase().endsWith(".pdf") ||
+      url.search.toLowerCase().includes(".pdf")
+    );
+  }
+
+  function getNameFromUrl(url) {
+    const name = url.pathname.split("/").filter(Boolean).pop();
+    return name ? decodeURIComponent(name) : "";
+  }
+
   function showRecommendation(analysis) {
     const engineLabel = analysis.nativeDark
       ? "No change needed"
       : engineLabels[analysis.engine] || engineLabels.css;
     const confidence = `${analysis.confidence || "low"} confidence`;
     recommendation.hidden = false;
-    recommendation.innerHTML = `Auto: <strong>${engineLabel}</strong> · ${escapeHtml(
-      analysis.reason || "CSS is the safer default"
-    )} <span class="confidence">(${escapeHtml(confidence)})</span>`;
+
+    recommendation.replaceChildren();
+    recommendation.append("Auto: ");
+
+    const strong = document.createElement("strong");
+    strong.textContent = engineLabel;
+    recommendation.append(strong);
+
+    recommendation.append(` · ${analysis.reason || "CSS is the safer default"} `);
+
+    const span = document.createElement("span");
+    span.className = "confidence";
+    span.textContent = `(${confidence})`;
+    recommendation.append(span);
   }
 
   function showRecommendationUnavailable() {

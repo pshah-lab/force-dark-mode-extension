@@ -1,0 +1,357 @@
+:root {
+  color-scheme: dark;
+  --viewer-bg: #0f1115;
+  --viewer-surface: #181c23;
+  --viewer-border: #303744;
+  --viewer-text: #e8eaed;
+  --viewer-muted: #aab2bf;
+  --viewer-accent: #8ab4f8;
+  --viewer-font-size: 17px;
+  --viewer-contrast: 105%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--viewer-bg);
+  color: var(--viewer-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--viewer-border);
+  background: color-mix(in srgb, var(--viewer-surface) 94%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.title-group {
+  min-width: 180px;
+}
+
+.title-group h1 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.title-group p {
+  overflow: hidden;
+  margin: 3px 0 0;
+  max-width: 320px;
+  color: var(--viewer-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.controls label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--viewer-muted);
+  font-size: 12px;
+}
+
+.controls select,
+.controls button {
+  min-height: 32px;
+  border: 1px solid var(--viewer-border);
+  border-radius: 7px;
+  background: #11151c;
+  color: var(--viewer-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.controls select {
+  padding: 0 28px 0 9px;
+}
+
+.controls button {
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.controls button:hover {
+  border-color: var(--viewer-accent);
+}
+
+.controls input[type="color"] {
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--viewer-border);
+  border-radius: 7px;
+  background: transparent;
+}
+
+.controls input[type="range"] {
+  width: 92px;
+  accent-color: var(--viewer-accent);
+}
+
+.viewer {
+  min-height: calc(100vh - 62px);
+  background: var(--viewer-bg);
+}
+
+.empty-state {
+  display: grid;
+  min-height: calc(100vh - 72px);
+  place-content: center;
+  padding: 32px;
+  text-align: center;
+}
+
+.empty-state h2 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.empty-state p {
+  max-width: 540px;
+  margin: 0;
+  color: var(--viewer-muted);
+  line-height: 1.5;
+}
+
+.pdf-panel {
+  height: calc(100vh - 62px);
+  background: var(--viewer-bg);
+}
+
+.pdf-render-panel {
+  min-height: calc(100vh - 62px);
+  padding: 18px 0 42px;
+  background: var(--viewer-bg);
+}
+
+.pdf-status {
+  position: sticky;
+  top: 62px;
+  z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto 16px;
+  padding: 8px 12px;
+  border: 1px solid var(--viewer-border);
+  border-radius: 7px;
+  background: var(--viewer-surface);
+  color: var(--viewer-muted);
+  font-size: 13px;
+}
+
+.pdf-pages {
+  display: grid;
+  gap: 22px;
+  justify-items: center;
+  padding: 0 18px;
+}
+
+.pdf-page {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.pdf-page-content {
+  position: relative;
+  overflow: hidden;
+  max-width: min(100%, 1100px);
+  border-radius: 5px;
+  background: var(--viewer-bg);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.38);
+}
+
+.pdf-page-label {
+  margin: 0 0 6px;
+  color: var(--viewer-muted);
+  font-size: 12px;
+}
+
+.pdf-page canvas {
+  display: block;
+  max-width: 100%;
+  height: auto !important;
+  background: var(--viewer-bg);
+  image-rendering: auto;
+}
+
+.pdf-text-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  line-height: 1;
+  text-align: initial;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+}
+
+.pdf-text-layer span,
+.pdf-text-layer br {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+.pdf-text-layer ::selection {
+  background: color-mix(in srgb, var(--viewer-accent) 55%, transparent);
+}
+
+.pdf-text-layer .endOfContent {
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: -1;
+  cursor: default;
+  user-select: none;
+}
+
+#pdf-frame {
+  display: block;
+  width: 100%;
+  height: calc(100% - 48px);
+  border: 0;
+  background: #ffffff;
+}
+
+.viewer[data-mode="smart"] #pdf-frame {
+  filter: invert(1) hue-rotate(180deg) contrast(var(--viewer-contrast));
+}
+
+.viewer[data-mode="invert"] #pdf-frame {
+  filter: invert(1) hue-rotate(180deg) contrast(var(--viewer-contrast));
+}
+
+.viewer[data-mode="sepia"] #pdf-frame {
+  filter: sepia(0.72) contrast(0.92) brightness(0.88);
+}
+
+.viewer[data-mode="original"] #pdf-frame {
+  filter: none;
+}
+
+.document-panel {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 42px 28px 72px;
+  color: var(--viewer-text);
+  font-size: var(--viewer-font-size);
+  line-height: 1.68;
+  white-space: pre-wrap;
+}
+
+.document-panel h1,
+.document-panel h2,
+.document-panel h3 {
+  margin: 1.6em 0 0.6em;
+  line-height: 1.2;
+}
+
+.document-panel h1:first-child,
+.document-panel h2:first-child,
+.document-panel h3:first-child,
+.document-panel p:first-child {
+  margin-top: 0;
+}
+
+.document-panel p {
+  margin: 0 0 1em;
+}
+
+.document-panel ul {
+  margin: 0 0 1em;
+  padding-left: 1.4em;
+}
+
+.document-panel a {
+  color: var(--viewer-accent);
+}
+
+.document-panel code {
+  padding: 0.1em 0.35em;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--viewer-text) 10%, transparent);
+}
+
+.viewer[data-mode="original"] {
+  --viewer-bg: #ffffff;
+  --viewer-surface: #f4f5f7;
+  --viewer-border: #d4d8df;
+  --viewer-text: #161a21;
+  --viewer-muted: #586170;
+}
+
+.viewer[data-mode="sepia"] {
+  --viewer-bg: #241e17;
+  --viewer-surface: #30271e;
+  --viewer-border: #564838;
+  --viewer-text: #f0ddc1;
+  --viewer-muted: #c7aa82;
+}
+
+.fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  border-top: 1px solid var(--viewer-border);
+  background: var(--viewer-surface);
+  color: var(--viewer-text);
+  text-align: center;
+}
+
+.fallback p {
+  margin: 0;
+  color: var(--viewer-muted);
+  font-size: 13px;
+}
+
+.fallback a {
+  color: var(--viewer-accent);
+}
+
+@media (max-width: 760px) {
+  .toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .controls {
+    justify-content: flex-start;
+  }
+
+  .controls label {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .controls input[type="range"] {
+    flex: 1;
+  }
+}

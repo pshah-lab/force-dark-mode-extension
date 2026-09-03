@@ -1,0 +1,49 @@
+<!-- src/options/options.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Force Dark Mode – Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <h1>Force Dark Mode Settings</h1>
+
+  <section class="section">
+    <label>
+      <input type="checkbox" id="enabled" /> Enable Dark Mode
+    </label>
+  </section>
+
+  <section class="section">
+    <label for="engine">Engine:</label>
+    <select id="engine">
+      <option value="auto">Auto</option>
+      <option value="css">CSS</option>
+      <option value="invert">Invert</option>
+    </select>
+  </section>
+
+  <section class="section">
+    <label for="bgColor">Background Color:</label>
+    <input type="color" id="bgColor" value="#000000" />
+  </section>
+
+  <section class="section">
+    <label for="preset">Preset:</label>
+    <select id="preset">
+      <option value="" disabled selected>Select preset</option>
+      <option value="midnight">Midnight Oasis</option>
+      <option value="neon">Neon Noir</option>
+      <option value="solarized">Solarized Dark</option>
+    </select>
+  </section>
+
+  <section class="section">
+    <button id="saveBtn">Save</button>
+  </section>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>

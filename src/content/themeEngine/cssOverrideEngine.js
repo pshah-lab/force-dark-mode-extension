@@ -24,7 +24,6 @@ const EXCLUDED_SELECTOR = [
   "canvas",
   "embed",
   "iframe",
-  "img",
   "link",
   "map",
   "meta",
@@ -34,7 +33,6 @@ const EXCLUDED_SELECTOR = [
   "script",
   "source",
   "style",
-  "svg",
   "template",
   "track",
   "video",
@@ -377,6 +375,10 @@ function shouldSkipElement(element) {
 
   if (element.matches(EXCLUDED_SELECTOR)) {
     return true;
+  }
+
+  if (element.tagName.toLowerCase() === "svg") {
+    return false;
   }
 
   return element.closest("svg, canvas, video, picture") !== null;

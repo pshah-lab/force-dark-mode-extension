@@ -1,6 +1,12 @@
+const DISALLOWED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+function isSafeKey(key) {
+  return typeof key === "string" && key.length > 0 && !DISALLOWED_KEYS.has(key.trim().toLowerCase());
+}
+
 export function getSiteConfig(host) {
   return new Promise((resolve) => {
-    if (!host) {
+    if (!isSafeKey(host)) {
       resolve(null);
       return;
     }
@@ -17,7 +23,7 @@ export function getSiteConfig(host) {
 
 export function setSiteConfig(host, config) {
   return new Promise((resolve) => {
-    if (!host) {
+    if (!isSafeKey(host)) {
       resolve();
       return;
     }

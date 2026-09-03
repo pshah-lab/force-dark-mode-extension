@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dark Document Viewer</title>
+    <link rel="stylesheet" href="viewer.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="title-group">
+        <h1>Dark Document Viewer</h1>
+        <p id="document-name">Open a PDF or document</p>
+      </div>
+
+      <div class="controls">
+        <label>
+          Mode
+          <select id="mode">
+            <option value="smart">Smart Dark</option>
+            <option value="invert">Invert</option>
+            <option value="sepia">Sepia</option>
+            <option value="original">Original</option>
+          </select>
+        </label>
+
+        <label>
+          Background
+          <input id="background-color" type="color" value="#0f1115" />
+        </label>
+
+        <label>
+          Text
+          <input id="text-color" type="color" value="#e8eaed" />
+        </label>
+
+        <label>
+          Size
+          <input id="font-size" type="range" min="14" max="24" value="17" />
+        </label>
+
+        <label>
+          Contrast
+          <input id="contrast" type="range" min="80" max="135" value="105" />
+        </label>
+
+        <button id="open-file" type="button">Open file</button>
+        <input
+          id="file-input"
+          type="file"
+          accept=".pdf,.txt,.md,.markdown,.rtf,application/pdf,text/plain,text/markdown,application/rtf,text/rtf"
+          hidden
+        />
+      </div>
+    </header>
+
+    <main id="viewer" class="viewer" data-mode="smart">
+      <section id="empty-state" class="empty-state">
+        <h2>Open a PDF, TXT, Markdown, or RTF file</h2>
+        <p>
+          PDF files render locally with smart dark conversion. Text documents
+          render in a clean dark reader with your selected colors.
+        </p>
+      </section>
+
+      <section id="pdf-render-panel" class="pdf-render-panel" hidden>
+        <div class="pdf-status" id="pdf-status">Loading PDF...</div>
+        <div class="pdf-pages" id="pdf-pages"></div>
+      </section>
+
+      <section id="pdf-panel" class="pdf-panel" hidden>
+        <iframe
+          id="pdf-frame"
+          title="PDF document"
+          sandbox="allow-scripts allow-same-origin"
+          referrerpolicy="no-referrer"
+        ></iframe>
+        <div class="fallback">
+          <p>Canvas rendering failed. This is the original PDF fallback.</p>
+          <a id="pdf-fallback-link" target="_blank" rel="noopener">Open PDF</a>
+        </div>
+      </section>
+
+      <article id="document-panel" class="document-panel" hidden></article>
+    </main>
+
+    <script type="module" src="viewer.js"></script>
+  </body>
+</html>

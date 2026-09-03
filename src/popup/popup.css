@@ -133,3 +133,28 @@ body {
   cursor: not-allowed;
   opacity: 0.55;
 }
+
+.document-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.document-tools button {
+  width: 100%;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid #343b46;
+  border-radius: 8px;
+  background: #151922;
+  color: #e8eaed;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+
+.document-tools button:hover {
+  border-color: #8ab4f8;
+  background: #1b2230;
+}

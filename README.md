@@ -18,6 +18,8 @@ It allows users to choose between multiple dark-mode engines and stores preferen
 - Active-tab engine recommendation based on page content
 - Native dark-site detection so already-dark pages are left alone in Auto mode
 - Per-site CSS background color picker
+- Dark PDF viewer with local PDF.js canvas rendering
+- Dark document viewer for TXT, Markdown, and RTF files
 - Lightweight and privacy-friendly
 
 ---
@@ -31,6 +33,8 @@ The extension uses a **storage-driven architecture**:
 - The popup asks the active tab to recommend the best engine for the current page
 - Auto mode applies CSS, Invert, or no extra styling when the site already appears dark
 - CSS background colors are stored per site and applied immediately
+- PDF files render locally with PDF.js and smart pixel-level dark conversion
+- Document files open in a local extension viewer with dark reading controls
 - Content scripts react immediately to storage changes
 - No page refresh is required
 - No background DOM manipulation
@@ -59,6 +63,14 @@ Theme engines are isolated and interchangeable.
 ### Invert Engine
 - Uses color inversion with re-inversion for media and embedded content
 - Useful for sites with complex or image-heavy layouts
+
+### PDF & Document Viewer
+- Opens detected PDF tabs from the popup in a dark viewer
+- Opens local PDF, TXT, Markdown, and RTF files from the viewer page
+- Renders PDFs to canvas with bundled PDF.js instead of loading remote scripts
+- Uses saturation-aware pixel conversion to preserve colorful diagrams better than simple inversion
+- Supports Smart Dark, Invert, Sepia, and Original viewing modes
+- Stores viewer colors, font size, and contrast preferences
 
 ---
 

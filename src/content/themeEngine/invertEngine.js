@@ -12,38 +12,24 @@ function enableInvert() {
 
     html {
       background-color: #121212 !important;
-    }
-
-    body {
-      background-color: #ffffff !important;
-      filter: invert(1) hue-rotate(180deg) !important;
-    }
-
-    body * {
-      border-color: #d7d7d7 !important;
+      filter: invert(0.92) hue-rotate(180deg) !important;
     }
 
     img,
     video,
-    picture,
-    iframe,
     canvas,
+    picture,
     embed,
     object,
-    svg,
     [style*="background-image"] {
       filter: invert(1) hue-rotate(180deg) !important;
     }
 
-    /* Prevent double inversion on media nested inside picture or media containers */
+    /* Prevent double inversion on media nested inside picture or video */
     picture img,
-    picture svg,
-    picture video {
+    picture video,
+    video img {
       filter: none !important;
-    }
-
-    iframe {
-      background-color: #ffffff !important;
     }
   `;
 

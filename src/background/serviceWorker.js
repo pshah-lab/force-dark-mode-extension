@@ -19,7 +19,8 @@ function getHostFromUrl(url) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (msg.type !== "TOGGLE") return;
+  if (sender.id && sender.id !== chrome.runtime.id) return;
+  if (msg?.type !== "TOGGLE") return;
 
   handleToggleMessage(msg, sender);
 });

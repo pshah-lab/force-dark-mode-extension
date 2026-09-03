@@ -14,18 +14,8 @@ echo "Building release package for Force Dark Mode v${VERSION}..."
 # Remove old package if exists
 rm -f "$OUTPUT"
 
-# Create clean zip archive
-zip -r "$OUTPUT" . \
-  -x ".git/*" \
-  -x ".gitignore" \
-  -x "tests/*" \
-  -x "*.zip" \
-  -x "*.sh" \
-  -x ".DS_Store" \
-  -x "*/.DS_Store" \
-  -x "CHROMEWEBSTORE.md" \
-  -x "new_features.md" \
-  -x "security_report.md"
+# Create clean zip archive containing only production runtime files
+zip -r "$OUTPUT" manifest.json assets/ src/ -x "*/.DS_Store"
 
 echo ""
 echo "========================================="

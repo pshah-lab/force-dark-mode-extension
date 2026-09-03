@@ -45,6 +45,7 @@ let currentObjectUrl = "";
 let currentPdfSource = null;
 let currentPdfName = "";
 let renderGeneration = 0;
+let rerenderDebounceTimer = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const settings = await getViewerSettings();
@@ -55,10 +56,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 function bindControls() {
   modeInput.onchange = persistCurrentSettingsAndRerenderPdf;
-  backgroundColorInput.oninput = persistCurrentSettingsAndRerenderPdf;
-  textColorInput.oninput = persistCurrentSettingsAndRerenderPdf;
-  fontSizeInput.oninput = persistCurrentSettings;
-  contrastInput.oninput = persistCurrentSettingsAndRerenderPdf;
+  backgroundColorInput.oninput = debouncedPersistAndRerenderPdf;
+  textColorInput.oninput = debouncedPersistAndRerenderPdf;
+  fontSizeInput.oninput = debouncedPersistAndRerenderPdf;
+  contrastInput.oninput = debouncedPersistAndRerenderPdf;
 
   openFileButton.onclick = () => {
     fileInput.click();
@@ -212,7 +213,7 @@ async function renderPdfPage(pdf, pageNumber, generation) {
   if (generation !== renderGeneration) return;
 
   const settings = getCurrentSettings();
-  const viewport = page.getViewport({ scale: getPageScale(page) });
+  const viewport = page.getViewport({ scale: getPageScale(page, settings) });
   const outputScale = getPdfOutputScale();
   const wrapper = document.createElement("section");
   const pageContent = document.createElement("div");
@@ -256,11 +257,12 @@ async function renderPdfPage(pdf, pageNumber, generation) {
   await renderPdfTextLayer(page, viewport, textLayer, generation);
 }
 
-function getPageScale(page) {
+function getPageScale(page, settings = getCurrentSettings()) {
   const baseViewport = page.getViewport({ scale: 1 });
   const availableWidth = Math.min(window.innerWidth - 48, 1100);
   const fitScale = availableWidth / baseViewport.width;
-  return clampNumber(fitScale, 0.9, 1.65, 1.2);
+  const zoomFactor = (settings?.fontSize || 17) / 17;
+  return clampNumber(fitScale * zoomFactor, 0.5, 3.0, 1.2);
 }
 
 function getPdfOutputScale() {
@@ -404,6 +406,20 @@ async function persistCurrentSettingsAndRerenderPdf() {
   if (!currentPdfSource) return;
 
   openPdf(currentPdfSource, currentPdfName, currentObjectUrl || currentPdfSource);
+}
+
+function debouncedPersistAndRerenderPdf() {
+  persistCurrentSettings();
+
+  if (!currentPdfSource) return;
+
+  if (rerenderDebounceTimer) {
+    clearTimeout(rerenderDebounceTimer);
+  }
+
+  rerenderDebounceTimer = setTimeout(() => {
+    openPdf(currentPdfSource, currentPdfName, currentObjectUrl || currentPdfSource);
+  }, 140);
 }
 
 function isPdfFile(file) {

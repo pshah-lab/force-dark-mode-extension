@@ -4,13 +4,13 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.6.0-indigo.svg)](manifest.json)
 [![Tests](https://img.shields.io/badge/tests-32%20passed-success.svg)](tests/)
-[![Website](https://img.shields.io/badge/website-live-cyan.svg)](https://pshah-lab.github.io/force-dark-mode-extension/)
+[![Website](https://img.shields.io/badge/website-live-cyan.svg)](https://darkmode.pshah.fun/)
 
 **Force Dark Mode - ThemeSwitcher** is a lightweight, privacy-first Chrome extension that transforms websites, local documents, and PDF files into eye-friendly, customizable dark themes.
 
 Unlike crude global inverters that turn photos, videos, and layouts into neon negatives, ThemeSwitcher evaluates page luminance and structure to apply the optimal dark strategy automatically.
 
-🌐 **Live Website & Guides**: [https://pshah-lab.github.io/force-dark-mode-extension/](https://pshah-lab.github.io/force-dark-mode-extension/)
+🌐 **Live Website & Guides**: [https://darkmode.pshah.fun/](https://darkmode.pshah.fun/)
 
 ---
 
@@ -72,7 +72,7 @@ ThemeSwitcher is built with privacy by design:
   - `activeTab`: Inspecting luminance and applying styles when the user opens the popup.
   - `<all_urls>` (content_scripts): Applying dark mode at `document_start` to prevent white flashes.
 
-Read our complete [Privacy Policy](https://pshah-lab.github.io/force-dark-mode-extension/privacy.html) or [PRIVACY.md](PRIVACY.md).
+Read our complete [Privacy Policy](https://darkmode.pshah.fun/privacy.html) or [PRIVACY.md](PRIVACY.md).
 
 ---
 
@@ -108,10 +108,10 @@ Create a clean, production-ready ZIP archive for the Chrome Web Store:
 
 ## 📚 Educational Guides & Documentation
 
-- [How to Force Dark Mode on Chrome Websites](https://pshah-lab.github.io/force-dark-mode-extension/blog/how-to-force-dark-mode-chrome.html)
-- [How to View and Read PDFs in Dark Mode on Chrome](https://pshah-lab.github.io/force-dark-mode-extension/blog/dark-mode-pdf-guide.html)
-- [Dark Mode vs Night Mode: What's the Difference?](https://pshah-lab.github.io/force-dark-mode-extension/blog/dark-mode-vs-night-mode.html)
-- [Choosing the Best Dark Mode Extension for Chrome](https://pshah-lab.github.io/force-dark-mode-extension/blog/best-dark-mode-extension-guide.html)
+- [How to Force Dark Mode on Chrome Websites](https://darkmode.pshah.fun/blog/how-to-force-dark-mode-chrome.html)
+- [How to View and Read PDFs in Dark Mode on Chrome](https://darkmode.pshah.fun/blog/dark-mode-pdf-guide.html)
+- [Dark Mode vs Night Mode: What's the Difference?](https://darkmode.pshah.fun/blog/dark-mode-vs-night-mode.html)
+- [Choosing the Best Dark Mode Extension for Chrome](https://darkmode.pshah.fun/blog/best-dark-mode-extension-guide.html)
 - [Chrome Web Store Listing Strategy](CHROMEWEBSTORE.md)
 
 ---

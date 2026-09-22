@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How It Works - Architecture &amp; Performance | ThemeSwitcher</title>
+    <meta
+      name="description"
+      content="Learn how ThemeSwitcher transforms websites and documents into dark mode with zero white flashes, batched DOM rendering, and 100% offline privacy."
+    />
+    <link rel="canonical" href="https://pshah-lab.github.io/force-dark-mode-extension/how-it-works.html" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#090b0e" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://pshah-lab.github.io/force-dark-mode-extension/how-it-works.html" />
+    <meta property="og:title" content="How It Works - Architecture &amp; Performance | ThemeSwitcher" />
+    <meta property="og:description" content="Technical architecture of ThemeSwitcher: document_start injection, DOM luminance sampling, requestAnimationFrame batching, and offline privacy." />
+    <meta property="og:image" content="https://pshah-lab.github.io/force-dark-mode-extension/assets/icon128.png" />
+
+    <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+      <div class="container nav-container">
+        <a href="./" class="logo-brand" aria-label="ThemeSwitcher Home">
+          <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          <span>ThemeSwitcher</span>
+        </a>
+
+        <nav role="navigation" aria-label="Main Navigation">
+          <button class="mobile-toggle" aria-expanded="false" aria-label="Toggle navigation menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          <ul class="nav-menu">
+            <li><a href="./" class="nav-link">Home</a></li>
+            <li><a href="features.html" class="nav-link">Features</a></li>
+            <li><a href="how-it-works.html" class="nav-link active">How It Works</a></li>
+            <li><a href="blog/how-to-force-dark-mode-chrome.html" class="nav-link">Guides</a></li>
+            <li><a href="support.html" class="nav-link">Support</a></li>
+            <li><a href="about.html" class="nav-link">About</a></li>
+          </ul>
+        </nav>
+
+        <div class="nav-cta">
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode"
+            class="btn btn-primary btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>Add to Chrome</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="container article-container">
+      <div class="article-header">
+        <div class="badge">Under The Hood</div>
+        <h1>How ThemeSwitcher Works: Architecture &amp; Performance</h1>
+        <div class="article-meta">
+          <span>By Engineering Team</span> • 
+          <span>Updated September 2026</span> • 
+          <span>5 min read</span>
+        </div>
+        <p class="hero-subtitle">
+          A deep dive into how ThemeSwitcher applies dark themes instantly, prevents white flashes, handles dynamic DOM updates, and protects your privacy.
+        </p>
+      </div>
+
+      <div class="article-content">
+        <h2>1. The Problem with Naive Inversion</h2>
+        <p>
+          Many basic dark mode extensions rely on a simple CSS rule: <code>filter: invert(1) hue-rotate(180deg)</code>. While this can make a white page dark quickly, it introduces major visual defects:
+        </p>
+        <ul>
+          <li>Images, profile photos, and videos appear as eerie negatives.</li>
+          <li>Contrast ratios can drop severely below WCAG accessibility thresholds.</li>
+          <li>Shadows, borders, and UI depth cues are completely inverted.</li>
+          <li>Modern Single Page Applications (SPAs) often glitch when navigating between views.</li>
+        </ul>
+
+        <h2>2. Document-Start Injection &amp; Zero White Flashes</h2>
+        <p>
+          A common frustration with browser extensions is the dreaded "white flash" — a split second of blinding bright light while the page loads before the extension styles kick in.
+        </p>
+        <p>
+          ThemeSwitcher solves this by running at <code>document_start</code>. Before the browser paints the first pixel of the DOM, ThemeSwitcher injects core CSS custom properties onto the <code>:root</code> element and declares <code>color-scheme: dark !important</code>. The browser immediately applies dark background defaults to the canvas, rendering the initial paint in soothing dark tones.
+        </p>
+
+        <div class="callout-box">
+          <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Why Document Start Matters</h3>
+          <p style="font-size: 0.95rem; margin-bottom: 0;">
+            By decoupling the initial dark background paint from full DOM element analysis, ThemeSwitcher guarantees that you never encounter a bright flash, even on slow network connections.
+          </p>
+        </div>
+
+        <h2>3. Batched DOM Scanning &amp; Layout Preservation</h2>
+        <p>
+          To style complex web applications without degrading browser performance, ThemeSwitcher enforces a strict separation of DOM read and write operations:
+        </p>
+        <ol>
+          <li>
+            <strong>Read Pass:</strong> The engine measures computed styles (background color luminance, border colors, and text luminance) across visible elements without mutating the DOM.
+          </li>
+          <li>
+            <strong>Write Pass:</strong> Changes are applied in a single coordinated frame via <code>requestAnimationFrame</code>, setting data attributes like <code>data-force-dark-surface="strong"</code> or <code>data-force-dark-text="true"</code>.
+          </li>
+          <li>
+            <strong>Mutation Tracking:</strong> A targeted <code>MutationObserver</code> observes newly added nodes and attribute changes, batching updates to prevent layout thrashing or dropped frames.
+          </li>
+        </ol>
+
+        <h2>4. Saturation-Aware PDF Pixel Conversion</h2>
+        <p>
+          Standard browser PDF viewers render documents inside an internal plugin that extensions cannot easily customize without breaking graphics.
+        </p>
+        <p>
+          ThemeSwitcher includes a dedicated, offline Dark Document Viewer. When opened, it loads the PDF into a sandboxed HTML5 canvas using bundled <strong>PDF.js</strong>. Rather than inverting everything indiscriminately, the canvas engine executes a saturation-aware pixel algorithm:
+        </p>
+        <ul>
+          <li>High-brightness, low-saturation pixels (white or near-white backgrounds) are converted to deep dark tones.</li>
+          <li>High-saturation pixels (colored charts, graphs, diagrams, and colored text) preserve their original hue and chromatic intensity.</li>
+          <li>Text contrast is boosted automatically to ensure maximum legibility.</li>
+        </ul>
+
+        <h2>5. Complete Offline Privacy</h2>
+        <p>
+          Unlike cloud-based converters, ThemeSwitcher makes <strong>zero external network requests</strong>.
+        </p>
+        <ul>
+          <li>No analytics or telemetry trackers are bundled.</li>
+          <li>Your browsing history and site URLs never leave your machine.</li>
+          <li>Site preferences are stored using Google Chrome’s built-in <code>chrome.storage.sync</code> API, encrypted and synchronized through your personal Google Account.</li>
+          <li>The source code is 100% open under the MIT License for public auditing.</li>
+        </ul>
+      </div>
+
+      <div class="cta-banner">
+        <h2>Try It on Your Browser</h2>
+        <p>Install ThemeSwitcher for free and enjoy an eye-friendly, distraction-free reading experience.</p>
+        <a
+          href="https://chromewebstore.google.com/detail/force-dark-mode"
+          class="btn btn-primary btn-lg btn-chrome-store"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <span>Add to Chrome</span>
+        </a>
+      </div>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container footer-bottom">
+        <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
+        <div><a href="./">Home</a> • <a href="features.html">Features</a> • <a href="privacy.html">Privacy</a></div>
+      </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>

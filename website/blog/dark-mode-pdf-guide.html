@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How to View and Read PDFs in Dark Mode on Chrome (2026 Tutorial)</title>
+    <meta
+      name="description"
+      content="Tired of blinding white PDF documents? Learn how to read local and online PDFs in dark mode on Google Chrome safely, locally, and without cloud uploads."
+    />
+    <link rel="canonical" href="https://pshah-lab.github.io/force-dark-mode-extension/blog/dark-mode-pdf-guide.html" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#090b0e" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://pshah-lab.github.io/force-dark-mode-extension/blog/dark-mode-pdf-guide.html" />
+    <meta property="og:title" content="How to View and Read PDFs in Dark Mode on Chrome (2026 Tutorial)" />
+    <meta property="og:description" content="Step-by-step guide to reading PDF papers and books in dark mode on Chrome without sacrificing diagram colors or uploading confidential files." />
+    <meta property="og:image" content="https://pshah-lab.github.io/force-dark-mode-extension/assets/icon128.png" />
+
+    <link rel="icon" type="image/svg+xml" href="../assets/icon.svg" />
+    <link rel="stylesheet" href="../css/style.css" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "How to View and Read PDFs in Dark Mode on Chrome",
+        "description": "Comprehensive tutorial on enabling dark mode for local and online PDF files in Google Chrome using offline canvas processing.",
+        "author": {
+          "@type": "Organization",
+          "name": "pshah-lab"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "ThemeSwitcher"
+        },
+        "datePublished": "2026-09-04",
+        "dateModified": "2026-09-22"
+      }
+    </script>
+  </head>
+
+  <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+      <div class="container nav-container">
+        <a href="../" class="logo-brand" aria-label="ThemeSwitcher Home">
+          <img src="../assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          <span>ThemeSwitcher</span>
+        </a>
+
+        <nav role="navigation" aria-label="Main Navigation">
+          <button class="mobile-toggle" aria-expanded="false" aria-label="Toggle navigation menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          <ul class="nav-menu">
+            <li><a href="../" class="nav-link">Home</a></li>
+            <li><a href="../features.html" class="nav-link">Features</a></li>
+            <li><a href="../how-it-works.html" class="nav-link">How It Works</a></li>
+            <li><a href="how-to-force-dark-mode-chrome.html" class="nav-link active">Guides</a></li>
+            <li><a href="../support.html" class="nav-link">Support</a></li>
+            <li><a href="../about.html" class="nav-link">About</a></li>
+          </ul>
+        </nav>
+
+        <div class="nav-cta">
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode"
+            class="btn btn-primary btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>Add to Chrome</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="container article-container">
+      <article class="article-header">
+        <div class="badge">Document Reader Guide</div>
+        <h1>How to View and Read PDFs in Dark Mode on Chrome</h1>
+        <div class="article-meta">
+          <span>By Document Accessibility Specialists</span> • 
+          <span>Updated September 2026</span> • 
+          <span>5 min read</span>
+        </div>
+        <p class="hero-subtitle">
+          Nothing ruins a late-night reading streak like opening an academic paper, textbook, or contract only to be blinded by full-screen white PDF pages. Here is how to achieve true, eye-friendly dark mode for PDFs.
+        </p>
+
+        <div class="article-content">
+          <h2>The Problem: Why Chrome's PDF Viewer Ignores Dark Mode</h2>
+          <p>
+            When you open a <code>.pdf</code> file in Google Chrome, it loads through an internal native PDF viewer component (PDFium).
+          </p>
+          <p>
+            Even if you have dark themes enabled on your computer or browser, the native viewer treats PDF pages as fixed white paper documents. Furthermore, standard content scripts in most browser extensions cannot inject CSS into native PDF plugin tabs, leaving readers stranded.
+          </p>
+
+          <h2>Common Workarounds (And Why They Fail)</h2>
+          <ul>
+            <li>
+              <strong>OS-Level Screen Invert:</strong> Turns the entire screen into inverted colors, which makes your entire desktop looks distorted and inverts colorful diagrams into neon ghosts.
+            </li>
+            <li>
+              <strong>Third-Party Cloud Converters:</strong> Uploading your PDFs to an external online converter poses critical security and privacy risks, especially for confidential financial, legal, or proprietary work documents.
+            </li>
+          </ul>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 2.5rem 0;" />
+
+          <h2>The Solution: Local Canvas Rendering with ThemeSwitcher</h2>
+          <p>
+            <a href="../">ThemeSwitcher</a> solves this natively by integrating an offline, client-side <strong>Dark Document Viewer</strong> directly into the extension.
+          </p>
+
+          <h3>How to Read Online PDFs in Dark Mode:</h3>
+          <ol>
+            <li>Open any web PDF link in a Chrome tab.</li>
+            <li>Click the ThemeSwitcher icon in your browser toolbar.</li>
+            <li>Click the button that appears: <strong>Open PDF in dark viewer</strong>.</li>
+            <li>The PDF immediately loads in ThemeSwitcher’s dedicated reader with dark canvas styling applied.</li>
+          </ol>
+
+          <h3>How to Read Local Computer PDFs in Dark Mode:</h3>
+          <ol>
+            <li>Click the ThemeSwitcher icon in your browser toolbar.</li>
+            <li>Click <strong>Open file viewer</strong> at the bottom of the popup.</li>
+            <li>Click <strong>Choose File</strong> and select any local PDF, Markdown, or text file on your drive.</li>
+            <li>Your document renders instantly in soothing dark mode without uploading a single byte to the internet.</li>
+          </ol>
+
+          <div class="callout-box">
+            <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Why Saturation-Aware Pixel Conversion Matters</h3>
+            <p style="font-size: 0.95rem; margin-bottom: 0;">
+              Unlike crude inversion that turns red, blue, and green chart bars into garish neons, ThemeSwitcher's canvas engine samples pixel saturation. Pixels with low saturation (the white paper background) are darkened into deep slate, while colorful lines and illustrations remain vibrant and accurate.
+            </p>
+          </div>
+
+          <h2>Key Advantages of the ThemeSwitcher PDF Reader:</h2>
+          <ul>
+            <li><strong>Zero Data Uploads:</strong> Built with bundled PDF.js; works entirely offline.</li>
+            <li><strong>Custom Controls:</strong> Adjust font sizing, page zoom, and contrast levels.</li>
+            <li><strong>Multi-Format:</strong> In addition to PDFs, opens local Markdown (.md), Plain Text (.txt), and RTF files.</li>
+            <li><strong>Multiple Modes:</strong> Switch between Smart Dark, Invert, Sepia, and Original views with a single click.</li>
+          </ul>
+        </div>
+
+        <div class="cta-banner">
+          <h2>Never Get Blinded by White PDFs Again</h2>
+          <p>Install ThemeSwitcher for Chrome and enjoy high-contrast, offline PDF dark reading.</p>
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode"
+            class="btn btn-primary btn-lg btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>Add to Chrome — Free</span>
+          </a>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container footer-bottom">
+        <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
+        <div><a href="../">Home</a> • <a href="../features.html">Features</a> • <a href="how-to-force-dark-mode-chrome.html">Force Dark Mode Guide</a></div>
+      </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+  </body>
+</html>

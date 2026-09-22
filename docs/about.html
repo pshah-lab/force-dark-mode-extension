@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About Developer &amp; Project Mission | ThemeSwitcher</title>
+    <meta
+      name="description"
+      content="Learn about the origins, mission, and technical philosophy behind ThemeSwitcher (Force Dark Mode): open-source accessibility and eye comfort."
+    />
+    <link rel="canonical" href="https://pshah-lab.github.io/force-dark-mode-extension/about.html" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#090b0e" />
+
+    <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+      <div class="container nav-container">
+        <a href="./" class="logo-brand" aria-label="ThemeSwitcher Home">
+          <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          <span>ThemeSwitcher</span>
+        </a>
+
+        <nav role="navigation" aria-label="Main Navigation">
+          <button class="mobile-toggle" aria-expanded="false" aria-label="Toggle navigation menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          <ul class="nav-menu">
+            <li><a href="./" class="nav-link">Home</a></li>
+            <li><a href="features.html" class="nav-link">Features</a></li>
+            <li><a href="how-it-works.html" class="nav-link">How It Works</a></li>
+            <li><a href="blog/how-to-force-dark-mode-chrome.html" class="nav-link">Guides</a></li>
+            <li><a href="support.html" class="nav-link">Support</a></li>
+            <li><a href="about.html" class="nav-link active">About</a></li>
+          </ul>
+        </nav>
+
+        <div class="nav-cta">
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode"
+            class="btn btn-primary btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>Add to Chrome</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="container article-container">
+      <div class="article-header">
+        <div class="badge">Project Origins</div>
+        <h1>About ThemeSwitcher</h1>
+        <p class="hero-subtitle">
+          Built to make web reading comfortable, accessible, and completely private for night-shift developers, students, and research readers.
+        </p>
+      </div>
+
+      <div class="article-content">
+        <h2>The Story Behind ThemeSwitcher</h2>
+        <p>
+          In modern web development, dark mode has evolved from an aesthetic preference into an essential accessibility feature. Excessive screen glare during long hours of reading code, articles, and research papers causes digital eye strain, headaches, and fatigue.
+        </p>
+        <p>
+          Yet, many existing dark mode extensions suffer from severe shortcomings:
+        </p>
+        <ul>
+          <li>Heavy JavaScript bundles that slow down tab switching and drain laptop batteries.</li>
+          <li>Crude inversion algorithms that invert photos, diagrams, and video thumbnails into distorted negatives.</li>
+          <li>Unnecessary tracking, intrusive telemetry, or advertising scripts that track browsing habits.</li>
+          <li>Zero support for PDF documents, leaving users stranded with blinding white PDF tabs.</li>
+        </ul>
+        <p>
+          <strong>ThemeSwitcher (Force Dark Mode)</strong> was engineered by <code>pshah-lab</code> as an open-source answer to these problems: a high-performance, layout-safe dark theme extension with an integrated offline PDF reader and a strict commitment to zero user tracking.
+        </p>
+
+        <h2>Our Technical &amp; Ethical Principles</h2>
+        <div class="demo-grid" style="margin: 2rem 0;">
+          <div class="demo-card" style="background: var(--bg-surface-elevated);">
+            <h3>1. Privacy by Default</h3>
+            <p>We believe your browsing history belongs to you. ThemeSwitcher contains zero telemetry, requires no user account, and makes no network calls.</p>
+          </div>
+          <div class="demo-card" style="background: var(--bg-surface-elevated);">
+            <h3>2. Layout Stability</h3>
+            <p>A dark mode extension shouldn't break the web. We use batched DOM analysis and contrast-calculated CSS variables to preserve page layout.</p>
+          </div>
+          <div class="demo-card" style="background: var(--bg-surface-elevated);">
+            <h3>3. Open Source &amp; Auditable</h3>
+            <p>Code that interacts with your web pages must be transparent. Every line of ThemeSwitcher is published on GitHub under the MIT License.</p>
+          </div>
+        </div>
+
+        <h2>Browser Compatibility</h2>
+        <p>
+          ThemeSwitcher is built on the standard Manifest V3 WebExtensions specification and is tested on:
+        </p>
+        <ul>
+          <li><strong>Google Chrome:</strong> Version 108 and newer</li>
+          <li><strong>Microsoft Edge:</strong> Version 108 and newer</li>
+          <li><strong>Brave Browser:</strong> Fully compatible</li>
+          <li><strong>Opera &amp; Vivaldi:</strong> Fully compatible via Chromium extension engine</li>
+        </ul>
+
+        <h2>Developer &amp; Community Links</h2>
+        <p>
+          ThemeSwitcher is developed and maintained by <code>pshah-lab</code>. Explore the repository or join our community discussions:
+        </p>
+        <ul>
+          <li>
+            <a href="https://github.com/pshah-lab/force-dark-mode-extension" target="_blank" rel="noopener noreferrer">
+              GitHub Source Repository
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com/pshah-lab/force-dark-mode-extension/releases" target="_blank" rel="noopener noreferrer">
+              Release Changelog &amp; Downloads
+            </a>
+          </li>
+          <li>
+            <a href="privacy.html">Privacy Policy Statement</a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="cta-banner">
+        <h2>Join Thousands of Night Readers</h2>
+        <p>Enhance your reading comfort on Chrome, Edge, and Brave today.</p>
+        <a
+          href="https://chromewebstore.google.com/detail/force-dark-mode"
+          class="btn btn-primary btn-lg btn-chrome-store"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <span>Install from Chrome Web Store</span>
+        </a>
+      </div>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container footer-bottom">
+        <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
+        <div><a href="./">Home</a> • <a href="features.html">Features</a> • <a href="support.html">Support</a></div>
+      </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>

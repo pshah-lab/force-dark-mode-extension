@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pshah-lab.github.io/force-dark-mode-extension/sitemap.xml

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>How to Force Dark Mode on Chrome Websites (Complete 2026 Guide)</title>
+    <meta
+      name="description"
+      content="Learn how to force dark mode on all Chrome websites using native browser flags and extensions. Compare methods, avoid broken layouts, and protect your eyes."
+    />
+    <link rel="canonical" href="https://pshah-lab.github.io/force-dark-mode-extension/blog/how-to-force-dark-mode-chrome.html" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#090b0e" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://pshah-lab.github.io/force-dark-mode-extension/blog/how-to-force-dark-mode-chrome.html" />
+    <meta property="og:title" content="How to Force Dark Mode on Chrome Websites (Complete 2026 Guide)" />
+    <meta property="og:description" content="Step-by-step tutorial on forcing dark mode across websites in Chrome. Discover the differences between experimental flags and intelligent extension engines." />
+    <meta property="og:image" content="https://pshah-lab.github.io/force-dark-mode-extension/assets/icon128.png" />
+
+    <link rel="icon" type="image/svg+xml" href="../assets/icon.svg" />
+    <link rel="stylesheet" href="../css/style.css" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "How to Force Dark Mode on Chrome Websites",
+        "description": "Complete guide on enabling dark mode for all websites in Google Chrome using native flags and intelligent extensions.",
+        "author": {
+          "@type": "Organization",
+          "name": "pshah-lab"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "ThemeSwitcher",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://pshah-lab.github.io/force-dark-mode-extension/assets/icon128.png"
+          }
+        },
+        "datePublished": "2026-09-04",
+        "dateModified": "2026-09-22"
+      }
+    </script>
+  </head>
+
+  <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+      <div class="container nav-container">
+        <a href="../" class="logo-brand" aria-label="ThemeSwitcher Home">
+          <img src="../assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          <span>ThemeSwitcher</span>
+        </a>
+
+        <nav role="navigation" aria-label="Main Navigation">
+          <button class="mobile-toggle" aria-expanded="false" aria-label="Toggle navigation menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          <ul class="nav-menu">
+            <li><a href="../" class="nav-link">Home</a></li>
+            <li><a href="../features.html" class="nav-link">Features</a></li>
+            <li><a href="../how-it-works.html" class="nav-link">How It Works</a></li>
+            <li><a href="how-to-force-dark-mode-chrome.html" class="nav-link active">Guides</a></li>
+            <li><a href="../support.html" class="nav-link">Support</a></li>
+            <li><a href="../about.html" class="nav-link">About</a></li>
+          </ul>
+        </nav>
+
+        <div class="nav-cta">
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode"
+            class="btn btn-primary btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>Add to Chrome</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="container article-container">
+      <article class="article-header">
+        <div class="badge">Comprehensive Tutorial</div>
+        <h1>How to Force Dark Mode on Chrome Websites</h1>
+        <div class="article-meta">
+          <span>By Web Accessibility Engineers</span> • 
+          <span>Updated September 2026</span> • 
+          <span>6 min read</span>
+        </div>
+        <p class="hero-subtitle">
+          Whether you're reading articles late at night or coding in the dark, glaring white websites cause uncomfortable eye strain. Here is how to force dark mode across every webpage in Google Chrome.
+        </p>
+
+        <div class="article-content">
+          <h2>Introduction: Why Native Dark Mode Isn't Enough</h2>
+          <p>
+            When you switch your operating system (macOS or Windows) or Google Chrome itself to Dark Mode, only the browser's UI chrome turns dark — the tab bar, bookmarks, and settings.
+          </p>
+          <p>
+            However, most individual websites continue to serve their default blinding white CSS backgrounds unless the site developer explicitly wrote a <code>@media (prefers-color-scheme: dark)</code> stylesheet.
+          </p>
+          <p>
+            To darken the remaining 70% of the web, you have two primary methods: <strong>Chrome’s Experimental Flags</strong> or an <strong>Intelligent Dark Mode Extension</strong>. Let’s compare both.
+          </p>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 2.5rem 0;" />
+
+          <h2>Method 1: Using Chrome’s Built-in Experimental Flag</h2>
+          <p>
+            Chromium contains an experimental feature designed to automatically invert web content.
+          </p>
+          <h3>Steps to Enable Chrome Force Dark Flag:</h3>
+          <ol>
+            <li>Open Google Chrome.</li>
+            <li>In the address bar, type <code>chrome://flags</code> and hit <kbd>Enter</kbd>.</li>
+            <li>In the search box at the top, type <code>force dark</code>.</li>
+            <li>Locate the setting named <strong>Auto Dark Mode for Web Contents</strong>.</li>
+            <li>Change the dropdown from <em>Default</em> to <strong>Enabled</strong>.</li>
+            <li>Click the blue <strong>Relaunch</strong> button at the bottom of the screen.</li>
+          </ol>
+
+          <div class="callout-box">
+            <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Limitations of the Chrome Flag</h3>
+            <ul>
+              <li><strong>Global Only:</strong> You cannot disable it for specific sites where colors break.</li>
+              <li><strong>Image Corruption:</strong> It often inverts diagrams, photos, and video thumbnails into photographic negatives.</li>
+              <li><strong>No Custom Colors:</strong> You are locked into Google’s hardcoded algorithmic color palette.</li>
+              <li><strong>Browser Restart:</strong> Enabling or disabling requires restarting all open Chrome windows.</li>
+            </ul>
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 2.5rem 0;" />
+
+          <h2>Method 2: Using ThemeSwitcher (Force Dark Mode Extension)</h2>
+          <p>
+            For users who want per-site control, protected media, customizable colors, and zero browser restarts, an extension like <a href="../">ThemeSwitcher</a> is the recommended approach.
+          </p>
+
+          <h3>Steps to Force Dark Mode with ThemeSwitcher:</h3>
+          <ol>
+            <li>
+              Install <a href="https://chromewebstore.google.com/detail/force-dark-mode" target="_blank" rel="noopener noreferrer">Force Dark Mode - ThemeSwitcher</a> from the Chrome Web Store.
+            </li>
+            <li>Navigate to any light-themed website (e.g., Wikipedia, Medium, or documentation).</li>
+            <li>Click the ThemeSwitcher icon in your browser toolbar.</li>
+            <li>Click the toggle button to activate dark mode instantly.</li>
+          </ol>
+
+          <h3>Why Method 2 is Superior for Daily Browsing:</h3>
+          <ul>
+            <li><strong>Automatic Engine Selection:</strong> Scans the DOM and applies the best engine (Auto, CSS Override, or Invert).</li>
+            <li><strong>Native Dark Protection:</strong> If a site natively supports dark mode (like YouTube, GitHub, or Reddit), ThemeSwitcher automatically respects it and doesn't interfere.</li>
+            <li><strong>Color Customizer:</strong> Choose between pitch black for OLED screens or a midnight slate palette.</li>
+            <li><strong>PDF &amp; Document Dark Viewer:</strong> Read local or web PDFs in high-contrast dark mode with built-in PDF.js rendering.</li>
+            <li><strong>100% Offline &amp; Private:</strong> No user data, analytics, or browsing history is ever transmitted.</li>
+          </ul>
+
+          <div class="callout-box">
+            <h3 style="font-size: 1.1rem; margin-bottom: 0.5rem;">Pro Tip: Customizing Background Colors per Website</h3>
+            <p style="font-size: 0.95rem; margin-bottom: 0;">
+              From the ThemeSwitcher popup, click the <strong>CSS background</strong> color picker. Choose your preferred shade (e.g. <code>#000000</code> or <code>#12161f</code>). The extension recalculates borders, text, and surfaces to maintain WCAG AA contrast automatically.
+            </p>
+          </div>
+
+          <h2>Summary: Which Method Should You Use?</h2>
+          <p>
+            If you just want a quick, all-or-nothing test and don't mind distorted media, Chrome flags are built right in. But if you value readability, preserved photos, per-domain control, and a dark PDF reader, <a href="../features.html">ThemeSwitcher</a> offers the most reliable, eye-friendly solution.
+          </p>
+        </div>
+
+        <div class="cta-banner">
+          <h2>Get Instant Dark Mode for All Websites</h2>
+          <p>Download ThemeSwitcher today and enjoy comfortable, glare-free web reading.</p>
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode"
+            class="btn btn-primary btn-lg btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>Add to Chrome — Free</span>
+          </a>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container footer-bottom">
+        <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
+        <div><a href="../">Home</a> • <a href="../features.html">Features</a> • <a href="../privacy.html">Privacy</a></div>
+      </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+  </body>
+</html>

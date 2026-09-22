@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy | ThemeSwitcher (Force Dark Mode)</title>
+    <meta
+      name="description"
+      content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. 100% offline, zero data collection, no telemetry, no tracking."
+    />
+    <link rel="canonical" href="https://pshah-lab.github.io/force-dark-mode-extension/privacy.html" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#090b0e" />
+
+    <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+      <div class="container nav-container">
+        <a href="./" class="logo-brand" aria-label="ThemeSwitcher Home">
+          <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          <span>ThemeSwitcher</span>
+        </a>
+
+        <nav role="navigation" aria-label="Main Navigation">
+          <button class="mobile-toggle" aria-expanded="false" aria-label="Toggle navigation menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          <ul class="nav-menu">
+            <li><a href="./" class="nav-link">Home</a></li>
+            <li><a href="features.html" class="nav-link">Features</a></li>
+            <li><a href="how-it-works.html" class="nav-link">How It Works</a></li>
+            <li><a href="blog/how-to-force-dark-mode-chrome.html" class="nav-link">Guides</a></li>
+            <li><a href="support.html" class="nav-link">Support</a></li>
+            <li><a href="about.html" class="nav-link">About</a></li>
+          </ul>
+        </nav>
+
+        <div class="nav-cta">
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode"
+            class="btn btn-primary btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>Add to Chrome</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="container article-container">
+      <div class="article-header">
+        <div class="badge">Transparency First</div>
+        <h1>Privacy Policy</h1>
+        <div class="article-meta">
+          <span>Last Updated: September 2026</span> • 
+          <span>Effective Immediately</span>
+        </div>
+      </div>
+
+      <div class="article-content">
+        <p>
+          ThemeSwitcher (Force Dark Mode) is developed with an uncompromising commitment to privacy and data minimization. This policy explains what information is processed, how it is handled, and why your data remains entirely in your control.
+        </p>
+
+        <h2>1. Zero Data Collection &amp; No Telemetry</h2>
+        <p>
+          ThemeSwitcher does <strong>not</strong> collect, store, transmit, or monetize any personal information, browsing activity, or web history.
+        </p>
+        <ul>
+          <li><strong>No Telemetry or Tracking:</strong> There are no third-party analytics trackers, advertising scripts, or tracking pixels embedded in the extension.</li>
+          <li><strong>No External Server Communication:</strong> The extension operates entirely offline. It does not ping external servers or maintain proprietary cloud databases.</li>
+          <li><strong>No Data Sharing:</strong> Because no data is collected, no information is ever sold, transferred, or shared with third parties.</li>
+        </ul>
+
+        <h2>2. Local Storage &amp; Chrome Sync</h2>
+        <p>
+          ThemeSwitcher uses Chrome’s built-in <code>chrome.storage.sync</code> API solely to store your display preferences:
+        </p>
+        <ul>
+          <li>Selected dark mode engine per domain (<code>auto</code>, <code>css</code>, or <code>invert</code>).</li>
+          <li>Custom background color preferences per domain.</li>
+          <li>Dark document and PDF viewer configuration (font size, zoom level, contrast settings).</li>
+        </ul>
+        <p>
+          These preferences are stored in your local Chrome profile and synchronized across your signed-in devices through Google’s official synchronization service. They are never sent to any server controlled by ThemeSwitcher.
+        </p>
+
+        <h2>3. Document &amp; PDF Processing</h2>
+        <p>
+          When you view a local or online PDF, Markdown, TXT, or RTF document in the Dark Document Viewer:
+        </p>
+        <ul>
+          <li>The file is processed <strong>100% locally</strong> inside your browser sandbox.</li>
+          <li>Rendering is performed by bundled, offline client-side libraries (PDF.js).</li>
+          <li>Your documents, text content, and files are never uploaded, logged, or analyzed by any remote service.</li>
+        </ul>
+
+        <h2>4. Browser Permissions Audit</h2>
+        <table class="comparison-table" style="margin: 2rem 0;">
+          <thead>
+            <tr>
+              <th>Permission</th>
+              <th>Purpose &amp; Scope</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>storage</code></td>
+              <td>Required to save your per-site preferences and viewer options locally and sync them between your Chrome instances.</td>
+            </tr>
+            <tr>
+              <td><code>activeTab</code></td>
+              <td>Used only when you open the extension popup to inspect page luminance and apply your selected theme settings to the active tab.</td>
+            </tr>
+            <tr>
+              <td><code>&lt;all_urls&gt;</code> (content_scripts)</td>
+              <td>Enables the extension to apply dark mode at <code>document_start</code> across sites so pages open without blinding white flashes.</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h2>5. Open Source Verification</h2>
+        <p>
+          ThemeSwitcher is free, open-source software licensed under the MIT License. Anyone can inspect, audit, and build the source code directly from our public GitHub repository:
+        </p>
+        <p>
+          <a href="https://github.com/pshah-lab/force-dark-mode-extension" target="_blank" rel="noopener noreferrer">
+            https://github.com/pshah-lab/force-dark-mode-extension
+          </a>
+        </p>
+
+        <h2>6. Contact &amp; Inquiries</h2>
+        <p>
+          If you have any questions, feedback, or concerns regarding privacy, you can submit an inquiry via our public issue tracker:
+        </p>
+        <p>
+          <a href="https://github.com/pshah-lab/force-dark-mode-extension/issues" target="_blank" rel="noopener noreferrer">
+            ThemeSwitcher Issue Tracker on GitHub
+          </a>
+        </p>
+      </div>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container footer-bottom">
+        <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
+        <div><a href="./">Home</a> • <a href="features.html">Features</a> • <a href="how-it-works.html">How It Works</a></div>
+      </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>

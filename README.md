@@ -1,117 +1,127 @@
-# Force Dark Mode
+# Force Dark Mode - ThemeSwitcher
 
-Force Dark Mode is a Chrome extension that applies a dark theme to websites that do not natively support one.  
-It allows users to choose between multiple dark-mode engines and stores preferences per site.
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-brightgreen.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.6.0-indigo.svg)](manifest.json)
+[![Tests](https://img.shields.io/badge/tests-32%20passed-success.svg)](tests/)
+[![Website](https://img.shields.io/badge/website-live-cyan.svg)](https://pshah-lab.github.io/force-dark-mode-extension/)
 
----
+**Force Dark Mode - ThemeSwitcher** is a lightweight, privacy-first Chrome extension that transforms websites, local documents, and PDF files into eye-friendly, customizable dark themes.
 
-## Features
+Unlike crude global inverters that turn photos, videos, and layouts into neon negatives, ThemeSwitcher evaluates page luminance and structure to apply the optimal dark strategy automatically.
 
-- Enable dark mode on any website
-- Choose between:
-  - **Auto mode** (default, chooses the best engine per site)
-  - **CSS-based dark mode** (layout-safe, with broad element coverage)
-  - **Invert-based dark mode** (useful for image-heavy sites)
-- Per-site preferences with automatic persistence
-- Instant toggle without page reload
-- Popup state that reflects the current site and selected engine
-- Active-tab engine recommendation based on page content
-- Native dark-site detection so already-dark pages are left alone in Auto mode
-- Per-site CSS background color picker
-- Dark PDF viewer with local PDF.js canvas rendering
-- Dark document viewer for TXT, Markdown, and RTF files
-- Lightweight and privacy-friendly
+🌐 **Live Website & Guides**: [https://pshah-lab.github.io/force-dark-mode-extension/](https://pshah-lab.github.io/force-dark-mode-extension/)
 
 ---
 
-## How It Works
+## 🚀 Key Features
 
-The extension uses a **storage-driven architecture**:
-
-- The popup updates site preferences
-- Preferences are stored using `chrome.storage.sync`
-- The popup asks the active tab to recommend the best engine for the current page
-- Auto mode applies CSS, Invert, or no extra styling when the site already appears dark
-- CSS background colors are stored per site and applied immediately
-- PDF files render locally with PDF.js and smart pixel-level dark conversion
-- Document files open in a local extension viewer with dark reading controls
-- Content scripts react immediately to storage changes
-- No page refresh is required
-- No background DOM manipulation
-
-This approach ensures reliability on both static sites and SPAs.
+- **Intelligent Auto Engine (Default)**: Dynamically detects whether a page is text-heavy, media-heavy, or already dark.
+- **Native Dark Site Detection**: Automatically detects native dark modes on sites like YouTube, GitHub, and Reddit—leaving them untouched to avoid double-inversion glitches.
+- **Layout-Safe CSS Override Engine**: Recolors backgrounds, typography, forms, and borders with contrast-tested CSS custom properties while preserving media elements.
+- **Smart Logo Inversion**: Selectively inverts dark/black logos on dark backgrounds for crystal-clear readability.
+- **Built-in Offline Dark PDF & Document Reader**: Render online and local PDF files locally using bundled PDF.js with saturation-aware pixel conversion. Also supports Markdown (`.md`), Plain Text (`.txt`), and RTF.
+- **Per-Site Background Customizer**: Choose between pitch-black (`#000000`) for OLED power savings or midnight slate (`#0f1115`) from the popup. Surfaces and borders adapt automatically.
+- **Zero White Flashes**: Injected at `document_start` so pages render dark immediately without blinding white flashes.
+- **Instant Toggle**: Toggle themes on the fly without refreshing the page.
+- **100% Offline & Private**: Zero telemetry, zero external network requests, and no tracking pixels.
 
 ---
 
-Theme engines are isolated and interchangeable.
+## 🛠️ How It Works
+
+ThemeSwitcher uses a **storage-driven, batched execution architecture**:
+
+```
+User Click / Navigation
+        ↓
+Injected at document_start (CSS root variables bound before paint)
+        ↓
+Read Pass (Luminance & contrast evaluated without DOM mutation)
+        ↓
+Single-Frame Batch Write (requestAnimationFrame applies data attributes)
+        ↓
+chrome.storage.sync (Preferences synced securely per domain)
+```
+
+1. **Document Start Binding**: Core styling variables are declared on `:root` before the DOM renders, completely eliminating white flashes.
+2. **Batched DOM Scanning**: Reads and writes are decoupled into coordinated animation frames to prevent layout thrashing and maintain 60 FPS scrolling.
+3. **Targeted MutationObserver**: Observes dynamic single-page application (SPA) updates without polling.
+4. **Offline Canvas PDF Rendering**: PDFs are converted pixel-by-pixel on an HTML5 canvas based on saturation, keeping diagrams vibrant while darkening white margins.
 
 ---
 
-## Theme Engines
+## 🎨 Theme Engines
 
-### Auto Engine (Default)
-- Detects whether the current page is text-heavy, media-heavy, or already dark
-- Applies CSS Engine, Invert Engine, or no extra styling based on page analysis
-- Best default for most users
-
-### CSS Engine
-- Overrides backgrounds, text, borders, form controls, links, and code blocks
-- Supports a user-selected background color from the popup
-- Preserves images and media
-- Best for most websites
-
-### Invert Engine
-- Uses color inversion with re-inversion for media and embedded content
-- Useful for sites with complex or image-heavy layouts
-
-### PDF & Document Viewer
-- Opens detected PDF tabs from the popup in a dark viewer
-- Opens local PDF, TXT, Markdown, and RTF files from the viewer page
-- Renders PDFs to canvas with bundled PDF.js instead of loading remote scripts
-- Uses saturation-aware pixel conversion to preserve colorful diagrams better than simple inversion
-- Supports Smart Dark, Invert, Sepia, and Original viewing modes
-- Stores viewer colors, font size, and contrast preferences
+| Engine | Ideal Use Case | How It Operates |
+| :--- | :--- | :--- |
+| **Auto Engine** *(Default)* | Everyday browsing across all sites | Analyzes DOM structure, relative luminance, and media density to select the best engine or leave native dark sites alone. |
+| **CSS Override Engine** | Text-heavy sites, articles, wikis, and SPAs | Rewrites surface and text CSS variables with mathematical WCAG AA contrast. Preserves all images, videos, and canvas elements. |
+| **Invert Engine** | Graphics-heavy or media-dense layouts | Applies smart color inversion with media re-inversion. |
+| **PDF & Document Viewer** | Research papers, textbooks, and notes | Bundled PDF.js canvas renderer with saturation-aware dark pixel conversion. |
 
 ---
 
-## Privacy
+## 🔒 Privacy & Permissions
 
-Force Dark Mode does **not** collect, transmit, or track any user data.
+ThemeSwitcher is built with privacy by design:
+- **No telemetry or analytics**: Zero tracking beacons, no Google Analytics, no third-party scripts.
+- **Zero external servers**: All computation is executed 100% locally on your machine.
+- **Minimal Manifest V3 Permissions**:
+  - `storage`: Storing domain preferences locally in Chrome Sync.
+  - `activeTab`: Inspecting luminance and applying styles when the user opens the popup.
+  - `<all_urls>` (content_scripts): Applying dark mode at `document_start` to prevent white flashes.
 
-- No analytics
-- No external services
-- No network requests
-- All settings remain on the user’s device
-
----
-
-## Installation (Development)
-
-1. Clone or download this repository
-2. Open Chrome and go to `chrome://extensions`
-3. Enable **Developer mode**
-4. Click **Load unpacked**
-5. Select the project root directory
+Read our complete [Privacy Policy](https://pshah-lab.github.io/force-dark-mode-extension/privacy.html) or [PRIVACY.md](PRIVACY.md).
 
 ---
 
-## Chrome Web Store
+## 💻 Local Development & Testing
 
-The extension is available on the Chrome Web Store.
+### Installation (Unpacked)
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/pshah-lab/force-dark-mode-extension.git
+   cd force-dark-mode-extension
+   ```
+2. Open Google Chrome and navigate to `chrome://extensions/`.
+3. Enable **Developer mode** (toggle in the top-right corner).
+4. Click **Load unpacked** and select the repository root directory.
 
-> (Add store link here after approval)
+### Running Automated Tests
+Run the comprehensive unit and DOM simulation test suites:
+```bash
+# File integrity, color math, and security checks (28 tests)
+node tests/run_tests.mjs
+
+# DOM simulation, engine switching, and YouTube detection (4 tests)
+node tests/dom_engine_test.mjs
+```
+
+### Packaging for Release
+Create a clean, production-ready ZIP archive for the Chrome Web Store:
+```bash
+./package-extension.sh
+```
 
 ---
 
-## Tech Stack
+## 📚 Educational Guides & Documentation
 
-- Chrome Extensions API (Manifest V3)
-- Vanilla JavaScript
-- CSS
-- No frameworks, no bundlers
+- [How to Force Dark Mode on Chrome Websites](https://pshah-lab.github.io/force-dark-mode-extension/blog/how-to-force-dark-mode-chrome.html)
+- [How to View and Read PDFs in Dark Mode on Chrome](https://pshah-lab.github.io/force-dark-mode-extension/blog/dark-mode-pdf-guide.html)
+- [Dark Mode vs Night Mode: What's the Difference?](https://pshah-lab.github.io/force-dark-mode-extension/blog/dark-mode-vs-night-mode.html)
+- [Choosing the Best Dark Mode Extension for Chrome](https://pshah-lab.github.io/force-dark-mode-extension/blog/best-dark-mode-extension-guide.html)
+- [Chrome Web Store Listing Strategy](CHROMEWEBSTORE.md)
 
 ---
 
-## License
+## 🤝 Contributing
 
-MIT License
+Contributions, bug reports, and suggestions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on our testing workflow and code standards.
+
+---
+
+## 📄 License
+
+Distributed under the **MIT License**. See [LICENSE](LICENSE) for more information.

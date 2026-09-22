@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Features - Smart Dark Mode &amp; Offline PDF Reader | ThemeSwitcher</title>
+    <meta
+      name="description"
+      content="Explore all features of Force Dark Mode - ThemeSwitcher: Intelligent Auto engine, CSS override palette generation, Invert engine, local PDF dark reader, and per-site color memory."
+    />
+    <link rel="canonical" href="https://pshah-lab.github.io/force-dark-mode-extension/features.html" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#090b0e" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://pshah-lab.github.io/force-dark-mode-extension/features.html" />
+    <meta property="og:title" content="Features - Smart Dark Mode &amp; Offline PDF Reader | ThemeSwitcher" />
+    <meta property="og:description" content="Discover how ThemeSwitcher's Auto, CSS, and Invert engines transform web pages and PDFs into eye-friendly dark themes without breaking layouts." />
+    <meta property="og:image" content="https://pshah-lab.github.io/force-dark-mode-extension/assets/icon128.png" />
+
+    <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+
+  <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+      <div class="container nav-container">
+        <a href="./" class="logo-brand" aria-label="ThemeSwitcher Home">
+          <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          <span>ThemeSwitcher</span>
+        </a>
+
+        <nav role="navigation" aria-label="Main Navigation">
+          <button class="mobile-toggle" aria-expanded="false" aria-label="Toggle navigation menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          <ul class="nav-menu">
+            <li><a href="./" class="nav-link">Home</a></li>
+            <li><a href="features.html" class="nav-link active">Features</a></li>
+            <li><a href="how-it-works.html" class="nav-link">How It Works</a></li>
+            <li><a href="blog/how-to-force-dark-mode-chrome.html" class="nav-link">Guides</a></li>
+            <li><a href="support.html" class="nav-link">Support</a></li>
+            <li><a href="about.html" class="nav-link">About</a></li>
+          </ul>
+        </nav>
+
+        <div class="nav-cta">
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode"
+            class="btn btn-primary btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <span>Add to Chrome</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="container" style="padding-top: 4rem; padding-bottom: 5rem;">
+      <div class="section-header">
+        <div class="badge">Engineered for Perfection</div>
+        <h1>Built for Every Website &amp; Document</h1>
+        <p>
+          ThemeSwitcher was designed from the ground up to solve the flaws of traditional browser inverters.
+          Here is a deep look into the technologies that power your dark browsing experience.
+        </p>
+      </div>
+
+      <!-- Feature Deep Dive 1: Auto Engine -->
+      <section style="margin-bottom: 5rem;" aria-labelledby="auto-engine-heading">
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 3rem;">
+          <h2 id="auto-engine-heading">1. Intelligent Auto Engine (Default)</h2>
+          <p style="font-size: 1.1rem; line-height: 1.7;">
+            The Auto Engine operates dynamically on page load. It samples visible DOM elements, analyzes relative background luminance, measures textual vs. media area, and determines whether a site needs CSS recoloring or inversion.
+          </p>
+          <div class="demo-grid" style="margin-top: 2rem;">
+            <div class="demo-card" style="background: var(--bg-surface-elevated);">
+              <h3>Native Dark Detection</h3>
+              <p>Detects sites that already provide a dark mode (such as YouTube in dark mode or GitHub in night theme) and steps aside automatically so you never suffer double inversion glitches.</p>
+            </div>
+            <div class="demo-card" style="background: var(--bg-surface-elevated);">
+              <h3>Smart Density Profiling</h3>
+              <p>Distinguishes between text-heavy articles, interactive web apps, and media galleries to pick the safest conversion method without user intervention.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feature Deep Dive 2: CSS Override Engine -->
+      <section style="margin-bottom: 5rem;" aria-labelledby="css-engine-heading">
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 3rem;">
+          <h2 id="css-engine-heading">2. Layout-Safe CSS Override Engine</h2>
+          <p style="font-size: 1.1rem; line-height: 1.7;">
+            The CSS Engine targets individual DOM surfaces, replacing bright backgrounds with your customized dark palette while strictly maintaining element dimensions, margins, and layouts.
+          </p>
+          <div class="demo-grid" style="margin-top: 2rem;">
+            <div class="demo-card" style="background: var(--bg-surface-elevated);">
+              <h3>Uncompromised Media Quality</h3>
+              <p>Images, SVG artwork, videos, and canvas elements are protected from color corruption. Logos containing black text on transparent backgrounds are intelligently detected and inverted for clarity.</p>
+            </div>
+            <div class="demo-card" style="background: var(--bg-surface-elevated);">
+              <h3>Form &amp; Input Clarity</h3>
+              <p>Buttons, inputs, textareas, and select elements receive calibrated contrast-tested styling so forms remain completely legible and accessible.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feature Deep Dive 3: Local PDF Reader -->
+      <section style="margin-bottom: 5rem;" aria-labelledby="pdf-viewer-heading">
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 3rem;">
+          <h2 id="pdf-viewer-heading">3. Local Dark Document &amp; PDF Reader</h2>
+          <p style="font-size: 1.1rem; line-height: 1.7;">
+            Reading PDF textbooks, papers, or documentation at night is often excruciating because built-in browser PDF viewers force glaring white page backgrounds.
+          </p>
+          <div class="demo-grid" style="margin-top: 2rem;">
+            <div class="demo-card" style="background: var(--bg-surface-elevated);">
+              <h3>Canvas Saturation-Aware Conversion</h3>
+              <p>Renders PDF pages directly to HTML5 canvas using bundled PDF.js and calculates pixel luminance to darken backgrounds while preserving chart and illustration hues.</p>
+            </div>
+            <div class="demo-card" style="background: var(--bg-surface-elevated);">
+              <h3>Zero Cloud Uploads</h3>
+              <p>Your documents, contracts, and personal PDFs are parsed 100% locally in your browser sandbox. Nothing is ever uploaded to remote servers.</p>
+            </div>
+            <div class="demo-card" style="background: var(--bg-surface-elevated);">
+              <h3>Markdown, TXT &amp; RTF Support</h3>
+              <p>View raw text documents, Markdown notes, and source files with customizable zoom, contrast sliders, and dark color palettes.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Feature Deep Dive 4: Customization -->
+      <section style="margin-bottom: 5rem;" aria-labelledby="customization-heading">
+        <div style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); padding: 3rem;">
+          <h2 id="customization-heading">4. Per-Site Customization &amp; Color Memory</h2>
+          <p style="font-size: 1.1rem; line-height: 1.7;">
+            Every website is different. ThemeSwitcher gives you the freedom to fine-tune your reading experience per domain.
+          </p>
+          <div class="demo-grid" style="margin-top: 2rem;">
+            <div class="demo-card" style="background: var(--bg-surface-elevated);">
+              <h3>Color Picker Integration</h3>
+              <p>Choose any base color from the popup. The extension computes harmonious surface, border, and text shades automatically to ensure optimal contrast.</p>
+            </div>
+            <div class="demo-card" style="background: var(--bg-surface-elevated);">
+              <h3>Chrome Sync Persistence</h3>
+              <p>Your chosen engine and background shades sync across your signed-in Chrome devices automatically using Chrome’s native storage API.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Call to Action Banner -->
+      <div class="cta-banner">
+        <h2>Experience the Difference</h2>
+        <p>Try ThemeSwitcher today on Chrome, Edge, or Brave. Free, open source, and lightweight.</p>
+        <a
+          href="https://chromewebstore.google.com/detail/force-dark-mode"
+          class="btn btn-primary btn-lg btn-chrome-store"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <span>Add to Chrome</span>
+        </a>
+      </div>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container footer-bottom">
+        <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
+        <div><a href="./">Home</a> • <a href="how-it-works.html">How It Works</a> • <a href="privacy.html">Privacy</a></div>
+      </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+  </body>
+</html>

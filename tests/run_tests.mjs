@@ -282,8 +282,10 @@ test("options HTML references valid options.js and options.css", () => {
 
 test("options.js correctly imports storage and constants", () => {
   const optionsJs = fs.readFileSync(path.join(rootDir, "src/options/options.js"), "utf8");
-  assert.ok(optionsJs.includes('import { getSiteConfig, setSiteConfig } from "../shared/storage.js"'));
-  assert.ok(optionsJs.includes('import { DEFAULT_ENGINE, DEFAULT_BACKGROUND_COLOR } from "../shared/constants.js"'));
+  assert.ok(optionsJs.includes("getSiteConfig"), "options.js should import getSiteConfig");
+  assert.ok(optionsJs.includes("setSiteConfig"), "options.js should import setSiteConfig");
+  assert.ok(optionsJs.includes("../shared/storage.js"), "options.js should import from storage.js");
+  assert.ok(optionsJs.includes("DEFAULT_ENGINE"), "options.js should import DEFAULT_ENGINE");
 });
 
 test("viewer files exist and provide PDF/document controls", () => {
@@ -358,9 +360,10 @@ test("viewer.js validates document URL protocols against allowlist", () => {
   assert.ok(viewerJs.includes("isSafeDocumentUrl"), "viewer.js should validate document URLs");
 });
 
-test("viewer.html sandboxes fallback iframe", () => {
+test("viewer.html sandboxes fallback iframe securely without same-origin", () => {
   const viewerHtml = fs.readFileSync(path.join(rootDir, "src/viewer/viewer.html"), "utf8");
-  assert.ok(viewerHtml.includes('sandbox="allow-scripts allow-same-origin"'), "iframe should be sandboxed");
+  assert.ok(viewerHtml.includes('sandbox="allow-scripts"'), "iframe should be strictly sandboxed");
+  assert.strictEqual(viewerHtml.includes("allow-same-origin"), false, "iframe must not grant allow-same-origin");
   assert.ok(viewerHtml.includes('referrerpolicy="no-referrer"'), "iframe should specify referrerpolicy");
 });
 
@@ -374,6 +377,149 @@ test("message listeners perform sender validation", () => {
   const contentCode = fs.readFileSync(path.join(rootDir, "src/content/index.js"), "utf8");
   assert.ok(swCode.includes("sender.id !== chrome.runtime.id"), "service worker should validate sender.id");
   assert.ok(contentCode.includes("sender.id !== chrome.runtime.id"), "content script should validate sender.id");
+});
+
+// 7. Compliance & Regulatory Standards Validation
+console.log("\n7. Compliance & Regulatory Standards Validation");
+
+test("zero cookies used across entire extension and website codebase", () => {
+  const jsFiles = [
+    "src/background/serviceWorker.js",
+    "src/content/index.js",
+    "src/content/themeEngine/cssOverrideEngine.js",
+    "src/content/themeEngine/invertEngine.js",
+    "src/popup/popup.js",
+    "src/options/options.js",
+    "src/shared/storage.js",
+    "src/shared/colorUtils.js",
+    "src/shared/constants.js",
+    "src/viewer/viewer.js",
+    "website/js/main.js",
+  ];
+
+  for (const relPath of jsFiles) {
+    const code = fs.readFileSync(path.join(rootDir, relPath), "utf8");
+    assert.strictEqual(
+      code.includes("document.cookie"),
+      false,
+      `${relPath} must not access or set document.cookie`
+    );
+  }
+});
+
+test("no eval or new Function in extension code", () => {
+  const extensionJsFiles = [
+    "src/background/serviceWorker.js",
+    "src/content/index.js",
+    "src/content/themeEngine/cssOverrideEngine.js",
+    "src/content/themeEngine/invertEngine.js",
+    "src/popup/popup.js",
+    "src/options/options.js",
+    "src/shared/storage.js",
+    "src/shared/colorUtils.js",
+    "src/shared/constants.js",
+    "src/viewer/viewer.js",
+  ];
+
+  for (const relPath of extensionJsFiles) {
+    const code = fs.readFileSync(path.join(rootDir, relPath), "utf8");
+    assert.strictEqual(
+      /\beval\s*\(/.test(code),
+      false,
+      `${relPath} must not call eval()`
+    );
+    assert.strictEqual(
+      /\bnew\s+Function\s*\(/.test(code),
+      false,
+      `${relPath} must not use new Function()`
+    );
+  }
+});
+
+test("extension HTML files do not load remote scripts", () => {
+  const htmlFiles = [
+    "src/popup/popup.html",
+    "src/options/options.html",
+    "src/viewer/viewer.html",
+  ];
+
+  for (const relPath of htmlFiles) {
+    const html = fs.readFileSync(path.join(rootDir, relPath), "utf8");
+    const remoteScripts = html.match(/<script[^>]+src=["'](https?:|\/\/)[^"']+["']/gi);
+    assert.strictEqual(
+      remoteScripts,
+      null,
+      `${relPath} contains prohibited remote script tags: ${remoteScripts}`
+    );
+  }
+});
+
+test("external blank links in extension and website enforce noopener", () => {
+  const htmlFiles = [
+    "src/popup/popup.html",
+    "src/viewer/viewer.html",
+    "website/index.html",
+    "website/features.html",
+    "website/how-it-works.html",
+    "website/support.html",
+    "website/about.html",
+    "website/privacy.html",
+    "website/blog/how-to-force-dark-mode-chrome.html",
+    "website/blog/dark-mode-pdf-guide.html",
+    "website/blog/dark-mode-vs-night-mode.html",
+    "website/blog/best-dark-mode-extension-guide.html",
+  ];
+
+  for (const relPath of htmlFiles) {
+    const html = fs.readFileSync(path.join(rootDir, relPath), "utf8");
+    const linkMatches = html.matchAll(/<a\s+[^>]*target=["']_blank["'][^>]*>/gi);
+    for (const match of linkMatches) {
+      const tag = match[0];
+      assert.ok(
+        tag.includes('rel="') && tag.includes("noopener"),
+        `${relPath} contains target="_blank" without rel="noopener": ${tag}`
+      );
+    }
+  }
+});
+
+test("all website HTML pages include security meta headers", () => {
+  const pages = [
+    "website/index.html",
+    "website/features.html",
+    "website/how-it-works.html",
+    "website/support.html",
+    "website/about.html",
+    "website/privacy.html",
+    "website/blog/how-to-force-dark-mode-chrome.html",
+    "website/blog/dark-mode-pdf-guide.html",
+    "website/blog/dark-mode-vs-night-mode.html",
+    "website/blog/best-dark-mode-extension-guide.html",
+  ];
+
+  for (const relPath of pages) {
+    const html = fs.readFileSync(path.join(rootDir, relPath), "utf8");
+    assert.ok(
+      html.includes('http-equiv="X-Content-Type-Options" content="nosniff"'),
+      `${relPath} must specify X-Content-Type-Options nosniff`
+    );
+    assert.ok(
+      html.includes('name="referrer" content="strict-origin-when-cross-origin"'),
+      `${relPath} must specify strict-origin-when-cross-origin referrer`
+    );
+  }
+});
+
+test("CHROMEWEBSTORE.md and PRIVACY.md certify zero telemetry & limited use", () => {
+  const storeDoc = fs.readFileSync(path.join(rootDir, "CHROMEWEBSTORE.md"), "utf8");
+  const privacyDoc = fs.readFileSync(path.join(rootDir, "PRIVACY.md"), "utf8");
+
+  assert.ok(storeDoc.includes("Single Purpose"), "CHROMEWEBSTORE.md missing Single Purpose");
+  assert.ok(storeDoc.includes("Permissions Justification"), "CHROMEWEBSTORE.md missing Permissions Justification");
+  assert.ok(storeDoc.includes("Data Collection"), "CHROMEWEBSTORE.md missing Data Collection");
+  assert.ok(storeDoc.includes("Data is NOT sold"), "CHROMEWEBSTORE.md missing Data sale certification");
+  assert.ok(privacyDoc.includes("Zero Telemetry"), "PRIVACY.md missing Zero Telemetry statement");
+  assert.ok(privacyDoc.includes("100% locally"), "PRIVACY.md missing local execution guarantee");
 });
 
 // Final summary

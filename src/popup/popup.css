@@ -158,3 +158,23 @@ body {
   border-color: #8ab4f8;
   background: #1b2230;
 }
+
+.popup-footer {
+  margin-top: 4px;
+  text-align: center;
+  padding-top: 8px;
+  border-top: 1px solid #232730;
+}
+
+.feedback-link {
+  color: #9aa0a6;
+  font-size: 11px;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.feedback-link:hover {
+  color: #8ab4f8;
+  text-decoration: underline;
+}
+

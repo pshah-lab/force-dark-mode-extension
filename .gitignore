@@ -1,9 +1,15 @@
 *.zip
 .DS_Store
+scratch*
 
 *.md
 !/README.md
 !/PRIVACY.md
 !/CHROMEWEBSTORE.md
 !/CONTRIBUTING.md
+!/SECURITY.md
+!/TERMS.md
+!/documentation/**/*.md
 !/.github/**/*.md
+/Role FDEx.docx
+/MASTER PROMPT_ PRIVACY, SECURITY & NATIONAL_INTERNATIONAL COMPLIANCE.docx

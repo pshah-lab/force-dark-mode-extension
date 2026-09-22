@@ -11,6 +11,8 @@
     <link rel="canonical" href="https://darkmode.pshah.fun/how-it-works.html" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#090b0e" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -29,7 +31,9 @@
     <header class="site-header" role="banner">
       <div class="container nav-container">
         <a href="./" class="logo-brand" aria-label="ThemeSwitcher Home">
-          <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          <div class="logo-icon-wrapper">
+            <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          </div>
           <span>ThemeSwitcher</span>
         </a>
 
@@ -59,6 +63,13 @@
             rel="noopener noreferrer"
             target="_blank"
           >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="4"></circle>
+              <line x1="21.17" y1="8" x2="12" y2="8"></line>
+              <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+              <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+            </svg>
             <span>Add to Chrome</span>
           </a>
         </div>
@@ -147,24 +158,83 @@
         </ul>
       </div>
 
-      <div class="cta-banner">
-        <h2>Try It on Your Browser</h2>
-        <p>Install ThemeSwitcher for free and enjoy an eye-friendly, distraction-free reading experience.</p>
-        <a
-          href="https://chromewebstore.google.com/detail/force-dark-mode"
-          class="btn btn-primary btn-lg btn-chrome-store"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <span>Add to Chrome</span>
-        </a>
-      </div>
+      <!-- Call to Action Banner -->
+      <section class="cta-banner" aria-labelledby="cta-heading">
+        <div class="cta-content">
+          <h2 id="cta-heading">Try It on Your Browser</h2>
+          <p>Install ThemeSwitcher for free and enjoy an eye-friendly, distraction-free reading experience.</p>
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode"
+            class="btn btn-primary btn-lg btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="4"></circle>
+              <line x1="21.17" y1="8" x2="12" y2="8"></line>
+              <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+              <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+            </svg>
+            <span>Add to Chrome — Free on Web Store</span>
+          </a>
+        </div>
+      </section>
     </main>
 
+    <!-- Footer -->
     <footer class="site-footer" role="contentinfo">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <div class="logo-brand">
+            <div class="logo-icon-wrapper">
+              <img src="assets/icon.svg" alt="" class="logo-icon" width="28" height="28" />
+            </div>
+            <span>ThemeSwitcher</span>
+          </div>
+          <p>
+            Force Dark Mode - ThemeSwitcher is a lightweight, privacy-focused browser extension providing intelligent dark themes for websites and PDF documents.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Home</a></li>
+            <li><a href="features.html">Features</a></li>
+            <li><a href="how-it-works.html">How It Works</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="about.html">About Developer</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Guides &amp; Articles</h4>
+          <ul class="footer-links">
+            <li><a href="blog/how-to-force-dark-mode-chrome.html">Force Dark Mode in Chrome</a></li>
+            <li><a href="blog/dark-mode-pdf-guide.html">Dark Mode PDF Reader</a></li>
+            <li><a href="blog/dark-mode-vs-night-mode.html">Dark Mode vs Night Mode</a></li>
+            <li><a href="blog/best-dark-mode-extension-guide.html">Best Dark Mode Extension</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Support &amp; Community</h4>
+          <ul class="footer-links">
+            <li><a href="support.html#feedback">Feedback &amp; Suggestions</a></li>
+            <li><a href="support.html">Help &amp; Troubleshooting</a></li>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="https://chromewebstore.google.com/detail/force-dark-mode" target="_blank" rel="noopener noreferrer">Chrome Web Store</a></li>
+          </ul>
+        </div>
+      </div>
+
       <div class="container footer-bottom">
         <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
-        <div><a href="./">Home</a> • <a href="features.html">Features</a> • <a href="privacy.html">Privacy</a></div>
+        <div class="footer-live-status">
+          <span class="pulse-dot-sm" aria-hidden="true"></span>
+          <span><strong id="footerActiveCount">16</strong> active readers online • Zero tracking</span>
+        </div>
       </div>
     </footer>
 

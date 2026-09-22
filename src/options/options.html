@@ -1,48 +1,112 @@
-<!-- src/options/options.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Force Dark Mode – Settings</title>
+  <title>ThemeSwitcher Settings & Privacy</title>
   <link rel="stylesheet" href="options.css" />
 </head>
 <body>
-  <h1>Force Dark Mode Settings</h1>
+  <div class="options-container">
+    <header class="options-header">
+      <div class="brand">
+        <img src="../../assets/icon48.png" alt="" width="32" height="32" class="brand-icon" />
+        <h1>ThemeSwitcher Settings</h1>
+      </div>
+      <p class="subtitle">Global preferences and local privacy data controls</p>
+    </header>
 
-  <section class="section">
-    <label>
-      <input type="checkbox" id="enabled" /> Enable Dark Mode
-    </label>
-  </section>
+    <div id="statusMessage" class="status-banner" hidden></div>
 
-  <section class="section">
-    <label for="engine">Engine:</label>
-    <select id="engine">
-      <option value="auto">Auto</option>
-      <option value="css">CSS</option>
-      <option value="invert">Invert</option>
-    </select>
-  </section>
+    <!-- Global Preferences Card -->
+    <section class="card">
+      <h2>Global Defaults</h2>
+      <p class="card-desc">Default settings applied when a site has not been customized individually.</p>
 
-  <section class="section">
-    <label for="bgColor">Background Color:</label>
-    <input type="color" id="bgColor" value="#000000" />
-  </section>
+      <div class="field">
+        <label class="checkbox-label" for="enabled">
+          <input type="checkbox" id="enabled" />
+          <span>Enable Dark Mode by default</span>
+        </label>
+      </div>
 
-  <section class="section">
-    <label for="preset">Preset:</label>
-    <select id="preset">
-      <option value="" disabled selected>Select preset</option>
-      <option value="midnight">Midnight Oasis</option>
-      <option value="neon">Neon Noir</option>
-      <option value="solarized">Solarized Dark</option>
-    </select>
-  </section>
+      <div class="field">
+        <label for="engine">Default Theme Engine</label>
+        <select id="engine">
+          <option value="auto">Auto Engine (Intelligent Surface Detection)</option>
+          <option value="css">CSS Engine (Declarative Recoloring)</option>
+          <option value="invert">Invert Engine (Smart Inversion & Media Preservation)</option>
+        </select>
+      </div>
 
-  <section class="section">
-    <button id="saveBtn">Save</button>
-  </section>
+      <div class="field">
+        <label for="bgColor">Default Background Color</label>
+        <div class="color-picker-row">
+          <input type="color" id="bgColor" value="#0f1115" />
+          <select id="preset">
+            <option value="" disabled selected>Or choose a preset...</option>
+            <option value="midnight">Midnight Oasis (#0b0e14)</option>
+            <option value="neon">Neon Noir (#0a0a0f)</option>
+            <option value="solarized">Solarized Dark (#002b36)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="saveBtn" class="btn btn-primary" type="button">Save Defaults</button>
+      </div>
+    </section>
+
+    <!-- Privacy & Data Management Card -->
+    <section class="card">
+      <div class="card-badge">Privacy by Design</div>
+      <h2>Privacy & Data Management</h2>
+      <p class="card-desc">
+        ThemeSwitcher operates entirely local-first. All preferences are stored strictly inside your browser profile via <code>chrome.storage.sync</code>. No browsing history, page contents, or personal telemetry ever leave your device.
+      </p>
+
+      <div class="data-stats">
+        <div class="stat-box">
+          <span class="stat-number" id="domainCount">0</span>
+          <span class="stat-label">Custom Site Preferences</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-number">0</span>
+          <span class="stat-label">Remote Servers or Trackers</span>
+        </div>
+      </div>
+
+      <div class="privacy-controls">
+        <div class="control-group">
+          <h3>Data Portability (GDPR Art. 20)</h3>
+          <p class="subtext">Export your saved dark mode configurations as a portable JSON file, or restore them on another machine.</p>
+          <div class="button-row">
+            <button id="exportBtn" class="btn btn-secondary" type="button">Export Settings (JSON)</button>
+            <button id="importBtn" class="btn btn-secondary" type="button">Import Settings (JSON)</button>
+            <input type="file" id="importFileInput" accept=".json,application/json" hidden />
+          </div>
+        </div>
+
+        <div class="control-group danger-group">
+          <h3>Right to Erasure (DPDP Sec. 12 / GDPR Art. 17)</h3>
+          <p class="subtext">Permanently delete all custom site rules, viewer settings, and defaults from your browser synchronization profile.</p>
+          <button id="clearBtn" class="btn btn-danger" type="button">Erase All Stored Data</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Transparency & Contact Footer -->
+    <footer class="options-footer">
+      <div class="footer-links">
+        <a href="https://darkmode.pshah.fun/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+        <span>•</span>
+        <a href="https://darkmode.pshah.fun/support.html" target="_blank" rel="noopener noreferrer">Support & Grievances</a>
+        <span>•</span>
+        <a href="https://github.com/pshah-lab/force-dark-mode-extension" target="_blank" rel="noopener noreferrer">Source Code</a>
+      </div>
+      <p class="copyright">ThemeSwitcher v1.6.0 • Local-First &amp; Privacy-Conscious</p>
+    </footer>
+  </div>
 
   <script src="options.js" type="module"></script>
 </body>

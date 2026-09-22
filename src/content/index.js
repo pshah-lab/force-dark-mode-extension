@@ -80,7 +80,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (sender.id && sender.id !== chrome.runtime.id) return;
+  if (sender.id !== chrome.runtime.id) return;
   if (!msg || typeof msg !== "object") return;
 
   if (msg.type === "APPLY_CONFIG") {

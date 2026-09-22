@@ -11,6 +11,8 @@
     <link rel="canonical" href="https://darkmode.pshah.fun/support.html" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#090b0e" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
 
     <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
     <link rel="stylesheet" href="css/style.css" />
@@ -22,7 +24,9 @@
     <header class="site-header" role="banner">
       <div class="container nav-container">
         <a href="./" class="logo-brand" aria-label="ThemeSwitcher Home">
-          <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          <div class="logo-icon-wrapper">
+            <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          </div>
           <span>ThemeSwitcher</span>
         </a>
 
@@ -52,6 +56,13 @@
             rel="noopener noreferrer"
             target="_blank"
           >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="4"></circle>
+              <line x1="21.17" y1="8" x2="12" y2="8"></line>
+              <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+              <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+            </svg>
             <span>Add to Chrome</span>
           </a>
         </div>
@@ -100,17 +111,100 @@
           </ol>
         </div>
 
-        <h2>Reporting Bugs &amp; Suggesting Features</h2>
+        <!-- Feedback & Suggestions Section -->
+        <section id="feedback" class="content-card feedback-card" aria-labelledby="feedback-heading">
+          <div class="feedback-header">
+            <div class="badge">Direct Community Input</div>
+            <h2 id="feedback-heading" style="margin-top: 0.75rem; margin-bottom: 0.5rem; border: none; padding-bottom: 0;">
+              Suggest an Improvement or Feature
+            </h2>
+            <p style="color: var(--text-secondary); margin-bottom: 2rem;">
+              Have an idea to make ThemeSwitcher better, or noticed a website that doesn't display correctly?
+              Submit your feedback directly below — no GitHub account required.
+            </p>
+          </div>
+
+          <form id="feedbackForm" class="feedback-form" novalidate>
+            <div class="form-group">
+              <label class="form-label">Feedback Category</label>
+              <div class="feedback-type-pills">
+                <label class="type-pill">
+                  <input type="radio" name="feedbackType" value="Feature Suggestion" checked />
+                  <span>💡 Feature Idea</span>
+                </label>
+                <label class="type-pill">
+                  <input type="radio" name="feedbackType" value="Broken Website" />
+                  <span>🐛 Broken Site Report</span>
+                </label>
+                <label class="type-pill">
+                  <input type="radio" name="feedbackType" value="Palette Suggestion" />
+                  <span>🎨 Custom Color Idea</span>
+                </label>
+                <label class="type-pill">
+                  <input type="radio" name="feedbackType" value="General Feedback" />
+                  <span>💬 General Feedback</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="feedbackUrl">Website URL <span class="form-optional">(optional)</span></label>
+              <input
+                type="url"
+                id="feedbackUrl"
+                name="url"
+                class="form-input"
+                placeholder="e.g. https://wikipedia.org or sub.example.com"
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="feedbackMessage">Your Suggestion or Improvement <span class="form-required">*</span></label>
+              <textarea
+                id="feedbackMessage"
+                name="message"
+                class="form-textarea"
+                rows="4"
+                placeholder="Tell us what you'd like to see added, improved, or fixed..."
+                required
+              ></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="feedbackEmail">Your Email <span class="form-optional">(optional, if you'd like a reply)</span></label>
+              <input
+                type="email"
+                id="feedbackEmail"
+                name="email"
+                class="form-input"
+                placeholder="you@domain.com"
+              />
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn btn-primary btn-lg" id="submitFeedbackBtn">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                <span>Send Suggestion</span>
+              </button>
+            </div>
+
+            <div id="feedbackStatus" class="feedback-status" hidden aria-live="polite"></div>
+          </form>
+        </section>
+
+        <h2>Reporting Bugs &amp; Feedback</h2>
         <p>
-          ThemeSwitcher is community-driven and actively maintained. If you discover a broken website, visual glitch, or have an idea for an enhancement:
+          ThemeSwitcher is community-driven and actively maintained. For inquiries, bug reports, or feature ideas:
         </p>
         <ul>
           <li>
-            <strong>GitHub Issue Tracker:</strong> Submit a detailed report with the website URL and screenshot at 
-            <a href="https://github.com/pshah-lab/force-dark-mode-extension/issues" target="_blank" rel="noopener noreferrer">github.com/pshah-lab/force-dark-mode-extension/issues</a>.
+            <strong>Suggestion Form:</strong> Use the interactive <a href="#feedback">feedback form above</a> to report broken website styles, suggest new controls, or request theme enhancements.
           </li>
           <li>
-            <strong>Feature Requests:</strong> Use our GitHub Discussions or open a Feature Request issue.
+            <strong>Chrome Web Store Reviews:</strong> Leave a review or feedback directly on our Chrome Web Store page to help fellow users and support the project.
           </li>
         </ul>
 
@@ -125,24 +219,74 @@
         </ol>
       </div>
 
-      <div class="cta-banner">
-        <h2>Still Need Help?</h2>
-        <p>Our issue tracker is open to everyone. Feel free to ask questions or inspect our code.</p>
-        <a
-          href="https://github.com/pshah-lab/force-dark-mode-extension/issues"
-          class="btn btn-secondary btn-lg"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <span>Open GitHub Issue</span>
-        </a>
-      </div>
+      <!-- Call to Action Banner -->
+      <section class="cta-banner" aria-labelledby="cta-heading">
+        <div class="cta-content">
+          <h2 id="cta-heading">Still Need Help?</h2>
+          <p>Have an idea or a website that needs styling fixes? We would love to hear your feedback.</p>
+          <a
+            href="#feedback"
+            class="btn btn-secondary btn-lg"
+          >
+            <span>Send Us Feedback</span>
+          </a>
+        </div>
+      </section>
     </main>
 
+    <!-- Footer -->
     <footer class="site-footer" role="contentinfo">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <div class="logo-brand">
+            <div class="logo-icon-wrapper">
+              <img src="assets/icon.svg" alt="" class="logo-icon" width="28" height="28" />
+            </div>
+            <span>ThemeSwitcher</span>
+          </div>
+          <p>
+            Force Dark Mode - ThemeSwitcher is a lightweight, privacy-focused browser extension providing intelligent dark themes for websites and PDF documents.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Home</a></li>
+            <li><a href="features.html">Features</a></li>
+            <li><a href="how-it-works.html">How It Works</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="about.html">About Developer</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Guides &amp; Articles</h4>
+          <ul class="footer-links">
+            <li><a href="blog/how-to-force-dark-mode-chrome.html">Force Dark Mode in Chrome</a></li>
+            <li><a href="blog/dark-mode-pdf-guide.html">Dark Mode PDF Reader</a></li>
+            <li><a href="blog/dark-mode-vs-night-mode.html">Dark Mode vs Night Mode</a></li>
+            <li><a href="blog/best-dark-mode-extension-guide.html">Best Dark Mode Extension</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Support &amp; Community</h4>
+          <ul class="footer-links">
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="support.html#feedback">Feedback &amp; Suggestions</a></li>
+            <li><a href="support.html">Help &amp; Troubleshooting</a></li>
+            <li><a href="https://chromewebstore.google.com/detail/force-dark-mode" target="_blank" rel="noopener noreferrer">Chrome Web Store</a></li>
+          </ul>
+        </div>
+      </div>
+
       <div class="container footer-bottom">
         <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
-        <div><a href="./">Home</a> • <a href="features.html">Features</a> • <a href="privacy.html">Privacy</a></div>
+        <div class="footer-live-status">
+          <span class="pulse-dot-sm" aria-hidden="true"></span>
+          <span><strong id="footerActiveCount">16</strong> active readers online • Zero tracking</span>
+        </div>
       </div>
     </footer>
 

@@ -234,7 +234,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       chrome.runtime.sendMessage({
         type: "TOGGLE",
         tabId: tab.id,
-        url: tab.url,
+        host,
         engine: selectedEngine,
         backgroundColor,
       });
@@ -250,7 +250,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         chrome.runtime.sendMessage({
           type: "TOGGLE",
           tabId: tab.id,
-          url: tab.url,
+          host,
           engine: radio.value,
           backgroundColor: normalizeColor(backgroundColorInput.value),
           forceEnabled: enabled,
@@ -273,7 +273,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         chrome.runtime.sendMessage({
           type: "TOGGLE",
           tabId: tab.id,
-          url: tab.url,
+          host,
           engine: getSelectedEngine(),
           backgroundColor,
           forceEnabled: enabled,

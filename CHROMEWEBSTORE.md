@@ -59,11 +59,11 @@ ThemeSwitcher is built with an uncompromising commitment to privacy:
 • Fully open-source under the MIT License for public security auditing.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SUPPORT & SOURCE CODE
+SUPPORT & RESOURCES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Website: https://darkmode.pshah.fun/
-Source Code: https://github.com/pshah-lab/force-dark-mode-extension
-Report Issues: https://github.com/pshah-lab/force-dark-mode-extension/issues
+Support & Feedback: https://darkmode.pshah.fun/support.html
+Help & Guides: https://darkmode.pshah.fun/how-it-works.html
 ```
 
 **Category** [REQUIRED]
@@ -135,7 +135,6 @@ English
 ```
 https://darkmode.pshah.fun/privacy.html
 ```
-*(Also available in repo at `https://raw.githubusercontent.com/pshah-lab/force-dark-mode-extension/main/PRIVACY.md`)*
 
 ---
 
@@ -150,7 +149,7 @@ https://darkmode.pshah.fun/privacy.html
 ## Developer Info
 
 - **Publisher Name**: pshah-lab
-- **Support URL**: https://github.com/pshah-lab/force-dark-mode-extension/issues
+- **Support URL**: https://darkmode.pshah.fun/support.html
 
 ---
 

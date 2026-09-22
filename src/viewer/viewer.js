@@ -170,10 +170,11 @@ function openTextDocument(text, name) {
   showPanel("document");
   documentName.textContent = name;
   if (isMarkdownName(name)) {
-    documentPanel.innerHTML = renderMarkdown(text);
+    renderMarkdownSafely(text, documentPanel);
     return;
   }
 
+  documentPanel.replaceChildren();
   documentPanel.textContent = normalizeDocumentText(text, name);
 }
 
@@ -455,72 +456,76 @@ function isMarkdownName(name) {
   return lowerName.endsWith(".md") || lowerName.endsWith(".markdown");
 }
 
-function renderMarkdown(text) {
-  const lines = escapeHtml(text).split("\n");
-  let inList = false;
-  const output = [];
+function renderMarkdownSafely(text, container) {
+  container.replaceChildren();
+  const lines = text.split("\n");
+  let currentList = null;
 
-  lines.forEach((line) => {
+  lines.forEach((rawLine) => {
+    const line = rawLine.trimEnd();
     const heading = line.match(/^(#{1,3})\s+(.+)$/);
     const listItem = line.match(/^[-*]\s+(.+)$/);
 
     if (heading) {
-      if (inList) {
-        output.push("</ul>");
-        inList = false;
-      }
-
-      output.push(`<h${heading[1].length}>${formatInlineMarkdown(heading[2])}</h${heading[1].length}>`);
+      currentList = null;
+      const hLevel = heading[1].length;
+      const hEl = document.createElement(`h${hLevel}`);
+      appendInlineMarkdown(hEl, heading[2]);
+      container.appendChild(hEl);
       return;
     }
 
     if (listItem) {
-      if (!inList) {
-        output.push("<ul>");
-        inList = true;
+      if (!currentList) {
+        currentList = document.createElement("ul");
+        container.appendChild(currentList);
       }
-
-      output.push(`<li>${formatInlineMarkdown(listItem[1])}</li>`);
+      const li = document.createElement("li");
+      appendInlineMarkdown(li, listItem[1]);
+      currentList.appendChild(li);
       return;
     }
 
-    if (inList) {
-      output.push("</ul>");
-      inList = false;
-    }
-
+    currentList = null;
     if (!line.trim()) {
-      output.push("");
       return;
     }
 
-    output.push(`<p>${formatInlineMarkdown(line)}</p>`);
+    const p = document.createElement("p");
+    appendInlineMarkdown(p, line);
+    container.appendChild(p);
   });
+}
 
-  if (inList) {
-    output.push("</ul>");
+function appendInlineMarkdown(parent, text) {
+  const tokenRegex = /(\*\*.*?\*\*|\*.*?\*|`.*?`)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = tokenRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parent.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+    }
+    const token = match[0];
+    if (token.startsWith("**") && token.endsWith("**")) {
+      const strong = document.createElement("strong");
+      strong.textContent = token.slice(2, -2);
+      parent.appendChild(strong);
+    } else if (token.startsWith("*") && token.endsWith("*")) {
+      const em = document.createElement("em");
+      em.textContent = token.slice(1, -1);
+      parent.appendChild(em);
+    } else if (token.startsWith("`") && token.endsWith("`")) {
+      const code = document.createElement("code");
+      code.textContent = token.slice(1, -1);
+      parent.appendChild(code);
+    }
+    lastIndex = match.index + token.length;
   }
 
-  return output.join("\n");
-}
-
-function formatInlineMarkdown(value) {
-  return value
-    .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*(.+?)\*/g, "<em>$1</em>")
-    .replace(/`(.+?)`/g, "<code>$1</code>");
-}
-
-function escapeHtml(value) {
-  return String(value).replace(/[&<>"']/g, (char) => {
-    return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    }[char];
-  });
+  if (lastIndex < text.length) {
+    parent.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
 }
 
 async function persistCurrentSettings() {

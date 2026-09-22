@@ -1,0 +1,22 @@
+{
+  "name": "force-dark-mode-extension",
+  "version": "1.6.0",
+  "description": "Force Dark Mode - ThemeSwitcher: Privacy-conscious, local-first browser extension for smart dark mode on websites and documents.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node tests/run_tests.mjs && node tests/dom_engine_test.mjs && node tests/privacy_security_test.mjs",
+    "test:core": "node tests/run_tests.mjs",
+    "test:dom": "node tests/dom_engine_test.mjs",
+    "test:privacy": "node tests/privacy_security_test.mjs"
+  },
+  "keywords": [
+    "dark-mode",
+    "chrome-extension",
+    "manifest-v3",
+    "privacy-first",
+    "accessibility"
+  ],
+  "author": "pshah-lab",
+  "license": "MIT"
+}

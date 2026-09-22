@@ -1,4 +1,4 @@
-import { setSiteConfig, getSiteConfig } from "../shared/storage.js";
+import { setSiteConfig, getSiteConfig, isSafeKey } from "../shared/storage.js";
 import {
   DEFAULT_ENGINE,
   VALID_ENGINES,
@@ -19,19 +19,19 @@ function getHostFromUrl(url) {
 }
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (sender.id && sender.id !== chrome.runtime.id) return;
-  if (msg?.type !== "TOGGLE") return;
+  if (sender.id !== chrome.runtime.id) return;
+  if (!msg || typeof msg !== "object" || msg.type !== "TOGGLE") return;
 
   handleToggleMessage(msg, sender);
 });
 
 async function handleToggleMessage(msg, sender) {
-  const tabId = msg.tabId || sender.tab?.id;
-  const url = msg.url || sender.tab?.url;
-  if (!url) return;
+  const host =
+    typeof msg.host === "string" && isSafeKey(msg.host)
+      ? msg.host.trim().toLowerCase()
+      : getHostFromUrl(msg.url || sender.tab?.url);
 
-  const host = getHostFromUrl(url);
-  if (!host) return;
+  if (!host || !isSafeKey(host)) return;
 
   const currentConfig = await getSiteConfig(host);
   const newEnabled =

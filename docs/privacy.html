@@ -11,6 +11,8 @@
     <link rel="canonical" href="https://darkmode.pshah.fun/privacy.html" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#090b0e" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
 
     <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
     <link rel="stylesheet" href="css/style.css" />
@@ -22,7 +24,9 @@
     <header class="site-header" role="banner">
       <div class="container nav-container">
         <a href="./" class="logo-brand" aria-label="ThemeSwitcher Home">
-          <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          <div class="logo-icon-wrapper">
+            <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          </div>
           <span>ThemeSwitcher</span>
         </a>
 
@@ -52,6 +56,13 @@
             rel="noopener noreferrer"
             target="_blank"
           >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="4"></circle>
+              <line x1="21.17" y1="8" x2="12" y2="8"></line>
+              <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+              <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+            </svg>
             <span>Add to Chrome</span>
           </a>
         </div>
@@ -63,14 +74,15 @@
         <div class="badge">Transparency First</div>
         <h1>Privacy Policy</h1>
         <div class="article-meta">
-          <span>Last Updated: September 2026</span> • 
+          <span>Version 2.0.0</span> • 
+          <span>Last Updated: September 23, 2026</span> • 
           <span>Effective Immediately</span>
         </div>
       </div>
 
       <div class="article-content">
         <p>
-          ThemeSwitcher (Force Dark Mode) is developed with an uncompromising commitment to privacy and data minimization. This policy explains what information is processed, how it is handled, and why your data remains entirely in your control.
+          ThemeSwitcher (Force Dark Mode) is engineered with an uncompromising commitment to privacy by design, local-first processing, and data minimization. This policy explains what information is processed, how it is handled, and why your data remains entirely under your control.
         </p>
 
         <h2>1. Zero Data Collection &amp; No Telemetry</h2>
@@ -78,9 +90,9 @@
           ThemeSwitcher does <strong>not</strong> collect, store, transmit, or monetize any personal information, browsing activity, or web history.
         </p>
         <ul>
-          <li><strong>No Telemetry or Tracking:</strong> There are no third-party analytics trackers, advertising scripts, or tracking pixels embedded in the extension.</li>
+          <li><strong>No Telemetry or Tracking:</strong> There are zero third-party analytics trackers, advertising scripts, or tracking pixels embedded in the extension or website.</li>
           <li><strong>No External Server Communication:</strong> The extension operates entirely offline. It does not ping external servers or maintain proprietary cloud databases.</li>
-          <li><strong>No Data Sharing:</strong> Because no data is collected, no information is ever sold, transferred, or shared with third parties.</li>
+          <li><strong>No Data Sharing or Sale:</strong> Because no data is collected, no information is ever sold, rented, transferred, or shared with third parties.</li>
         </ul>
 
         <h2>2. Local Storage &amp; Chrome Sync</h2>
@@ -91,6 +103,7 @@
           <li>Selected dark mode engine per domain (<code>auto</code>, <code>css</code>, or <code>invert</code>).</li>
           <li>Custom background color preferences per domain.</li>
           <li>Dark document and PDF viewer configuration (font size, zoom level, contrast settings).</li>
+          <li>Global defaults applied to unconfigured websites.</li>
         </ul>
         <p>
           These preferences are stored in your local Chrome profile and synchronized across your signed-in devices through Google’s official synchronization service. They are never sent to any server controlled by ThemeSwitcher.
@@ -130,32 +143,80 @@
           </tbody>
         </table>
 
-        <h2>5. Open Source Verification</h2>
+        <h2>5. User Rights &amp; Data Control (GDPR / DPDP / CCPA)</h2>
         <p>
-          ThemeSwitcher is free, open-source software licensed under the MIT License. Anyone can inspect, audit, and build the source code directly from our public GitHub repository:
+          We provide built-in technical controls directly in the extension’s <strong>Options</strong> page:
         </p>
-        <p>
-          <a href="https://github.com/pshah-lab/force-dark-mode-extension" target="_blank" rel="noopener noreferrer">
-            https://github.com/pshah-lab/force-dark-mode-extension
-          </a>
-        </p>
+        <ul>
+          <li><strong>Right to Portability (GDPR Art. 20):</strong> Export your saved site configurations as a portable JSON file at any time.</li>
+          <li><strong>Right to Erasure (DPDP Sec. 12 / GDPR Art. 17):</strong> Permanently wipe all stored domain preferences with a single click using the &ldquo;Erase All Stored Data&rdquo; button.</li>
+          <li><strong>Right to Non-Discrimination:</strong> We provide full functionality to all users without discrimination.</li>
+        </ul>
 
-        <h2>6. Contact &amp; Inquiries</h2>
+        <h2>6. Contact &amp; Grievance Redressal</h2>
         <p>
-          If you have any questions, feedback, or concerns regarding privacy, you can submit an inquiry via our public issue tracker:
+          If you have any questions, privacy inquiries, or grievances, our designated contact is:
         </p>
         <p>
-          <a href="https://github.com/pshah-lab/force-dark-mode-extension/issues" target="_blank" rel="noopener noreferrer">
-            ThemeSwitcher Issue Tracker on GitHub
-          </a>
+          <strong>Email:</strong> <a href="mailto:pshah.lab@gmail.com">pshah.lab@gmail.com</a> (Acknowledgment within 48 hours; resolution within 30 days)<br />
+          <strong>Support &amp; Community Feedback:</strong> <a href="support.html#feedback">ThemeSwitcher Feedback Form</a>
         </p>
       </div>
     </main>
 
+    <!-- Footer -->
     <footer class="site-footer" role="contentinfo">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <div class="logo-brand">
+            <div class="logo-icon-wrapper">
+              <img src="assets/icon.svg" alt="" class="logo-icon" width="28" height="28" />
+            </div>
+            <span>ThemeSwitcher</span>
+          </div>
+          <p>
+            Force Dark Mode - ThemeSwitcher is a lightweight, privacy-focused browser extension providing intelligent dark themes for websites and PDF documents.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Home</a></li>
+            <li><a href="features.html">Features</a></li>
+            <li><a href="how-it-works.html">How It Works</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="about.html">About Developer</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Guides &amp; Articles</h4>
+          <ul class="footer-links">
+            <li><a href="blog/how-to-force-dark-mode-chrome.html">Force Dark Mode in Chrome</a></li>
+            <li><a href="blog/dark-mode-pdf-guide.html">Dark Mode PDF Reader</a></li>
+            <li><a href="blog/dark-mode-vs-night-mode.html">Dark Mode vs Night Mode</a></li>
+            <li><a href="blog/best-dark-mode-extension-guide.html">Best Dark Mode Extension</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Support &amp; Legal</h4>
+          <ul class="footer-links">
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="support.html#feedback">Feedback &amp; Suggestions</a></li>
+            <li><a href="https://chromewebstore.google.com/detail/force-dark-mode" target="_blank" rel="noopener noreferrer">Chrome Web Store</a></li>
+          </ul>
+        </div>
+      </div>
+
       <div class="container footer-bottom">
         <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
-        <div><a href="./">Home</a> • <a href="features.html">Features</a> • <a href="how-it-works.html">How It Works</a></div>
+        <div class="footer-live-status">
+          <span class="pulse-dot-sm" aria-hidden="true"></span>
+          <span><strong id="footerActiveCount">16</strong> active readers online • Zero tracking</span>
+        </div>
       </div>
     </footer>
 

@@ -9,6 +9,8 @@ scratch*
 !/CONTRIBUTING.md
 !/SECURITY.md
 !/TERMS.md
+!/CHANGELOG.md
+!/VERSIONING.md
 !/documentation/**/*.md
 !/.github/**/*.md
 /Role FDEx.docx

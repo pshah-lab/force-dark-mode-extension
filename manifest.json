@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Force Dark Mode - ThemeSwitcher",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Apply smart dark mode to websites, PDFs, and documents with Auto, CSS, Invert, native dark detection, and local PDF rendering.",
   "permissions": ["storage", "activeTab"],
   "background": {

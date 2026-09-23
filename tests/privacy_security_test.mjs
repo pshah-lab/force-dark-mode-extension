@@ -190,7 +190,7 @@ testAsync("exportSettingsJson exports sanitized JSON payload (Portability)", asy
   const exportedString = await storageModule.exportSettingsJson();
   const parsed = JSON.parse(exportedString);
 
-  assert.strictEqual(parsed.version, "1.6.0");
+  assert.strictEqual(parsed.version, "1.6.1");
   assert.ok(parsed.exportDate);
   assert.ok(parsed.settings["wikipedia.org"]);
   assert.strictEqual(parsed.settings["wikipedia.org"].engine, "css");
@@ -294,6 +294,51 @@ test("all website HTML files include nosniff and strict-origin-when-cross-origin
       `${relPath} missing strict-origin-when-cross-origin referrer`
     );
   }
+});
+
+// 7. Versioning & Nomenclature Consistency
+console.log("\n7. Versioning & Nomenclature Consistency");
+
+test("manifest.json and package.json versions match SemVer standard", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "manifest.json"), "utf8"));
+  const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, "package.json"), "utf8"));
+
+  assert.match(manifest.version, /^\d+\.\d+\.\d+$/, "manifest.json version must follow SemVer X.Y.Z");
+  assert.strictEqual(manifest.version, pkg.version, "manifest.json and package.json must have matching versions");
+});
+
+test("storage.js and options.html footer reflect current manifest version", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "manifest.json"), "utf8"));
+  const storageJs = fs.readFileSync(path.join(rootDir, "src/shared/storage.js"), "utf8");
+  const optionsHtml = fs.readFileSync(path.join(rootDir, "src/options/options.html"), "utf8");
+
+  assert.ok(
+    storageJs.includes(`version: "${manifest.version}"`),
+    "storage.js exportSettingsJson version must match manifest version"
+  );
+  assert.ok(
+    optionsHtml.includes(`v${manifest.version}`),
+    "options.html footer must display the current version"
+  );
+});
+
+test("CHANGELOG.md and VERSIONING.md document current release and latest published version", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "manifest.json"), "utf8"));
+  const changelog = fs.readFileSync(path.join(rootDir, "CHANGELOG.md"), "utf8");
+  const versioning = fs.readFileSync(path.join(rootDir, "VERSIONING.md"), "utf8");
+
+  assert.ok(
+    changelog.includes(`## [${manifest.version}]`),
+    `CHANGELOG.md must contain a section for current version [${manifest.version}]`
+  );
+  assert.ok(
+    changelog.includes("## [1.6.0]"),
+    "CHANGELOG.md must document latest published version [1.6.0]"
+  );
+  assert.ok(
+    versioning.includes("Latest Published Version:** `1.6.0`"),
+    "VERSIONING.md must state latest published version as 1.6.0"
+  );
 });
 
 // Final summary

@@ -1,7 +1,7 @@
 # ThemeSwitcher Security Model & Architecture
 
 **Classification:** Technical Architecture & Defense-in-Depth Specification  
-**Version:** 1.6.0  
+**Version:** 1.6.1  
 
 ---
 

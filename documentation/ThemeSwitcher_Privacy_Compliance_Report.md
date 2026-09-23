@@ -1,7 +1,7 @@
 # ThemeSwitcher Privacy, Security & National/International Compliance Report
 
 **Product:** Force Dark Mode - ThemeSwitcher  
-**Version:** 1.6.0  
+**Version:** 1.6.1  
 **Manifest Version:** 3  
 **Audit Date:** September 23, 2026  
 **Auditor / Roles:** Application Security Engineer, Privacy Engineer, Chrome Web Store Specialist  

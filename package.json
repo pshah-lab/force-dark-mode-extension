@@ -1,6 +1,6 @@
 {
   "name": "force-dark-mode-extension",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Force Dark Mode - ThemeSwitcher: Privacy-conscious, local-first browser extension for smart dark mode on websites and documents.",
   "type": "module",
   "private": true,

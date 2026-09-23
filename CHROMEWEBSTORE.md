@@ -157,5 +157,6 @@ https://darkmode.pshah.fun/privacy.html
 
 | Version | Date | Changes | Status |
 | :--- | :--- | :--- | :--- |
-| 1.6.0 | 2026-09-22 | Unified branding as Force Dark Mode - ThemeSwitcher, added local PDF/document dark viewer with PDF.js, enhanced YouTube/SPA native dark detection, improved smart SVG logo inversion, tightened CSP, and production SEO landing site. | Draft |
+| 1.6.1 | 2026-09-23 | Privacy & Security compliance update: added User Control Center in Options (JSON settings export/import, one-click data erasure for GDPR Art. 17 / DPDP Sec. 12), hardened iframe sandbox without allow-same-origin, refactored document viewer to safe DOM construction (0 innerHTML), minimized runtime messaging to host-only, eliminated third-party count APIs on companion site, and added 47 automated security/privacy compliance tests. | Draft |
+| 1.6.0 | 2026-09-22 | Unified branding as Force Dark Mode - ThemeSwitcher, added local PDF/document dark viewer with PDF.js, enhanced YouTube/SPA native dark detection, improved smart SVG logo inversion, tightened CSP, and production SEO landing site. | Published |
 | 1.4.2 | 2026-08-18 | Initial multi-engine release with Auto, CSS, and Invert engines. | Published |

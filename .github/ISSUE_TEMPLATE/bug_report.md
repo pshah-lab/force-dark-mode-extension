@@ -13,7 +13,7 @@ Provide the link to the website where the issue occurred (e.g., https://example.
 A clear and concise description of what the problem is (e.g., inverted image, illegible text, form input unreadable).
 
 **ThemeSwitcher Configuration**
-- Extension Version (e.g. 1.6.0):
+- Extension Version (e.g. 1.6.1):
 - Active Engine (Auto / CSS / Invert):
 - Background Color selected (default `#0f1115` or custom):
 

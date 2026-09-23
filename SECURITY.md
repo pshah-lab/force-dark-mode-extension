@@ -11,7 +11,7 @@ Security updates and patches are actively maintained for the latest stable relea
 | Version | Supported          | Security Maintenance Status |
 | ------- | ------------------ | --------------------------- |
 | 1.6.x   | :white_check_mark: | Active support & patches    |
-| < 1.6.0 | :x:                | Deprecated. Please update   |
+| < 1.6.1 | :x:                | Deprecated. Please update   |
 
 ---
 

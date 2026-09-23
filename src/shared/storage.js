@@ -84,7 +84,7 @@ export async function exportSettingsJson() {
   }
   return JSON.stringify(
     {
-      version: "1.6.0",
+      version: "1.6.1",
       exportDate: new Date().toISOString(),
       generator: "ThemeSwitcher - Force Dark Mode",
       settings: sanitized,

@@ -8,7 +8,8 @@
     "test": "node tests/run_tests.mjs && node tests/dom_engine_test.mjs && node tests/privacy_security_test.mjs",
     "test:core": "node tests/run_tests.mjs",
     "test:dom": "node tests/dom_engine_test.mjs",
-    "test:privacy": "node tests/privacy_security_test.mjs"
+    "test:privacy": "node tests/privacy_security_test.mjs",
+    "serve": "python3 -m http.server 8080 --directory docs"
   },
   "keywords": [
     "dark-mode",

@@ -106,6 +106,7 @@ function initSplitScreenSlider() {
   }
 
   function stopDragging() {
+    if (!isDragging) return;
     isDragging = false;
     document.removeEventListener("mousemove", handlePointerMove);
     document.removeEventListener("mouseup", stopDragging);
@@ -114,6 +115,10 @@ function initSplitScreenSlider() {
   }
 
   function startDragging(e) {
+    // Do not hijack clicks on the interactive popup simulator
+    if (e.target.closest && e.target.closest(".floating-extension-popup")) {
+      return;
+    }
     isDragging = true;
     document.addEventListener("mousemove", handlePointerMove);
     document.addEventListener("mouseup", stopDragging);
@@ -136,6 +141,19 @@ function initSplitScreenSlider() {
       e.preventDefault();
     }
   });
+
+  // Hero "Interactive Demo" button smooth scroll + attention pulse
+  const heroDemoBtn = document.querySelector('a[href="#demo-section"]');
+  if (heroDemoBtn) {
+    heroDemoBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      container.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => {
+        handle.classList.add("slider-pulse");
+        setTimeout(() => handle.classList.remove("slider-pulse"), 1200);
+      }, 400);
+    });
+  }
 }
 
 /**
@@ -154,28 +172,32 @@ function initExtensionPopupSimulator() {
   if (!toggleBtn || !darkLayer) return;
 
   // Toggle On/Off
-  toggleBtn.addEventListener("click", () => {
+  toggleBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
     const isActive = toggleBtn.classList.contains("is-active");
 
     if (isActive) {
       toggleBtn.classList.remove("is-active");
       if (toggleStatusDot) toggleStatusDot.style.background = "#64748b";
       if (toggleStatusText) toggleStatusText.textContent = "Dark Mode Disabled";
-      darkLayer.style.display = "none";
+      darkLayer.style.opacity = "0";
+      darkLayer.style.pointerEvents = "none";
     } else {
       toggleBtn.classList.add("is-active");
-      if (toggleStatusDot) toggleStatusDot.style.background = "var(--accent-success)";
+      if (toggleStatusDot) toggleStatusDot.style.background = "var(--accent-success, #10b981)";
       if (toggleStatusText) toggleStatusText.textContent = "Dark Mode Enabled";
-      darkLayer.style.display = "flex";
+      darkLayer.style.opacity = "1";
+      darkLayer.style.pointerEvents = "auto";
     }
   });
 
   // Background color customization
   if (colorPicker) {
     colorPicker.addEventListener("input", (e) => {
+      e.stopPropagation();
       const color = e.target.value;
+      darkLayer.style.background = color;
       darkLayer.style.setProperty("--simulated-bg", color);
-      document.documentElement.style.setProperty("--simulated-bg", color);
     });
   }
 
@@ -187,10 +209,13 @@ function initExtensionPopupSimulator() {
 
       if (engine === "auto") {
         simRecommendation.textContent = "Auto · CSS Engine recommended (high confidence)";
+        darkLayer.style.filter = "none";
       } else if (engine === "css") {
         simRecommendation.textContent = "CSS Engine active · Layout-safe recoloring";
+        darkLayer.style.filter = "none";
       } else if (engine === "invert") {
         simRecommendation.textContent = "Invert Engine active · Smart media protection";
+        darkLayer.style.filter = "invert(0.9) hue-rotate(180deg)";
       }
     });
   });

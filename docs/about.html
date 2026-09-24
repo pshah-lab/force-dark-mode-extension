@@ -11,6 +11,8 @@
     <link rel="canonical" href="https://darkmode.pshah.fun/about.html" />
     <meta name="robots" content="index, follow" />
     <meta name="theme-color" content="#090b0e" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
 
     <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
     <link rel="stylesheet" href="css/style.css" />
@@ -22,7 +24,9 @@
     <header class="site-header" role="banner">
       <div class="container nav-container">
         <a href="./" class="logo-brand" aria-label="ThemeSwitcher Home">
-          <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          <div class="logo-icon-wrapper">
+            <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          </div>
           <span>ThemeSwitcher</span>
         </a>
 
@@ -52,6 +56,13 @@
             rel="noopener noreferrer"
             target="_blank"
           >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="4"></circle>
+              <line x1="21.17" y1="8" x2="12" y2="8"></line>
+              <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+              <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+            </svg>
             <span>Add to Chrome</span>
           </a>
         </div>
@@ -86,18 +97,18 @@
         </p>
 
         <h2>Our Technical &amp; Ethical Principles</h2>
-        <div class="demo-grid" style="margin: 2rem 0;">
-          <div class="demo-card" style="background: var(--bg-surface-elevated);">
-            <h3>1. Privacy by Default</h3>
-            <p>We believe your browsing history belongs to you. ThemeSwitcher contains zero telemetry, requires no user account, and makes no network calls.</p>
+        <div class="demo-grid">
+          <div class="demo-card">
+            <h3 style="margin-bottom: 0.5rem;">1. Privacy by Default</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 0;">We believe your browsing history belongs to you. ThemeSwitcher contains zero telemetry, requires no user account, and makes no network calls.</p>
           </div>
-          <div class="demo-card" style="background: var(--bg-surface-elevated);">
-            <h3>2. Layout Stability</h3>
-            <p>A dark mode extension shouldn't break the web. We use batched DOM analysis and contrast-calculated CSS variables to preserve page layout.</p>
+          <div class="demo-card">
+            <h3 style="margin-bottom: 0.5rem;">2. Layout Stability</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 0;">A dark mode extension shouldn't break the web. We use batched DOM analysis and contrast-calculated CSS variables to preserve page layout.</p>
           </div>
-          <div class="demo-card" style="background: var(--bg-surface-elevated);">
-            <h3>3. Open Source &amp; Auditable</h3>
-            <p>Code that interacts with your web pages must be transparent. Every line of ThemeSwitcher is published on GitHub under the MIT License.</p>
+          <div class="demo-card">
+            <h3 style="margin-bottom: 0.5rem;">3. Open Source &amp; Auditable</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 0;">Code that interacts with your web pages must be transparent. Every line of ThemeSwitcher is published on GitHub under the MIT License.</p>
           </div>
         </div>
 
@@ -114,43 +125,107 @@
 
         <h2>Developer &amp; Community Links</h2>
         <p>
-          ThemeSwitcher is developed and maintained by <code>pshah-lab</code>. Explore the repository or join our community discussions:
+          ThemeSwitcher is developed and maintained with care. Connect with our community and resources:
         </p>
         <ul>
           <li>
-            <a href="https://github.com/pshah-lab/force-dark-mode-extension" target="_blank" rel="noopener noreferrer">
-              GitHub Source Repository
+            <a href="support.html#feedback">
+              Feedback &amp; Feature Suggestions
             </a>
           </li>
           <li>
-            <a href="https://github.com/pshah-lab/force-dark-mode-extension/releases" target="_blank" rel="noopener noreferrer">
-              Release Changelog &amp; Downloads
+            <a href="support.html">
+              Troubleshooting &amp; Knowledge Base
             </a>
           </li>
           <li>
             <a href="privacy.html">Privacy Policy Statement</a>
           </li>
+          <li>
+            <a href="https://chromewebstore.google.com/detail/force-dark-mode" target="_blank" rel="noopener noreferrer">
+              Chrome Web Store Page
+            </a>
+          </li>
         </ul>
       </div>
 
-      <div class="cta-banner">
-        <h2>Join Thousands of Night Readers</h2>
-        <p>Enhance your reading comfort on Chrome, Edge, and Brave today.</p>
-        <a
-          href="https://chromewebstore.google.com/detail/force-dark-mode"
-          class="btn btn-primary btn-lg btn-chrome-store"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <span>Install from Chrome Web Store</span>
-        </a>
-      </div>
+      <!-- Call to Action Banner -->
+      <section class="cta-banner" aria-labelledby="cta-heading">
+        <div class="cta-content">
+          <h2 id="cta-heading">Join Thousands of Night Readers</h2>
+          <p>Enhance your reading comfort on Chrome, Edge, and Brave today.</p>
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode"
+            class="btn btn-primary btn-lg btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="4"></circle>
+              <line x1="21.17" y1="8" x2="12" y2="8"></line>
+              <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+              <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+            </svg>
+            <span>Install from Chrome Web Store</span>
+          </a>
+        </div>
+      </section>
     </main>
 
+    <!-- Footer -->
     <footer class="site-footer" role="contentinfo">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <div class="logo-brand">
+            <div class="logo-icon-wrapper">
+              <img src="assets/icon.svg" alt="" class="logo-icon" width="28" height="28" />
+            </div>
+            <span>ThemeSwitcher</span>
+          </div>
+          <p>
+            Force Dark Mode - ThemeSwitcher is a lightweight, privacy-focused browser extension providing intelligent dark themes for websites and PDF documents.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="./">Home</a></li>
+            <li><a href="features.html">Features</a></li>
+            <li><a href="how-it-works.html">How It Works</a></li>
+            <li><a href="support.html">Support</a></li>
+            <li><a href="about.html">About Developer</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Guides &amp; Articles</h4>
+          <ul class="footer-links">
+            <li><a href="blog/how-to-force-dark-mode-chrome.html">Force Dark Mode in Chrome</a></li>
+            <li><a href="blog/dark-mode-pdf-guide.html">Dark Mode PDF Reader</a></li>
+            <li><a href="blog/dark-mode-vs-night-mode.html">Dark Mode vs Night Mode</a></li>
+            <li><a href="blog/best-dark-mode-extension-guide.html">Best Dark Mode Extension</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Support &amp; Community</h4>
+          <ul class="footer-links">
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="support.html#feedback">Feedback &amp; Suggestions</a></li>
+            <li><a href="support.html">Help &amp; Troubleshooting</a></li>
+            <li><a href="https://chromewebstore.google.com/detail/force-dark-mode" target="_blank" rel="noopener noreferrer">Chrome Web Store</a></li>
+          </ul>
+        </div>
+      </div>
+
       <div class="container footer-bottom">
         <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
-        <div><a href="./">Home</a> • <a href="features.html">Features</a> • <a href="support.html">Support</a></div>
+        <div class="footer-live-status">
+          <span class="pulse-dot-sm" aria-hidden="true"></span>
+          <span><strong id="footerActiveCount">16</strong> active readers online • Zero tracking</span>
+        </div>
       </div>
     </footer>
 

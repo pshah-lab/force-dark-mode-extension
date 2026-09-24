@@ -7,7 +7,7 @@
 - **Platform**: Google Chrome (Manifest V3 extension)
 - **License**: MIT Open Source
 - **Official Website**: https://darkmode.pshah.fun/
-- **Chrome Web Store**: https://chromewebstore.google.com/detail/force-dark-mode-themeswi/
+- **Chrome Web Store**: https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke
 - **GitHub Repository**: https://github.com/pshah-lab/force-dark-mode-extension
 - **Primary Use Cases**: Reducing digital eye strain, late-night browsing, reading white PDFs in dark mode, battery saving on OLED displays.
 

@@ -3,14 +3,17 @@
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-brightgreen.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.6.1-indigo.svg)](manifest.json)
-[![Tests](https://img.shields.io/badge/tests-47%20passed-success.svg)](tests/)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Free-blue.svg?logo=googlechrome)](https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke)
+[![Tests](https://img.shields.io/badge/tests-50%20passed-success.svg)](tests/)
 [![Website](https://img.shields.io/badge/website-live-cyan.svg)](https://darkmode.pshah.fun/)
 
 **Force Dark Mode - ThemeSwitcher** is a lightweight, privacy-first Chrome extension that transforms websites, local documents, and PDF files into eye-friendly, customizable dark themes.
 
 Unlike crude global inverters that turn photos, videos, and layouts into neon negatives, ThemeSwitcher evaluates page luminance and structure to apply the optimal dark strategy automatically.
 
-🌐 **Live Website & Guides**: [https://darkmode.pshah.fun/](https://darkmode.pshah.fun/)
+🌐 **Chrome Web Store**: [https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke](https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke)  
+🌐 **Live Website & Guides**: [https://darkmode.pshah.fun/](https://darkmode.pshah.fun/)  
+📊 **Live Trends & Analytics**: [Chrome-Stats Profile](https://chrome-stats.com/d/kmhhphbakbhohiohagkhhgdgfbplkfke)
 
 ---
 

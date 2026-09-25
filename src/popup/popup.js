@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const button = document.getElementById("toggle");
   const label = button.querySelector(".label");
   const site = document.getElementById("site");
+  const shortcutHint = document.getElementById("shortcut-hint");
   const recommendation = document.getElementById("recommendation");
   const backgroundColorInput = document.getElementById("background-color");
   const brightnessInput = document.getElementById("brightness");
@@ -38,6 +39,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   const [tab] = await chrome.tabs.query({
     active: true,
     currentWindow: true,
+  });
+
+  chrome.commands.getAll((commands) => {
+    const shortcut = commands.find((c) => c.name === "toggle-dark-mode")?.shortcut;
+    if (!shortcut) return;
+
+    shortcutHint.replaceChildren();
+    shortcutHint.append("Shortcut: ");
+    const kbd = document.createElement("kbd");
+    kbd.textContent = shortcut;
+    shortcutHint.append(kbd);
+    shortcutHint.append(" · right-click a page to toggle too");
+    shortcutHint.hidden = false;
   });
 
   openDocumentViewerButton.onclick = () => {

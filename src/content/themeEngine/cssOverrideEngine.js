@@ -136,6 +136,10 @@ function enableDarkMode(config = {}) {
     :root[${ROOT_MODE_ATTR}="css"] :is(img, svg)[${IMAGE_ATTR}="invert"] {
       filter: invert(0.9) hue-rotate(180deg) !important;
     }
+
+    :root[${ROOT_MODE_ATTR}="css"][data-force-dark-filter="true"] {
+      filter: brightness(var(--force-dark-brightness, 100%)) contrast(var(--force-dark-contrast, 100%)) sepia(var(--force-dark-sepia, 0%)) !important;
+    }
   `;
 
   const target = document.head || document.documentElement;

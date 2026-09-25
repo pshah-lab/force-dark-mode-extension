@@ -12,7 +12,7 @@ function enableInvert() {
 
     html {
       background-color: #121212 !important;
-      filter: invert(0.92) hue-rotate(180deg) !important;
+      filter: invert(0.92) hue-rotate(180deg) brightness(var(--force-dark-brightness, 100%)) contrast(var(--force-dark-contrast, 100%)) sepia(var(--force-dark-sepia, 0%)) !important;
     }
 
     img,

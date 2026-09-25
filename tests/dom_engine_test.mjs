@@ -335,6 +335,34 @@ test("Page analysis correctly detects YouTube native dark mode with heavy media 
   assert.strictEqual(analysis.reason, "site already appears dark");
 });
 
+test("applyEngine applies filter CSS variables and gates the filter attribute", () => {
+  applyEngine({ enabled: true, engine: "css", brightness: 120, contrast: 90, sepia: 30 });
+
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-brightness"), "120%");
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-contrast"), "90%");
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-sepia"), "30%");
+  assert.strictEqual(mockDoc.documentElement.getAttribute("data-force-dark-filter"), "true");
+
+  disableDarkMode();
+});
+
+test("applyEngine omits the filter attribute when all values are default", () => {
+  applyEngine({ enabled: true, engine: "css", brightness: 100, contrast: 100, sepia: 0 });
+
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-brightness"), "100%");
+  assert.strictEqual(mockDoc.documentElement.getAttribute("data-force-dark-filter"), null);
+
+  disableDarkMode();
+});
+
+test("applyEngine clears filter variables and attribute when disabled", () => {
+  applyEngine({ enabled: true, engine: "css", brightness: 120, contrast: 90, sepia: 30 });
+  applyEngine({ enabled: false });
+
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-brightness"), "");
+  assert.strictEqual(mockDoc.documentElement.getAttribute("data-force-dark-filter"), null);
+});
+
 console.log("\n=========================================");
 console.log(`🎉 DOM Engine Results: ${passed} passed, ${failed} failed`);
 console.log("=========================================\n");

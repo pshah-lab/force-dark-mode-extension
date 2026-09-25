@@ -39,6 +39,27 @@
         <input id="background-color" type="color" value="#0f1115" />
       </label>
 
+      <div class="filter-group">
+        <label class="filter-control">
+          <span>Brightness</span>
+          <input id="brightness" type="range" min="50" max="150" value="100" />
+        </label>
+
+        <label class="filter-control">
+          <span>Contrast</span>
+          <input id="contrast" type="range" min="50" max="150" value="100" />
+        </label>
+
+        <label class="filter-control">
+          <span>Sepia</span>
+          <input id="sepia" type="range" min="0" max="100" value="0" />
+        </label>
+
+        <button id="reset-filters" type="button" class="reset-filters-btn">
+          Reset filters
+        </button>
+      </div>
+
       <div class="document-tools">
         <button id="open-pdf-viewer" type="button" hidden>
           Open PDF in dark viewer

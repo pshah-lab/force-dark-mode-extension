@@ -29,6 +29,7 @@ function normalizeEngine(engine) {
 function applyEngine(config) {
   disableDarkMode();
   disableInvert();
+  clearFilterVars();
 
   if (!config?.enabled) return;
 
@@ -36,11 +37,38 @@ function applyEngine(config) {
 
   if (!engine) return;
 
+  applyFilterVars(config);
+
   if (engine === "invert") {
     enableInvert();
   } else {
     enableDarkMode(config);
   }
+}
+
+function applyFilterVars(config) {
+  const brightness = Number.isFinite(config?.brightness) ? config.brightness : 100;
+  const contrast = Number.isFinite(config?.contrast) ? config.contrast : 100;
+  const sepia = Number.isFinite(config?.sepia) ? config.sepia : 0;
+  const hasAdjustment = brightness !== 100 || contrast !== 100 || sepia !== 0;
+  const root = document.documentElement;
+
+  root.style.setProperty("--force-dark-brightness", `${brightness}%`);
+  root.style.setProperty("--force-dark-contrast", `${contrast}%`);
+  root.style.setProperty("--force-dark-sepia", `${sepia}%`);
+  if (hasAdjustment) {
+    root.setAttribute("data-force-dark-filter", "true");
+  } else {
+    root.removeAttribute("data-force-dark-filter");
+  }
+}
+
+function clearFilterVars() {
+  const root = document.documentElement;
+  root.style.removeProperty("--force-dark-brightness");
+  root.style.removeProperty("--force-dark-contrast");
+  root.style.removeProperty("--force-dark-sepia");
+  root.removeAttribute("data-force-dark-filter");
 }
 
 function resolveEngine(config) {

@@ -4,6 +4,7 @@ import {
   VALID_ENGINES,
   DEFAULT_BACKGROUND_COLOR,
   HEX_COLOR_PATTERN,
+  clampFilterValue,
 } from "../shared/constants.js";
 
 function getHostFromUrl(url) {
@@ -49,9 +50,22 @@ async function handleToggleMessage(msg, sender) {
     ? requestedBackgroundColor
     : DEFAULT_BACKGROUND_COLOR;
 
+  const brightness = clampFilterValue(
+    "brightness",
+    msg.brightness ?? currentConfig?.brightness
+  );
+  const contrast = clampFilterValue(
+    "contrast",
+    msg.contrast ?? currentConfig?.contrast
+  );
+  const sepia = clampFilterValue("sepia", msg.sepia ?? currentConfig?.sepia);
+
   await setSiteConfig(host, {
     enabled: newEnabled,
     engine,
     backgroundColor,
+    brightness,
+    contrast,
+    sepia,
   });
 }

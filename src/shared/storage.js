@@ -1,3 +1,5 @@
+import { clampFilterValue } from "./constants.js";
+
 const DISALLOWED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
 
 export function isSafeKey(key) {
@@ -31,6 +33,9 @@ export function setSiteConfig(host, config) {
       enabled: Boolean(config?.enabled),
       engine: typeof config?.engine === "string" ? config.engine : "auto",
       backgroundColor: typeof config?.backgroundColor === "string" ? config.backgroundColor : "#0f1115",
+      brightness: clampFilterValue("brightness", config?.brightness),
+      contrast: clampFilterValue("contrast", config?.contrast),
+      sepia: clampFilterValue("sepia", config?.sepia),
     };
     chrome.storage.sync.set({ [host]: safeConfig }, () => {
       if (chrome.runtime.lastError) {
@@ -119,6 +124,9 @@ export async function importSettingsJson(jsonString) {
       enabled: Boolean(val.enabled),
       engine: typeof val.engine === "string" ? val.engine : "auto",
       backgroundColor: typeof val.backgroundColor === "string" ? val.backgroundColor : "#0f1115",
+      brightness: clampFilterValue("brightness", val.brightness),
+      contrast: clampFilterValue("contrast", val.contrast),
+      sepia: clampFilterValue("sepia", val.sepia),
     };
     validCount++;
   }

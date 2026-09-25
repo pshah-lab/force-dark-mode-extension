@@ -134,6 +134,62 @@ body {
   opacity: 0.55;
 }
 
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1a1a1a;
+}
+
+.filter-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #d6d9df;
+  font-size: 12px;
+}
+
+.filter-control span {
+  flex-shrink: 0;
+  width: 62px;
+}
+
+.filter-control input[type="range"] {
+  flex: 1;
+  accent-color: #4caf50;
+  cursor: pointer;
+}
+
+.filter-control input[type="range"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.reset-filters-btn {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #8ab4f8;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+}
+
+.reset-filters-btn:hover {
+  text-decoration: underline;
+}
+
+.reset-filters-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  text-decoration: none;
+}
+
 .document-tools {
   display: flex;
   flex-direction: column;

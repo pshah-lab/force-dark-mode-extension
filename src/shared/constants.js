@@ -16,3 +16,8 @@ export function clampFilterValue(name, value) {
   if (!range || !Number.isFinite(numeric)) return range?.default ?? 0;
   return Math.min(range.max, Math.max(range.min, Math.round(numeric)));
 }
+
+export const VALID_SCHEDULE_MODES = new Set(["off", "time", "system"]);
+export const DEFAULT_SCHEDULE_START = "20:00";
+export const DEFAULT_SCHEDULE_END = "07:00";
+export const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;

@@ -7,6 +7,8 @@ import {
   exportSettingsJson,
   importSettingsJson,
   isSafeKey,
+  getScheduleConfig,
+  setScheduleConfig,
 } from "../shared/storage.js";
 import { DEFAULT_ENGINE, DEFAULT_BACKGROUND_COLOR } from "../shared/constants.js";
 
@@ -28,6 +30,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const importFileInput = document.getElementById("importFileInput");
   const clearBtn = document.getElementById("clearBtn");
   const statusMessage = document.getElementById("statusMessage");
+  const scheduleModeSelect = document.getElementById("scheduleMode");
+  const scheduleTimeFields = document.getElementById("scheduleTimeFields");
+  const scheduleStartInput = document.getElementById("scheduleStart");
+  const scheduleEndInput = document.getElementById("scheduleEnd");
+  const saveScheduleBtn = document.getElementById("saveScheduleBtn");
 
   function showStatus(text, type = "success") {
     if (!statusMessage) return;
@@ -74,6 +81,39 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (bgColorInput) bgColorInput.value = globalConfig.backgroundColor || DEFAULT_BACKGROUND_COLOR;
 
   await refreshStats();
+
+  // Load schedule preferences
+  const scheduleConfig = (await getScheduleConfig()) || { mode: "off", start: "20:00", end: "07:00" };
+
+  function updateScheduleFieldVisibility() {
+    if (scheduleTimeFields) {
+      scheduleTimeFields.hidden = scheduleModeSelect.value !== "time";
+    }
+  }
+
+  if (scheduleModeSelect) {
+    scheduleModeSelect.value = scheduleConfig.mode;
+    scheduleStartInput.value = scheduleConfig.start;
+    scheduleEndInput.value = scheduleConfig.end;
+    updateScheduleFieldVisibility();
+
+    scheduleModeSelect.addEventListener("change", updateScheduleFieldVisibility);
+  }
+
+  if (saveScheduleBtn) {
+    saveScheduleBtn.addEventListener("click", async () => {
+      await setScheduleConfig({
+        mode: scheduleModeSelect.value,
+        start: scheduleStartInput.value,
+        end: scheduleEndInput.value,
+      });
+      showStatus("✓ Automatic scheduling preferences saved successfully.");
+      saveScheduleBtn.textContent = "Saved!";
+      setTimeout(() => {
+        saveScheduleBtn.textContent = "Save Schedule";
+      }, 1500);
+    });
+  }
 
   if (presetSelect) {
     presetSelect.addEventListener("change", () => {

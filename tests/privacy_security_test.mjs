@@ -177,6 +177,15 @@ global.chrome = {
         if (cb) cb();
       },
     },
+    local: {
+      get: (key, cb) => cb({ [key]: mockStorageData[`local:${key}`] }),
+      set: (items, cb) => {
+        for (const [k, v] of Object.entries(items)) {
+          mockStorageData[`local:${k}`] = v;
+        }
+        if (cb) cb();
+      },
+    },
   },
 };
 
@@ -215,6 +224,26 @@ testAsync("setSiteConfig clamps filter values to their valid ranges", async () =
   assert.strictEqual(defaults.brightness, 100);
   assert.strictEqual(defaults.contrast, 100);
   assert.strictEqual(defaults.sepia, 0);
+});
+
+testAsync("setScheduleConfig sanitizes mode and time values, stored separately from sync", async () => {
+  await storageModule.setScheduleConfig({ mode: "time", start: "20:00", end: "07:00" });
+  const config = await storageModule.getScheduleConfig();
+  assert.strictEqual(config.mode, "time");
+  assert.strictEqual(config.start, "20:00");
+  assert.strictEqual(config.end, "07:00");
+
+  // Invalid values fall back to safe defaults instead of being stored as-is.
+  await storageModule.setScheduleConfig({ mode: "not-a-mode", start: "bad", end: "25:99" });
+  const fallback = await storageModule.getScheduleConfig();
+  assert.strictEqual(fallback.mode, "off");
+  assert.strictEqual(fallback.start, "20:00");
+  assert.strictEqual(fallback.end, "07:00");
+
+  // Schedule data must never surface through the per-site export (different storage area).
+  const exportedString = await storageModule.exportSettingsJson();
+  const parsed = JSON.parse(exportedString);
+  assert.strictEqual(parsed.settings.scheduleConfig, undefined);
 });
 
 testAsync("importSettingsJson validates schema and rejects malformed payloads", async () => {

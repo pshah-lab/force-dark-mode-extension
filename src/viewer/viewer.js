@@ -248,8 +248,11 @@ async function renderPdfPage(pdf, pageNumber, generation) {
     viewport,
     transform:
       outputScale === 1 ? null : [outputScale, 0, 0, outputScale, 0, 0],
-    background:
-      settings.mode === "smart" ? settings.backgroundColor : "rgb(255, 255, 255)",
+    // Always render against the natural white page. Both the "smart" mode's
+    // pageColors filter and our own transformPdfCanvas pixel pass assume an
+    // unmodified white-paper source to recolor from - pre-darkening the
+    // canvas here would double-process it and wash out the result.
+    background: "rgb(255, 255, 255)",
     pageColors: getPdfPageColors(settings),
   }).promise;
 

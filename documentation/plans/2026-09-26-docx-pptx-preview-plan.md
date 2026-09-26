@@ -26,6 +26,7 @@
 - A `.pptx` with zero `ppt/slides/slideN.xml` entries must show a clear message, not an empty viewer with no feedback.
 - A password-protected `.docx`/`.pptx` must show the specific "password-protected" message, not the generic corruption message (they're different situations a user should be told apart).
 - Re-opening a second file after one is already displayed must fully reset the previous render (no leftover slides/paragraphs from the first file mixed into the second) — the existing PDF path already resets via `renderGeneration`; the office-file path needs its own equivalent guard against a stale/slow load overwriting a newer one.
+- A file large enough that reading it into memory fails outright (device under memory pressure, or a very large file on a low-RAM machine) must show a message that says so specifically ("not enough available memory"), not get mislabeled as "corrupted" — these are different problems with different user actions (free up memory / close other tabs, vs. the file itself being bad).
 
 ---
 
@@ -981,9 +982,13 @@ async function openOfficeFile(file) {
   let bytes;
   try {
     bytes = new Uint8Array(await file.arrayBuffer());
-  } catch {
+  } catch (error) {
     if (generation !== officeRenderGeneration) return;
-    showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+    if (error instanceof RangeError) {
+      showEmptyState(`Not enough available memory to open ${file.name}.`);
+    } else {
+      showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+    }
     return;
   }
 

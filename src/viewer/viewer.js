@@ -20,8 +20,11 @@ const ALLOWED_DOCUMENT_PROTOCOLS = new Set([
   "blob:",
   "file:",
 ]);
-const PDF_MIN_RENDER_SCALE = 2.75;
-const PDF_MAX_RENDER_SCALE = 4;
+// Track the display's actual pixel density (sharp on retina, no wasted
+// pixels on standard 1x screens), capped so very high-density displays
+// don't force excessively large canvases.
+const PDF_MIN_RENDER_SCALE = 1;
+const PDF_MAX_RENDER_SCALE = 3;
 
 const viewer = document.getElementById("viewer");
 const emptyState = document.getElementById("empty-state");

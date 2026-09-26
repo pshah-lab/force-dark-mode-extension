@@ -5,12 +5,13 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "node tests/run_tests.mjs && node tests/dom_engine_test.mjs && node tests/privacy_security_test.mjs && node tests/zip_reader_test.mjs && node tests/docx_parser_test.mjs",
+    "test": "node tests/run_tests.mjs && node tests/dom_engine_test.mjs && node tests/privacy_security_test.mjs && node tests/zip_reader_test.mjs && node tests/docx_parser_test.mjs && node tests/pptx_parser_test.mjs",
     "test:core": "node tests/run_tests.mjs",
     "test:dom": "node tests/dom_engine_test.mjs",
     "test:privacy": "node tests/privacy_security_test.mjs",
     "test:zip": "node tests/zip_reader_test.mjs",
     "test:docx": "node tests/docx_parser_test.mjs",
+    "test:pptx": "node tests/pptx_parser_test.mjs",
     "serve": "python3 -m http.server 8080 --directory docs"
   },
   "keywords": [

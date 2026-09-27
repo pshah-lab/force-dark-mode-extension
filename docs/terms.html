@@ -23,11 +23,24 @@
 
     <header class="site-header" role="banner">
       <div class="container nav-container">
-        <a href="./" class="logo-brand" aria-label="ThemeSwitcher Home">
-          <div class="logo-icon-wrapper">
-            <img src="assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+        <a href="./" class="logo-brand" aria-label="Chameleon Labs Home">
+          <div class="logo-icon-wrapper chameleon-mark chameleon-mark--nav">
+            <svg viewBox="0 0 200 160" class="chameleon-mark-icon" aria-hidden="true">
+              <path d="M20 120 C -10 120, -10 80, 20 80 C 45 80, 45 105, 25 105 C 12 105, 12 92, 25 92" stroke="currentColor" stroke-width="10" stroke-linecap="round" fill="none"></path>
+              <ellipse cx="95" cy="90" rx="55" ry="38" fill="currentColor"></ellipse>
+              <path d="M60 58 L68 46 L76 58 M84 55 L92 42 L100 55 M108 55 L116 44 L124 55" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+              <ellipse cx="150" cy="75" rx="28" ry="24" fill="currentColor"></ellipse>
+              <circle cx="158" cy="65" r="10" fill="#fff"></circle>
+              <circle cx="160" cy="63" r="4.5" fill="#0b0e14"></circle>
+              <path d="M70 118 C 65 130, 55 132, 48 128" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"></path>
+              <path d="M120 122 C 122 134, 132 138, 140 134" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"></path>
+            </svg>
           </div>
-          <span>ThemeSwitcher</span>
+          <span class="logo-lockup">
+            <span class="logo-parent">Chameleon Labs</span>
+            <span class="logo-divider" aria-hidden="true">/</span>
+            <span class="logo-product">ThemeSwitcher</span>
+          </span>
         </a>
 
         <nav role="navigation" aria-label="Main Navigation">
@@ -43,6 +56,29 @@
             <li><a href="./" class="nav-link">Home</a></li>
             <li><a href="features.html" class="nav-link">Features</a></li>
             <li><a href="how-it-works.html" class="nav-link">How It Works</a></li>
+            <li class="nav-item-dropdown">
+              <button type="button" class="nav-link nav-dropdown-trigger" aria-haspopup="true" aria-expanded="false">
+                <span>Products</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </button>
+              <div class="nav-dropdown-panel">
+                <a href="./" class="nav-dropdown-item">
+                  <span class="nav-dropdown-item-icon" aria-hidden="true">🌓</span>
+                  <span class="nav-dropdown-item-copy">
+                    <strong>ThemeSwitcher</strong>
+                    <small>Dark mode extension &mdash; live</small>
+                  </span>
+                </a>
+                <div class="nav-dropdown-item is-disabled">
+                  <span class="nav-dropdown-item-icon" aria-hidden="true">🗂️</span>
+                  <span class="nav-dropdown-item-copy">
+                    <strong>Chameleon Convert</strong>
+                    <small>File transformation suite</small>
+                  </span>
+                  <span class="badge-soon">Soon</span>
+                </div>
+              </div>
+            </li>
             <li><a href="blog/" class="nav-link">Guides</a></li>
             <li><a href="support.html" class="nav-link">Support</a></li>
             <li><a href="about.html" class="nav-link">About</a></li>

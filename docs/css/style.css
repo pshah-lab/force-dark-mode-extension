@@ -1137,6 +1137,19 @@ a:hover {
 }
 
 /* Responsive Media Queries */
+@media (max-width: 1300px) {
+  /* The "Products" nav item + "Chameleon Labs / ThemeSwitcher" lockup need
+     more room than the original 6-item nav + single-word logo did. */
+  .nav-menu {
+    gap: 1.25rem;
+  }
+
+  .logo-divider,
+  .logo-product {
+    display: none;
+  }
+}
+
 @media (max-width: 1024px) {
   .col-8, .col-4, .col-6 {
     grid-column: span 12;

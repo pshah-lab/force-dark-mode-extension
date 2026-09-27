@@ -1,0 +1,6 @@
+Force Dark Mode - Sample Text File
+
+This is a plain text file used to test the Dark Document Viewer's
+TXT rendering across all color modes (Smart Dark, Invert, Sepia, Original).
+
+It has no special formatting, just plain lines of text.

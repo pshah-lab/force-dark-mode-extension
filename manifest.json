@@ -3,10 +3,19 @@
   "name": "Force Dark Mode - ThemeSwitcher",
   "version": "1.6.1",
   "description": "Apply smart dark mode to websites, PDFs, and documents with Auto, CSS, Invert, native dark detection, and local PDF rendering.",
-  "permissions": ["storage", "activeTab"],
+  "permissions": ["storage", "activeTab", "contextMenus"],
   "background": {
     "service_worker": "src/background/serviceWorker.js",
     "type": "module"
+  },
+  "commands": {
+    "toggle-dark-mode": {
+      "suggested_key": {
+        "default": "Alt+Shift+D",
+        "mac": "Alt+Shift+D"
+      },
+      "description": "Toggle Force Dark Mode on the current site"
+    }
   },
   "content_scripts": [
     {

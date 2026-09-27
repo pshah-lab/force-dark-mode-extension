@@ -155,6 +155,15 @@ h2 {
   margin-bottom: 0.5rem;
 }
 
+.schedule-time-row {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.schedule-time-row[hidden] {
+  display: none;
+}
+
 .checkbox-label {
   display: flex !important;
   align-items: center;

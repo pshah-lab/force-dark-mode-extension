@@ -57,6 +57,36 @@
       </div>
     </section>
 
+    <!-- Automatic Scheduling Card -->
+    <section class="card">
+      <h2>Automatic Scheduling</h2>
+      <p class="card-desc">Automatically gate when your per-site dark mode preferences take effect, without changing the per-site choices themselves.</p>
+
+      <div class="field">
+        <label for="scheduleMode">Schedule Mode</label>
+        <select id="scheduleMode">
+          <option value="off">Off (always follow per-site preference)</option>
+          <option value="time">Time range</option>
+          <option value="system">Match system dark mode</option>
+        </select>
+      </div>
+
+      <div class="field schedule-time-row" id="scheduleTimeFields" hidden>
+        <div>
+          <label for="scheduleStart">Start</label>
+          <input type="time" id="scheduleStart" value="20:00" />
+        </div>
+        <div>
+          <label for="scheduleEnd">End</label>
+          <input type="time" id="scheduleEnd" value="07:00" />
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="saveScheduleBtn" class="btn btn-primary" type="button">Save Schedule</button>
+      </div>
+    </section>
+
     <!-- Privacy & Data Management Card -->
     <section class="card">
       <div class="card-badge">Privacy by Design</div>

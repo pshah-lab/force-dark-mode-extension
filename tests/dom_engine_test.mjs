@@ -210,6 +210,10 @@ global.chrome = {
       get: (keys, cb) => cb({}),
       set: (obj, cb) => cb && cb(),
     },
+    local: {
+      get: (keys, cb) => cb({}),
+      set: (obj, cb) => cb && cb(),
+    },
     onChanged: {
       addListener: () => {},
     },
@@ -333,6 +337,67 @@ test("Page analysis correctly detects YouTube native dark mode with heavy media 
   const analysis = analyzePageForEngine();
   assert.strictEqual(analysis.nativeDark, true, "YouTube with dark mode should be detected as nativeDark: true");
   assert.strictEqual(analysis.reason, "site already appears dark");
+});
+
+test("applyEngine applies filter CSS variables and gates the filter attribute", () => {
+  applyEngine({ enabled: true, engine: "css", brightness: 120, contrast: 90, sepia: 30 });
+
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-brightness"), "120%");
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-contrast"), "90%");
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-sepia"), "30%");
+  assert.strictEqual(mockDoc.documentElement.getAttribute("data-force-dark-filter"), "true");
+
+  disableDarkMode();
+});
+
+test("applyEngine omits the filter attribute when all values are default", () => {
+  applyEngine({ enabled: true, engine: "css", brightness: 100, contrast: 100, sepia: 0 });
+
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-brightness"), "100%");
+  assert.strictEqual(mockDoc.documentElement.getAttribute("data-force-dark-filter"), null);
+
+  disableDarkMode();
+});
+
+test("toMinutesSinceMidnight parses valid HH:MM and rejects invalid input", () => {
+  assert.strictEqual(toMinutesSinceMidnight("00:00"), 0);
+  assert.strictEqual(toMinutesSinceMidnight("07:30"), 450);
+  assert.strictEqual(toMinutesSinceMidnight("23:59"), 1439);
+  assert.strictEqual(toMinutesSinceMidnight("24:00"), null);
+  assert.strictEqual(toMinutesSinceMidnight("bad"), null);
+  assert.strictEqual(toMinutesSinceMidnight(undefined), null);
+});
+
+test("isWithinSchedule treats missing/off schedules as always-on", () => {
+  assert.strictEqual(isWithinSchedule(null), true);
+  assert.strictEqual(isWithinSchedule({ mode: "off" }), true);
+});
+
+test("isWithinSchedule 'system' mode follows prefers-color-scheme", () => {
+  const original = global.window.matchMedia;
+
+  global.window.matchMedia = () => ({ matches: true });
+  assert.strictEqual(isWithinSchedule({ mode: "system" }), true);
+
+  global.window.matchMedia = () => ({ matches: false });
+  assert.strictEqual(isWithinSchedule({ mode: "system" }), false);
+
+  global.window.matchMedia = original;
+});
+
+test("isWithinTimeWindow handles overnight wraparound windows", () => {
+  // A degenerate window (identical start/end) should never block dark mode.
+  assert.strictEqual(isWithinTimeWindow("20:00", "20:00"), true);
+  // Malformed input should fail open rather than lock users out.
+  assert.strictEqual(isWithinTimeWindow("nope", "07:00"), true);
+});
+
+test("applyEngine clears filter variables and attribute when disabled", () => {
+  applyEngine({ enabled: true, engine: "css", brightness: 120, contrast: 90, sepia: 30 });
+  applyEngine({ enabled: false });
+
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-brightness"), "");
+  assert.strictEqual(mockDoc.documentElement.getAttribute("data-force-dark-filter"), null);
 });
 
 console.log("\n=========================================");

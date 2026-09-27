@@ -1,4 +1,7 @@
 import * as pdfjsLib from "./vendor/pdf.min.mjs";
+import { listZipEntryNames, readZipEntryText } from "../shared/zipReader.js";
+import { parseDocxDocument } from "./parsers/docxParser.js";
+import { parsePptxPresentation } from "./parsers/pptxParser.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
   "src/viewer/vendor/pdf.worker.min.mjs"
@@ -20,11 +23,16 @@ const ALLOWED_DOCUMENT_PROTOCOLS = new Set([
   "blob:",
   "file:",
 ]);
-const PDF_MIN_RENDER_SCALE = 2.75;
-const PDF_MAX_RENDER_SCALE = 4;
+// Track the display's actual pixel density (sharp on retina, no wasted
+// pixels on standard 1x screens), capped so very high-density displays
+// don't force excessively large canvases.
+const PDF_MIN_RENDER_SCALE = 1;
+const PDF_MAX_RENDER_SCALE = 3;
 
 const viewer = document.getElementById("viewer");
 const emptyState = document.getElementById("empty-state");
+const emptyStateHeading = document.getElementById("empty-state-heading");
+const emptyStateDescription = document.getElementById("empty-state-description");
 const pdfRenderPanel = document.getElementById("pdf-render-panel");
 const pdfStatus = document.getElementById("pdf-status");
 const pdfPages = document.getElementById("pdf-pages");
@@ -97,6 +105,8 @@ function loadInitialDocument() {
 
 async function openLocalFile(file) {
   revokeCurrentObjectUrl();
+  currentPdfSource = null;
+  renderGeneration += 1;
 
   if (isPdfFile(file)) {
     const data = new Uint8Array(await file.arrayBuffer());
@@ -108,6 +118,16 @@ async function openLocalFile(file) {
   if (isReadableDocument(file)) {
     const text = await file.text();
     openTextDocument(text, file.name);
+    return;
+  }
+
+  if (isLegacyOfficeDocument(file)) {
+    showEmptyState(`${file.name} is a legacy Office format — only .docx and .pptx are supported.`);
+    return;
+  }
+
+  if (isOfficeDocument(file)) {
+    await openOfficeFile(file);
     return;
   }
 
@@ -178,9 +198,121 @@ function openTextDocument(text, name) {
   documentPanel.textContent = normalizeDocumentText(text, name);
 }
 
+const CFB_SIGNATURE = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+
+function isEncryptedOfficeContainer(bytes) {
+  if (bytes.length < CFB_SIGNATURE.length) return false;
+  return CFB_SIGNATURE.every((byte, index) => bytes[index] === byte);
+}
+
+function isOutOfMemoryError(error) {
+  return error instanceof RangeError || error.name === "NotReadableError";
+}
+
+async function openOfficeFile(file) {
+  renderGeneration += 1;
+  const generation = renderGeneration;
+
+  showPanel("document");
+  documentName.textContent = file.name;
+  documentPanel.replaceChildren();
+
+  let bytes;
+  try {
+    bytes = new Uint8Array(await file.arrayBuffer());
+  } catch (error) {
+    if (generation !== renderGeneration) return;
+    if (isOutOfMemoryError(error)) {
+      showEmptyState(`Not enough available memory to open ${file.name}.`);
+    } else {
+      showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+    }
+    return;
+  }
+
+  if (isEncryptedOfficeContainer(bytes)) {
+    showEmptyState(`${file.name} is password-protected and can't be previewed.`);
+    return;
+  }
+
+  if (isDocxFile(file)) {
+    try {
+      await listZipEntryNames(bytes);
+    } catch {
+      if (generation !== renderGeneration) return;
+      showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+      return;
+    }
+
+    let xmlText;
+    try {
+      xmlText = await readZipEntryText(bytes, "word/document.xml");
+    } catch (error) {
+      if (generation !== renderGeneration) return;
+      if (error.code === "ENCRYPTED") {
+        showEmptyState(`${file.name} is password-protected and can't be previewed.`);
+      } else {
+        showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+      }
+      return;
+    }
+
+    if (generation !== renderGeneration) return;
+
+    if (xmlText === null) {
+      showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+      return;
+    }
+
+    const docxResult = parseDocxDocument(xmlText);
+    if (docxResult.blocks.length === 0) {
+      showEmptyState(`No readable text found in ${file.name}.`);
+      return;
+    }
+
+    showPanel("document");
+    renderDocxBlocksSafely(docxResult, documentPanel);
+    return;
+  }
+
+  let entryNames;
+  try {
+    entryNames = await listZipEntryNames(bytes);
+  } catch {
+    if (generation !== renderGeneration) return;
+    showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+    return;
+  }
+
+  let result;
+  try {
+    result = await parsePptxPresentation(entryNames, (entryName) => readZipEntryText(bytes, entryName));
+  } catch (error) {
+    if (generation !== renderGeneration) return;
+    if (error.code === "ENCRYPTED") {
+      showEmptyState(`${file.name} is password-protected and can't be previewed.`);
+    } else {
+      showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+    }
+    return;
+  }
+
+  if (generation !== renderGeneration) return;
+
+  if (result.slides.length === 0) {
+    showEmptyState(`Could not find any slides in ${file.name} — the file may be corrupted.`);
+    return;
+  }
+
+  showPanel("document");
+  renderPptxSlidesSafely(result, documentPanel);
+}
+
 function showEmptyState(message) {
   showPanel("empty");
   documentName.textContent = message;
+  emptyStateHeading.textContent = message;
+  emptyStateDescription.hidden = true;
 }
 
 function showPanel(panel) {
@@ -248,8 +380,11 @@ async function renderPdfPage(pdf, pageNumber, generation) {
     viewport,
     transform:
       outputScale === 1 ? null : [outputScale, 0, 0, outputScale, 0, 0],
-    background:
-      settings.mode === "smart" ? settings.backgroundColor : "rgb(255, 255, 255)",
+    // Always render against the natural white page. Both the "smart" mode's
+    // pageColors filter and our own transformPdfCanvas pixel pass assume an
+    // unmodified white-paper source to recolor from - pre-darkening the
+    // canvas here would double-process it and wash out the result.
+    background: "rgb(255, 255, 255)",
     pageColors: getPdfPageColors(settings),
   }).promise;
 
@@ -438,6 +573,33 @@ function isReadableDocument(file) {
   );
 }
 
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const PPTX_MIME = "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+
+function isOfficeDocument(file) {
+  const name = file.name.toLowerCase();
+  return (
+    file.type === DOCX_MIME ||
+    file.type === PPTX_MIME ||
+    name.endsWith(".docx") ||
+    name.endsWith(".pptx")
+  );
+}
+
+function isLegacyOfficeDocument(file) {
+  const name = file.name.toLowerCase();
+  return (
+    file.type === "application/msword" ||
+    file.type === "application/vnd.ms-powerpoint" ||
+    name.endsWith(".doc") ||
+    name.endsWith(".ppt")
+  );
+}
+
+function isDocxFile(file) {
+  return file.type === DOCX_MIME || file.name.toLowerCase().endsWith(".docx");
+}
+
 function normalizeDocumentText(text, name) {
   if (!name.toLowerCase().endsWith(".rtf")) {
     return text;
@@ -525,6 +687,91 @@ function appendInlineMarkdown(parent, text) {
 
   if (lastIndex < text.length) {
     parent.appendChild(document.createTextNode(text.slice(lastIndex)));
+  }
+}
+
+function renderRunsInto(parent, runs) {
+  runs.forEach((run) => {
+    let node = document.createTextNode(run.text);
+    if (run.bold) {
+      const strong = document.createElement("strong");
+      strong.appendChild(node);
+      node = strong;
+    }
+    if (run.italic) {
+      const em = document.createElement("em");
+      em.appendChild(node);
+      node = em;
+    }
+    parent.appendChild(node);
+  });
+}
+
+function appendTruncationNotice(container, message) {
+  const notice = document.createElement("p");
+  notice.className = "truncation-notice";
+  notice.textContent = message;
+  container.appendChild(notice);
+}
+
+function renderDocxBlocksSafely(result, container) {
+  container.replaceChildren();
+  let currentList = null;
+
+  result.blocks.forEach((block) => {
+    if (block.type === "heading") {
+      currentList = null;
+      const heading = document.createElement(`h${block.level}`);
+      heading.textContent = block.text;
+      container.appendChild(heading);
+      return;
+    }
+
+    if (block.type === "listItem") {
+      if (!currentList) {
+        currentList = document.createElement("ul");
+        container.appendChild(currentList);
+      }
+      const li = document.createElement("li");
+      renderRunsInto(li, block.runs);
+      currentList.appendChild(li);
+      return;
+    }
+
+    currentList = null;
+    const p = document.createElement("p");
+    renderRunsInto(p, block.runs);
+    container.appendChild(p);
+  });
+
+  if (result.truncated) {
+    appendTruncationNotice(container, "This document is very long — only the first 2000 paragraphs are shown.");
+  }
+}
+
+function renderPptxSlidesSafely(result, container) {
+  container.replaceChildren();
+
+  result.slides.forEach((slide) => {
+    const wrapper = document.createElement("section");
+    wrapper.className = "pptx-slide";
+
+    const label = document.createElement("div");
+    label.className = "pptx-slide-label";
+    label.textContent = `Slide ${slide.number}`;
+    wrapper.appendChild(label);
+
+    slide.blocks.forEach((block) => {
+      const p = document.createElement("p");
+      renderRunsInto(p, block.runs);
+      wrapper.appendChild(p);
+    });
+
+    container.appendChild(wrapper);
+  });
+
+  if (result.truncated) {
+    appendTruncationNotice(container, "This presentation has a lot of slides — only the first 500 are shown.");
   }
 }
 

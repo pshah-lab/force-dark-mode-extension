@@ -177,6 +177,15 @@ global.chrome = {
         if (cb) cb();
       },
     },
+    local: {
+      get: (key, cb) => cb({ [key]: mockStorageData[`local:${key}`] }),
+      set: (items, cb) => {
+        for (const [k, v] of Object.entries(items)) {
+          mockStorageData[`local:${k}`] = v;
+        }
+        if (cb) cb();
+      },
+    },
   },
 };
 
@@ -194,6 +203,47 @@ testAsync("exportSettingsJson exports sanitized JSON payload (Portability)", asy
   assert.ok(parsed.exportDate);
   assert.ok(parsed.settings["wikipedia.org"]);
   assert.strictEqual(parsed.settings["wikipedia.org"].engine, "css");
+});
+
+testAsync("setSiteConfig clamps filter values to their valid ranges", async () => {
+  await storageModule.setSiteConfig("out-of-range.com", {
+    enabled: true,
+    engine: "css",
+    brightness: 999,
+    contrast: -50,
+    sepia: 500,
+  });
+
+  const config = await storageModule.getSiteConfig("out-of-range.com");
+  assert.strictEqual(config.brightness, 150, "brightness should clamp to max 150");
+  assert.strictEqual(config.contrast, 50, "contrast should clamp to min 50");
+  assert.strictEqual(config.sepia, 100, "sepia should clamp to max 100");
+
+  await storageModule.setSiteConfig("no-filters-given.com", { enabled: true });
+  const defaults = await storageModule.getSiteConfig("no-filters-given.com");
+  assert.strictEqual(defaults.brightness, 100);
+  assert.strictEqual(defaults.contrast, 100);
+  assert.strictEqual(defaults.sepia, 0);
+});
+
+testAsync("setScheduleConfig sanitizes mode and time values, stored separately from sync", async () => {
+  await storageModule.setScheduleConfig({ mode: "time", start: "20:00", end: "07:00" });
+  const config = await storageModule.getScheduleConfig();
+  assert.strictEqual(config.mode, "time");
+  assert.strictEqual(config.start, "20:00");
+  assert.strictEqual(config.end, "07:00");
+
+  // Invalid values fall back to safe defaults instead of being stored as-is.
+  await storageModule.setScheduleConfig({ mode: "not-a-mode", start: "bad", end: "25:99" });
+  const fallback = await storageModule.getScheduleConfig();
+  assert.strictEqual(fallback.mode, "off");
+  assert.strictEqual(fallback.start, "20:00");
+  assert.strictEqual(fallback.end, "07:00");
+
+  // Schedule data must never surface through the per-site export (different storage area).
+  const exportedString = await storageModule.exportSettingsJson();
+  const parsed = JSON.parse(exportedString);
+  assert.strictEqual(parsed.settings.scheduleConfig, undefined);
 });
 
 testAsync("importSettingsJson validates schema and rejects malformed payloads", async () => {

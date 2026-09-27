@@ -29,6 +29,7 @@ function normalizeEngine(engine) {
 function applyEngine(config) {
   disableDarkMode();
   disableInvert();
+  clearFilterVars();
 
   if (!config?.enabled) return;
 
@@ -36,11 +37,38 @@ function applyEngine(config) {
 
   if (!engine) return;
 
+  applyFilterVars(config);
+
   if (engine === "invert") {
     enableInvert();
   } else {
     enableDarkMode(config);
   }
+}
+
+function applyFilterVars(config) {
+  const brightness = Number.isFinite(config?.brightness) ? config.brightness : 100;
+  const contrast = Number.isFinite(config?.contrast) ? config.contrast : 100;
+  const sepia = Number.isFinite(config?.sepia) ? config.sepia : 0;
+  const hasAdjustment = brightness !== 100 || contrast !== 100 || sepia !== 0;
+  const root = document.documentElement;
+
+  root.style.setProperty("--force-dark-brightness", `${brightness}%`);
+  root.style.setProperty("--force-dark-contrast", `${contrast}%`);
+  root.style.setProperty("--force-dark-sepia", `${sepia}%`);
+  if (hasAdjustment) {
+    root.setAttribute("data-force-dark-filter", "true");
+  } else {
+    root.removeAttribute("data-force-dark-filter");
+  }
+}
+
+function clearFilterVars() {
+  const root = document.documentElement;
+  root.style.removeProperty("--force-dark-brightness");
+  root.style.removeProperty("--force-dark-contrast");
+  root.style.removeProperty("--force-dark-sepia");
+  root.removeAttribute("data-force-dark-filter");
 }
 
 function resolveEngine(config) {
@@ -54,29 +82,102 @@ function resolveEngine(config) {
   return analysis.nativeDark ? "" : analysis.engine;
 }
 
-// Initial engine application
-chrome.storage.sync.get(host, (data) => {
-  applyEngine(data[host]);
+const SCHEDULE_STORAGE_KEY = "scheduleConfig";
+const SCHEDULE_RECHECK_INTERVAL_MS = 60000;
+let currentSiteConfig = null;
+let currentSchedule = null;
+let scheduleIntervalId = null;
+
+function isWithinSchedule(schedule) {
+  if (!schedule || !schedule.mode || schedule.mode === "off") return true;
+
+  if (schedule.mode === "system") {
+    return Boolean(window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+  }
+
+  if (schedule.mode === "time") {
+    return isWithinTimeWindow(schedule.start, schedule.end);
+  }
+
+  return true;
+}
+
+function isWithinTimeWindow(start, end) {
+  const startMinutes = toMinutesSinceMidnight(start);
+  const endMinutes = toMinutesSinceMidnight(end);
+  if (startMinutes === null || endMinutes === null || startMinutes === endMinutes) {
+    return true;
+  }
+
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  if (startMinutes < endMinutes) {
+    return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+  }
+
+  // Overnight window, e.g. 20:00 - 07:00
+  return nowMinutes >= startMinutes || nowMinutes < endMinutes;
+}
+
+function toMinutesSinceMidnight(value) {
+  const match = typeof value === "string" ? /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value) : null;
+  return match ? Number(match[1]) * 60 + Number(match[2]) : null;
+}
+
+function applyEffectiveEngine() {
+  if (!currentSiteConfig) {
+    applyEngine(null);
+    return;
+  }
+
+  applyEngine({
+    ...currentSiteConfig,
+    enabled: currentSiteConfig.enabled && isWithinSchedule(currentSchedule),
+  });
+}
+
+function refreshScheduleTimer() {
+  if (scheduleIntervalId) {
+    clearInterval(scheduleIntervalId);
+    scheduleIntervalId = null;
+  }
+
+  if (currentSchedule && currentSchedule.mode !== "off") {
+    scheduleIntervalId = setInterval(applyEffectiveEngine, SCHEDULE_RECHECK_INTERVAL_MS);
+  }
+}
+
+function loadSiteConfigAndApply() {
+  chrome.storage.sync.get(host, (data) => {
+    currentSiteConfig = data[host] || null;
+    applyEffectiveEngine();
+  });
+}
+
+// Initial engine application: load the global schedule once, then the per-site config.
+chrome.storage.local.get(SCHEDULE_STORAGE_KEY, (localData) => {
+  currentSchedule = localData[SCHEDULE_STORAGE_KEY] || null;
+  refreshScheduleTimer();
+  loadSiteConfigAndApply();
 });
 
 // Re-evaluate Auto Mode engine on DOMContentLoaded if DOM was still loading at document_start
 if (document.readyState === "loading") {
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-      chrome.storage.sync.get(host, (data) => {
-        applyEngine(data[host]);
-      });
-    },
-    { once: true }
-  );
+  document.addEventListener("DOMContentLoaded", loadSiteConfigAndApply, { once: true });
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area !== "sync") return;
-  if (!changes[host]) return;
+  if (area === "sync" && changes[host]) {
+    currentSiteConfig = changes[host].newValue || null;
+    applyEffectiveEngine();
+  }
 
-  applyEngine(changes[host].newValue);
+  if (area === "local" && changes[SCHEDULE_STORAGE_KEY]) {
+    currentSchedule = changes[SCHEDULE_STORAGE_KEY].newValue || null;
+    refreshScheduleTimer();
+    applyEffectiveEngine();
+  }
 });
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
@@ -84,7 +185,8 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (!msg || typeof msg !== "object") return;
 
   if (msg.type === "APPLY_CONFIG") {
-    applyEngine(msg.config);
+    currentSiteConfig = msg.config || null;
+    applyEffectiveEngine();
   }
 
   if (msg.type === "ANALYZE_PAGE") {

@@ -2,15 +2,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   const button = document.getElementById("toggle");
   const label = button.querySelector(".label");
   const site = document.getElementById("site");
+  const shortcutHint = document.getElementById("shortcut-hint");
   const recommendation = document.getElementById("recommendation");
   const backgroundColorInput = document.getElementById("background-color");
+  const brightnessInput = document.getElementById("brightness");
+  const contrastInput = document.getElementById("contrast");
+  const sepiaInput = document.getElementById("sepia");
+  const resetFiltersButton = document.getElementById("reset-filters");
   const openPdfViewerButton = document.getElementById("open-pdf-viewer");
   const openDocumentViewerButton = document.getElementById("open-document-viewer");
   const radios = document.querySelectorAll('input[name="engine"]');
   const defaultBackgroundColor = "#0f1115";
   const defaultEngine = "auto";
+  const defaultFilters = { brightness: 100, contrast: 100, sepia: 0 };
   const hexColorPattern = /^#[0-9a-f]{6}$/i;
   let colorDebounceTimer = null;
+  let filterDebounceTimer = null;
   let userHasInteractedWithEngine = false;
 
   const engineLabels = {
@@ -34,6 +41,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     currentWindow: true,
   });
 
+  chrome.commands.getAll((commands) => {
+    const shortcut = commands.find((c) => c.name === "toggle-dark-mode")?.shortcut;
+    if (!shortcut) return;
+
+    shortcutHint.replaceChildren();
+    shortcutHint.append("Shortcut: ");
+    const kbd = document.createElement("kbd");
+    kbd.textContent = shortcut;
+    shortcutHint.append(kbd);
+    shortcutHint.append(" · right-click a page to toggle too");
+    shortcutHint.hidden = false;
+  });
+
   openDocumentViewerButton.onclick = () => {
     chrome.tabs.create({
       url: chrome.runtime.getURL("src/viewer/viewer.html"),
@@ -47,6 +67,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     label.textContent = text;
     button.classList.remove("active");
     backgroundColorInput.disabled = true;
+    brightnessInput.disabled = true;
+    contrastInput.disabled = true;
+    sepiaInput.disabled = true;
+    resetFiltersButton.disabled = true;
     radios.forEach((radio) => {
       radio.disabled = true;
     });
@@ -87,11 +111,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   function updateToggleUI(
     enabled,
     engine = defaultEngine,
-    backgroundColor = defaultBackgroundColor
+    backgroundColor = defaultBackgroundColor,
+    filters = defaultFilters
   ) {
     button.classList.toggle("active", enabled);
     label.textContent = enabled ? "Dark mode enabled" : "Enable dark mode";
     backgroundColorInput.value = normalizeColor(backgroundColor);
+    brightnessInput.value = normalizeFilterValue("brightness", filters.brightness);
+    contrastInput.value = normalizeFilterValue("contrast", filters.contrast);
+    sepiaInput.value = normalizeFilterValue("sepia", filters.sepia);
     if (!userHasInteractedWithEngine) {
       radios.forEach((radio) => {
         radio.checked = radio.value === engine;
@@ -108,6 +136,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function normalizeColor(color) {
     return hexColorPattern.test(color || "") ? color.toLowerCase() : defaultBackgroundColor;
+  }
+
+  function normalizeFilterValue(name, value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : defaultFilters[name];
+  }
+
+  function getFilterValues() {
+    return {
+      brightness: normalizeFilterValue("brightness", brightnessInput.value),
+      contrast: normalizeFilterValue("contrast", contrastInput.value),
+      sepia: normalizeFilterValue("sepia", sepiaInput.value),
+    };
   }
 
   function isPdfUrl(url) {
@@ -204,7 +245,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     updateToggleUI(
       config.enabled === true,
       config.engine || defaultEngine,
-      config.backgroundColor || defaultBackgroundColor
+      config.backgroundColor || defaultBackgroundColor,
+      config
     );
   });
 
@@ -216,7 +258,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const engine = config.engine || defaultEngine;
       const backgroundColor = config.backgroundColor || defaultBackgroundColor;
 
-      updateToggleUI(enabled, engine, backgroundColor);
+      updateToggleUI(enabled, engine, backgroundColor, config);
       requestRecommendation(hasSavedConfig);
     });
   }
@@ -224,12 +266,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   button.onclick = () => {
     const selectedEngine = getSelectedEngine();
     const backgroundColor = normalizeColor(backgroundColorInput.value);
+    const filters = getFilterValues();
 
     chrome.storage.sync.get(host, (data) => {
       const currentlyEnabled = data[host]?.enabled === true;
       const nextEnabled = !currentlyEnabled;
 
-      updateToggleUI(nextEnabled, selectedEngine, backgroundColor);
+      updateToggleUI(nextEnabled, selectedEngine, backgroundColor, filters);
 
       chrome.runtime.sendMessage({
         type: "TOGGLE",
@@ -237,6 +280,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         host,
         engine: selectedEngine,
         backgroundColor,
+        ...filters,
       });
     });
   };
@@ -254,6 +298,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           engine: radio.value,
           backgroundColor: normalizeColor(backgroundColorInput.value),
           forceEnabled: enabled,
+          ...getFilterValues(),
         });
       });
     };
@@ -277,9 +322,43 @@ document.addEventListener("DOMContentLoaded", async () => {
           engine: getSelectedEngine(),
           backgroundColor,
           forceEnabled: enabled,
+          ...getFilterValues(),
         });
       });
     }, 200);
+  };
+
+  function sendFilterUpdate() {
+    if (filterDebounceTimer) {
+      clearTimeout(filterDebounceTimer);
+    }
+
+    filterDebounceTimer = setTimeout(() => {
+      chrome.storage.sync.get(host, (data) => {
+        const enabled = data[host]?.enabled === true;
+
+        chrome.runtime.sendMessage({
+          type: "TOGGLE",
+          tabId: tab.id,
+          host,
+          engine: getSelectedEngine(),
+          backgroundColor: normalizeColor(backgroundColorInput.value),
+          forceEnabled: enabled,
+          ...getFilterValues(),
+        });
+      });
+    }, 200);
+  }
+
+  [brightnessInput, contrastInput, sepiaInput].forEach((input) => {
+    input.oninput = sendFilterUpdate;
+  });
+
+  resetFiltersButton.onclick = () => {
+    brightnessInput.value = defaultFilters.brightness;
+    contrastInput.value = defaultFilters.contrast;
+    sepiaInput.value = defaultFilters.sepia;
+    sendFilterUpdate();
   };
 
   updateUI();

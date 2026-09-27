@@ -1,4 +1,13 @@
+import {
+  clampFilterValue,
+  VALID_SCHEDULE_MODES,
+  DEFAULT_SCHEDULE_START,
+  DEFAULT_SCHEDULE_END,
+  TIME_PATTERN,
+} from "./constants.js";
+
 const DISALLOWED_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+const SCHEDULE_KEY = "scheduleConfig";
 
 export function isSafeKey(key) {
   return typeof key === "string" && key.length > 0 && !DISALLOWED_KEYS.has(key.trim().toLowerCase());
@@ -31,10 +40,46 @@ export function setSiteConfig(host, config) {
       enabled: Boolean(config?.enabled),
       engine: typeof config?.engine === "string" ? config.engine : "auto",
       backgroundColor: typeof config?.backgroundColor === "string" ? config.backgroundColor : "#0f1115",
+      brightness: clampFilterValue("brightness", config?.brightness),
+      contrast: clampFilterValue("contrast", config?.contrast),
+      sepia: clampFilterValue("sepia", config?.sepia),
     };
     chrome.storage.sync.set({ [host]: safeConfig }, () => {
       if (chrome.runtime.lastError) {
         console.warn("[ForceDark] Storage set error:", chrome.runtime.lastError.message);
+      }
+      resolve();
+    });
+  });
+}
+
+/**
+ * Retrieve the global automatic-scheduling preference from chrome.storage.local.
+ * Kept separate from per-site chrome.storage.sync data so it never gets
+ * pulled into the per-site export/import/erasure flows.
+ */
+export function getScheduleConfig() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(SCHEDULE_KEY, (data) => {
+      if (chrome.runtime.lastError) {
+        console.warn("[ForceDark] Schedule get error:", chrome.runtime.lastError.message);
+        resolve(null);
+        return;
+      }
+      resolve(data[SCHEDULE_KEY] || null);
+    });
+  });
+}
+
+export function setScheduleConfig(config) {
+  return new Promise((resolve) => {
+    const mode = VALID_SCHEDULE_MODES.has(config?.mode) ? config.mode : "off";
+    const start = TIME_PATTERN.test(config?.start) ? config.start : DEFAULT_SCHEDULE_START;
+    const end = TIME_PATTERN.test(config?.end) ? config.end : DEFAULT_SCHEDULE_END;
+
+    chrome.storage.local.set({ [SCHEDULE_KEY]: { mode, start, end } }, () => {
+      if (chrome.runtime.lastError) {
+        console.warn("[ForceDark] Schedule set error:", chrome.runtime.lastError.message);
       }
       resolve();
     });
@@ -119,6 +164,9 @@ export async function importSettingsJson(jsonString) {
       enabled: Boolean(val.enabled),
       engine: typeof val.engine === "string" ? val.engine : "auto",
       backgroundColor: typeof val.backgroundColor === "string" ? val.backgroundColor : "#0f1115",
+      brightness: clampFilterValue("brightness", val.brightness),
+      contrast: clampFilterValue("contrast", val.contrast),
+      sepia: clampFilterValue("sepia", val.sepia),
     };
     validCount++;
   }

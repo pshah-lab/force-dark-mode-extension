@@ -63,6 +63,8 @@ chrome.storage.sync (Preferences synced securely per domain)
 | **Invert Engine** | Graphics-heavy or media-dense layouts | Applies smart color inversion with media re-inversion. |
 | **PDF & Document Viewer** | Research papers, textbooks, and notes | Bundled PDF.js canvas renderer with saturation-aware dark pixel conversion. |
 
+**Known limitation (Invert Engine):** on a small number of sites, the Invert Engine's blanket "re-invert images so they show their true colors" rule can collide with a site's own `prefers-color-scheme`-aware icon styling (icons the site already inverts for dark mode independently of its main theme). The result is a double-inversion that makes that specific icon disappear, rather than a broken layout. This is an inherent trade-off of CSS-filter-based invert dark modes generally, not unique to this extension. If you hit this, switch that site to the CSS Override Engine instead.
+
 ---
 
 ## 🔒 Privacy & Permissions

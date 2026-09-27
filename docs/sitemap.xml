@@ -19,6 +19,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://darkmode.pshah.fun/blog/</loc>
+    <lastmod>2026-09-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.85</priority>
+  </url>
+  <url>
     <loc>https://darkmode.pshah.fun/blog/how-to-force-dark-mode-chrome.html</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>monthly</changefreq>

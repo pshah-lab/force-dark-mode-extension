@@ -65,6 +65,8 @@ chrome.storage.sync (Preferences synced securely per domain)
 
 **Known limitation (Invert Engine):** on a small number of sites, the Invert Engine's blanket "re-invert images so they show their true colors" rule can collide with a site's own `prefers-color-scheme`-aware icon styling (icons the site already inverts for dark mode independently of its main theme). The result is a double-inversion that makes that specific icon disappear, rather than a broken layout. This is an inherent trade-off of CSS-filter-based invert dark modes generally, not unique to this extension. If you hit this, switch that site to the CSS Override Engine instead.
 
+**Known limitation (canvas-rendered editors):** apps like Google Docs render their actual document content onto an HTML `<canvas>` element rather than styleable DOM text — the surrounding toolbar/sidebar UI goes dark correctly, but the document page itself can't be recolored by any CSS-based approach, in either engine. This is a well-known, industry-wide limitation shared by every CSS-based dark mode extension, not something specific to this one.
+
 ---
 
 ## 🔒 Privacy & Permissions

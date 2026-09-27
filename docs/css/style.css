@@ -31,6 +31,13 @@
   --accent-success: #10b981;
   --accent-warning: #f59e0b;
 
+  /* Chameleon Labs Maximalist Palette (homepage rebrand accents) */
+  --chameleon-pink: #f472b6;
+  --chameleon-orange: #fb923c;
+  --chameleon-lime: #a3e635;
+  --chameleon-teal: #2dd4bf;
+  --chameleon-violet: #a78bfa;
+
   /* Typography */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
@@ -1552,3 +1559,389 @@ a:hover {
 }
 
 
+
+/* ==========================================================================
+   Chameleon Labs Rebrand — Homepage Maximalist Layer
+   Umbrella brand lockup, color-shifting mascot, Products dropdown, bold
+   hero blobs, and the Chameleon Convert "Coming Soon" teaser. Homepage only.
+   ========================================================================== */
+
+/* --- Logo lockup: "Chameleon Labs / ThemeSwitcher" --- */
+.logo-lockup {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  line-height: 1.1;
+}
+
+.logo-parent {
+  font-weight: 800;
+}
+
+.logo-divider {
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.logo-product {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+@media (max-width: 480px) {
+  .logo-product { display: none; }
+  .logo-divider { display: none; }
+}
+
+/* --- Chameleon mark: color-shifting mascot icon --- */
+.chameleon-mark-icon {
+  color: var(--chameleon-teal);
+  display: block;
+  animation: chameleon-hue-shift 9s linear infinite;
+}
+
+.chameleon-mark--nav {
+  width: 34px;
+  height: 34px;
+}
+
+.chameleon-mark--hero {
+  width: 100%;
+  height: 100%;
+}
+
+@keyframes chameleon-hue-shift {
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chameleon-mark-icon {
+    animation: none;
+  }
+}
+
+/* --- "Products" nav dropdown --- */
+.nav-item-dropdown {
+  position: relative;
+}
+
+.nav-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.nav-dropdown-trigger svg {
+  transition: transform 0.2s var(--ease-smooth);
+}
+
+.nav-item-dropdown:hover .nav-dropdown-trigger svg,
+.nav-item-dropdown:focus-within .nav-dropdown-trigger svg {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 0.9rem);
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  width: 300px;
+  padding: 0.6rem;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s var(--ease-smooth), transform 0.18s var(--ease-smooth), visibility 0.18s;
+  z-index: 1100;
+}
+
+.nav-item-dropdown:hover .nav-dropdown-panel,
+.nav-item-dropdown:focus-within .nav-dropdown-panel {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: background 0.15s ease;
+}
+
+a.nav-dropdown-item:hover {
+  background: var(--bg-surface);
+}
+
+.nav-dropdown-item.is-disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.nav-dropdown-item-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.nav-dropdown-item-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1;
+}
+
+.nav-dropdown-item-copy strong {
+  font-size: 0.92rem;
+}
+
+.nav-dropdown-item-copy small {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.badge-soon {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-full);
+  background: rgba(251, 146, 60, 0.18);
+  color: var(--chameleon-orange);
+  border: 1px solid rgba(251, 146, 60, 0.35);
+}
+
+@media (max-width: 768px) {
+  .nav-dropdown-panel {
+    position: static;
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    width: 100%;
+    box-shadow: none;
+    margin-top: 0.75rem;
+    background: transparent;
+    border: none;
+    padding: 0;
+  }
+
+  .nav-dropdown-trigger svg {
+    display: none;
+  }
+}
+
+/* --- Hero: vision tagline + maximalist blobs + floating mascot --- */
+.vision-tagline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-glass-card);
+  border: 1px solid var(--border-subtle);
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-full);
+  margin-bottom: 1.75rem;
+}
+
+.vision-tagline strong {
+  color: var(--text-primary);
+}
+
+.hero-maximalist-blobs {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.hero-maximalist-blobs span {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.35;
+  animation: chameleon-blob-drift 18s ease-in-out infinite;
+}
+
+.hero-blob-1 {
+  width: 420px;
+  height: 420px;
+  top: -120px;
+  left: 8%;
+  background: var(--chameleon-pink);
+  animation-delay: 0s;
+}
+
+.hero-blob-2 {
+  width: 380px;
+  height: 380px;
+  top: -60px;
+  right: 10%;
+  background: var(--chameleon-teal);
+  animation-delay: -6s;
+}
+
+.hero-blob-3 {
+  width: 320px;
+  height: 320px;
+  top: 220px;
+  left: 42%;
+  background: var(--chameleon-violet);
+  animation-delay: -12s;
+}
+
+@keyframes chameleon-blob-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, 25px) scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-maximalist-blobs span {
+    animation: none;
+  }
+}
+
+.hero {
+  position: relative;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-mascot-float {
+  position: absolute;
+  top: 0.5rem;
+  right: 2vw;
+  width: 96px;
+  height: 96px;
+  opacity: 0.9;
+  z-index: 1;
+}
+
+@media (max-width: 1024px) {
+  .hero-mascot-float {
+    display: none;
+  }
+}
+
+/* --- Coming Soon: Chameleon Convert teaser --- */
+.coming-soon-section {
+  padding: 2rem 0 5rem;
+}
+
+.coming-soon-card {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 3.5rem 2.5rem;
+  border-radius: var(--radius-lg);
+  background: var(--bg-glass-card);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(16px);
+}
+
+.coming-soon-card::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle 340px at 15% 20%, rgba(244, 114, 182, 0.16), transparent 65%),
+              radial-gradient(circle 300px at 85% 80%, rgba(45, 212, 191, 0.14), transparent 65%);
+  z-index: 0;
+}
+
+.coming-soon-mark {
+  position: relative;
+  z-index: 1;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 1.25rem;
+}
+
+.badge-soon-lg {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.4rem 1rem;
+  border-radius: var(--radius-full);
+  background: rgba(251, 146, 60, 0.16);
+  color: var(--chameleon-orange);
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  margin-bottom: 1.25rem;
+}
+
+.coming-soon-card h2 {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 0.85rem;
+}
+
+.coming-soon-card p {
+  position: relative;
+  z-index: 1;
+  max-width: 620px;
+  margin: 0 auto 2rem;
+}
+
+.file-type-grid {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 2rem;
+}
+
+.file-chip {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+}
+
+.badge-static-waitlist {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-full);
+}

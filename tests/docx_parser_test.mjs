@@ -69,6 +69,12 @@ test("returns an empty, non-truncated result for XML with no paragraphs", () => 
   assert.deepStrictEqual(result, { blocks: [], truncated: false });
 });
 
+test("does not treat <w:tab/> as a <w:t> opening tag", () => {
+  const xml = `<w:p><w:r><w:tab/><w:t>Hello</w:t></w:r></w:p>`;
+  const { blocks } = parseDocxDocument(xml);
+  assert.strictEqual(blocks[0].runs[0].text, "Hello");
+});
+
 test("caps output at 2000 paragraphs and marks it truncated", () => {
   const paragraph = `<w:p><w:r><w:t>line</w:t></w:r></w:p>`;
   const xml = paragraph.repeat(2005);

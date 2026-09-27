@@ -28,7 +28,7 @@ export function parsePptxSlideXml(xmlText) {
       const italic = /\bi="1"/.test(rPrTag);
 
       let text = "";
-      const textRegex = /<a:t[^>]*>([\s\S]*?)<\/a:t>/g;
+      const textRegex = /<a:t(?:\s[^>]*)?>([\s\S]*?)<\/a:t>/g;
       let textMatch;
       while ((textMatch = textRegex.exec(runXml)) !== null) {
         text += decodeXmlEntities(textMatch[1]);

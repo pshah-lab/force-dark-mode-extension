@@ -105,6 +105,8 @@ function loadInitialDocument() {
 
 async function openLocalFile(file) {
   revokeCurrentObjectUrl();
+  currentPdfSource = null;
+  renderGeneration += 1;
 
   if (isPdfFile(file)) {
     const data = new Uint8Array(await file.arrayBuffer());
@@ -196,11 +198,20 @@ function openTextDocument(text, name) {
   documentPanel.textContent = normalizeDocumentText(text, name);
 }
 
-let officeRenderGeneration = 0;
+const CFB_SIGNATURE = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
+
+function isEncryptedOfficeContainer(bytes) {
+  if (bytes.length < CFB_SIGNATURE.length) return false;
+  return CFB_SIGNATURE.every((byte, index) => bytes[index] === byte);
+}
+
+function isOutOfMemoryError(error) {
+  return error instanceof RangeError || error.name === "NotReadableError";
+}
 
 async function openOfficeFile(file) {
-  officeRenderGeneration += 1;
-  const generation = officeRenderGeneration;
+  renderGeneration += 1;
+  const generation = renderGeneration;
 
   showPanel("document");
   documentName.textContent = file.name;
@@ -210,8 +221,8 @@ async function openOfficeFile(file) {
   try {
     bytes = new Uint8Array(await file.arrayBuffer());
   } catch (error) {
-    if (generation !== officeRenderGeneration) return;
-    if (error instanceof RangeError) {
+    if (generation !== renderGeneration) return;
+    if (isOutOfMemoryError(error)) {
       showEmptyState(`Not enough available memory to open ${file.name}.`);
     } else {
       showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
@@ -219,11 +230,16 @@ async function openOfficeFile(file) {
     return;
   }
 
+  if (isEncryptedOfficeContainer(bytes)) {
+    showEmptyState(`${file.name} is password-protected and can't be previewed.`);
+    return;
+  }
+
   if (isDocxFile(file)) {
     try {
       await listZipEntryNames(bytes);
     } catch {
-      if (generation !== officeRenderGeneration) return;
+      if (generation !== renderGeneration) return;
       showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
       return;
     }
@@ -231,21 +247,31 @@ async function openOfficeFile(file) {
     let xmlText;
     try {
       xmlText = await readZipEntryText(bytes, "word/document.xml");
-    } catch {
-      if (generation !== officeRenderGeneration) return;
-      showEmptyState(`${file.name} is password-protected and can't be previewed.`);
+    } catch (error) {
+      if (generation !== renderGeneration) return;
+      if (error.code === "ENCRYPTED") {
+        showEmptyState(`${file.name} is password-protected and can't be previewed.`);
+      } else {
+        showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+      }
       return;
     }
 
-    if (generation !== officeRenderGeneration) return;
+    if (generation !== renderGeneration) return;
 
     if (xmlText === null) {
       showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
       return;
     }
 
+    const docxResult = parseDocxDocument(xmlText);
+    if (docxResult.blocks.length === 0) {
+      showEmptyState(`No readable text found in ${file.name}.`);
+      return;
+    }
+
     showPanel("document");
-    renderDocxBlocksSafely(parseDocxDocument(xmlText), documentPanel);
+    renderDocxBlocksSafely(docxResult, documentPanel);
     return;
   }
 
@@ -253,7 +279,7 @@ async function openOfficeFile(file) {
   try {
     entryNames = await listZipEntryNames(bytes);
   } catch {
-    if (generation !== officeRenderGeneration) return;
+    if (generation !== renderGeneration) return;
     showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
     return;
   }
@@ -261,13 +287,17 @@ async function openOfficeFile(file) {
   let result;
   try {
     result = await parsePptxPresentation(entryNames, (entryName) => readZipEntryText(bytes, entryName));
-  } catch {
-    if (generation !== officeRenderGeneration) return;
-    showEmptyState(`${file.name} is password-protected and can't be previewed.`);
+  } catch (error) {
+    if (generation !== renderGeneration) return;
+    if (error.code === "ENCRYPTED") {
+      showEmptyState(`${file.name} is password-protected and can't be previewed.`);
+    } else {
+      showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+    }
     return;
   }
 
-  if (generation !== officeRenderGeneration) return;
+  if (generation !== renderGeneration) return;
 
   if (result.slides.length === 0) {
     showEmptyState(`Could not find any slides in ${file.name} — the file may be corrupted.`);

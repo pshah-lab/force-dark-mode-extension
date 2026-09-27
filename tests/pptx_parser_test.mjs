@@ -39,6 +39,12 @@ test("parsePptxSlideXml returns an empty array for a slide with no text", () => 
   assert.deepStrictEqual(blocks, []);
 });
 
+test("parsePptxSlideXml does not treat a hypothetical <a:tXY> tag as a <a:t> opening tag", () => {
+  const xml = `<a:p><a:r><a:tXY/><a:t>Hello</a:t></a:r></a:p>`;
+  const blocks = parsePptxSlideXml(xml);
+  assert.strictEqual(blocks[0].runs[0].text, "Hello");
+});
+
 await test("parsePptxPresentation orders slides numerically, not lexicographically", async () => {
   const entryNames = ["ppt/slides/slide10.xml", "ppt/slides/slide2.xml", "ppt/slides/slide1.xml", "ppt/presentation.xml"];
   const fetchEntryText = async (name) => {

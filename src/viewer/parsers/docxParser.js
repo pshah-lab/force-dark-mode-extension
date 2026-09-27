@@ -22,7 +22,7 @@ function extractRuns(paragraphXml) {
     const italic = /<w:i\b(?![^>]*w:val="(0|false)")[^>]*\/?>/.test(rPrXml);
 
     let text = "";
-    const textRegex = /<w:t[^>]*>([\s\S]*?)<\/w:t>/g;
+    const textRegex = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
     let textMatch;
     while ((textMatch = textRegex.exec(runXml)) !== null) {
       text += decodeXmlEntities(textMatch[1]);

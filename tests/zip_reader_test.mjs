@@ -180,6 +180,28 @@ await test("listZipEntryNames throws a clear error for a non-ZIP buffer", async 
   }, /Not a valid ZIP archive/);
 });
 
+await test("readZipEntryText's encrypted-entry error is tagged so callers can distinguish it from other failures", async () => {
+  const zip = await buildZip([
+    { name: "word/document.xml", data: enc.encode("secret"), method: 0, generalPurposeFlag: 0x1 },
+  ]);
+  try {
+    await readZipEntryText(zip, "word/document.xml");
+    assert.fail("expected readZipEntryText to throw");
+  } catch (error) {
+    assert.strictEqual(error.code, "ENCRYPTED");
+  }
+});
+
+await test("a non-ZIP buffer's error is not tagged as ENCRYPTED", async () => {
+  const notAZip = enc.encode("this is definitely not a zip file, no EOCD signature anywhere in here");
+  try {
+    await listZipEntryNames(notAZip);
+    assert.fail("expected listZipEntryNames to throw");
+  } catch (error) {
+    assert.notStrictEqual(error.code, "ENCRYPTED");
+  }
+});
+
 console.log("\n=========================================");
 console.log(`🎉 ZIP Reader Results: ${passed} passed, ${failed} failed`);
 console.log("=========================================\n");

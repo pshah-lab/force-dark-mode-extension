@@ -92,7 +92,9 @@ export async function readZipEntryText(bytes, entryName) {
 
   const isEncrypted = (entry.generalPurposeFlag & 0x1) !== 0;
   if (isEncrypted) {
-    throw new Error("This entry is password-protected and cannot be decompressed.");
+    const error = new Error("This entry is password-protected and cannot be decompressed.");
+    error.code = "ENCRYPTED";
+    throw error;
   }
   if (entry.uncompressedSize > MAX_ENTRY_SIZE) return null;
 

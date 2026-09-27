@@ -15,6 +15,20 @@
         "mac": "Alt+Shift+D"
       },
       "description": "Toggle Force Dark Mode on the current site"
+    },
+    "open-file-viewer": {
+      "suggested_key": {
+        "default": "Alt+Shift+O",
+        "mac": "Alt+Shift+O"
+      },
+      "description": "Open the dark document viewer"
+    },
+    "open-current-document-in-viewer": {
+      "suggested_key": {
+        "default": "Alt+Shift+V",
+        "mac": "Alt+Shift+V"
+      },
+      "description": "Open the current tab's PDF in the dark viewer"
     }
   },
   "content_scripts": [

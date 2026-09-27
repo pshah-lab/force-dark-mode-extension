@@ -43,15 +43,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   chrome.commands.getAll((commands) => {
     const shortcut = commands.find((c) => c.name === "toggle-dark-mode")?.shortcut;
-    if (!shortcut) return;
+    if (shortcut) {
+      shortcutHint.replaceChildren();
+      shortcutHint.append("Shortcut: ");
+      const kbd = document.createElement("kbd");
+      kbd.textContent = shortcut;
+      shortcutHint.append(kbd);
+      shortcutHint.append(" · right-click a page to toggle too");
+      shortcutHint.hidden = false;
+    }
 
-    shortcutHint.replaceChildren();
-    shortcutHint.append("Shortcut: ");
-    const kbd = document.createElement("kbd");
-    kbd.textContent = shortcut;
-    shortcutHint.append(kbd);
-    shortcutHint.append(" · right-click a page to toggle too");
-    shortcutHint.hidden = false;
+    const viewerShortcut = commands.find((c) => c.name === "open-file-viewer")?.shortcut;
+    if (viewerShortcut) {
+      openDocumentViewerButton.title = `Shortcut: ${viewerShortcut}`;
+    }
+
+    const currentDocShortcut = commands.find(
+      (c) => c.name === "open-current-document-in-viewer"
+    )?.shortcut;
+    if (currentDocShortcut) {
+      openPdfViewerButton.title = `Shortcut: ${currentDocShortcut}`;
+    }
   });
 
   openDocumentViewerButton.onclick = () => {

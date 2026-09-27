@@ -27,10 +27,19 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
 });
 
 chrome.commands.onCommand.addListener((command, tab) => {
-  if (command !== "toggle-dark-mode") return;
-  if (!isTogglableUrl(tab?.url)) return;
+  if (command === "toggle-dark-mode") {
+    toggleForTab(tab);
+    return;
+  }
 
-  handleToggleMessage({ type: "TOGGLE" }, tab.url);
+  if (command === "open-file-viewer") {
+    openFileViewer();
+    return;
+  }
+
+  if (command === "open-current-document-in-viewer") {
+    openCurrentDocumentInViewer(tab);
+  }
 });
 
 chrome.runtime.onInstalled.addListener(() => {
@@ -39,14 +48,51 @@ chrome.runtime.onInstalled.addListener(() => {
     title: "Toggle Force Dark Mode",
     contexts: ["page"],
   });
+  chrome.contextMenus.create({
+    id: "force-dark-mode-open-viewer",
+    title: "Open Dark Document Viewer",
+    contexts: ["page"],
+  });
+  chrome.contextMenus.create({
+    id: "force-dark-mode-open-current-document",
+    title: "Open This PDF in Dark Viewer",
+    contexts: ["page"],
+  });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId !== "force-dark-mode-toggle") return;
-  if (!isTogglableUrl(tab?.url)) return;
+  if (info.menuItemId === "force-dark-mode-toggle") {
+    toggleForTab(tab);
+    return;
+  }
 
-  handleToggleMessage({ type: "TOGGLE" }, tab.url);
+  if (info.menuItemId === "force-dark-mode-open-viewer") {
+    openFileViewer();
+    return;
+  }
+
+  if (info.menuItemId === "force-dark-mode-open-current-document") {
+    openCurrentDocumentInViewer(tab);
+  }
 });
+
+function toggleForTab(tab) {
+  if (!isTogglableUrl(tab?.url)) return;
+  handleToggleMessage({ type: "TOGGLE" }, tab.url);
+}
+
+function openFileViewer() {
+  chrome.tabs.create({ url: chrome.runtime.getURL("src/viewer/viewer.html") });
+}
+
+function openCurrentDocumentInViewer(tab) {
+  if (!tab?.url || !isPdfUrl(tab.url)) return;
+
+  const viewerUrl = new URL(chrome.runtime.getURL("src/viewer/viewer.html"));
+  viewerUrl.searchParams.set("src", tab.url);
+  viewerUrl.searchParams.set("name", getNameFromUrl(tab.url) || "PDF document");
+  chrome.tabs.create({ url: viewerUrl.href });
+}
 
 function isTogglableUrl(url) {
   if (!url) return false;
@@ -55,6 +101,25 @@ function isTogglableUrl(url) {
     return protocol === "http:" || protocol === "https:" || protocol === "file:";
   } catch {
     return false;
+  }
+}
+
+function isPdfUrl(urlString) {
+  try {
+    const url = new URL(urlString);
+    return url.pathname.toLowerCase().endsWith(".pdf") || url.search.toLowerCase().includes(".pdf");
+  } catch {
+    return false;
+  }
+}
+
+function getNameFromUrl(urlString) {
+  try {
+    const url = new URL(urlString);
+    const name = url.pathname.split("/").filter(Boolean).pop();
+    return name ? decodeURIComponent(name) : "";
+  } catch {
+    return "";
   }
 }
 

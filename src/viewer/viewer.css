@@ -191,6 +191,28 @@ body {
   font-size: 12px;
 }
 
+.pptx-slide {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--viewer-border);
+}
+
+.pptx-slide-label {
+  margin-bottom: 8px;
+  color: var(--viewer-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.truncation-notice {
+  margin-top: 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--viewer-border);
+  border-radius: 8px;
+  color: var(--viewer-muted);
+  font-size: 13px;
+}
+
 .pdf-page canvas {
   display: block;
   max-width: 100%;

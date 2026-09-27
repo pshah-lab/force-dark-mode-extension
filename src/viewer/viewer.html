@@ -48,7 +48,7 @@
         <input
           id="file-input"
           type="file"
-          accept=".pdf,.txt,.md,.markdown,.rtf,application/pdf,text/plain,text/markdown,application/rtf,text/rtf"
+          accept=".pdf,.txt,.md,.markdown,.rtf,.docx,.pptx,.doc,.ppt,application/pdf,text/plain,text/markdown,application/rtf,text/rtf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword,application/vnd.ms-powerpoint"
           hidden
         />
       </div>
@@ -56,10 +56,11 @@
 
     <main id="viewer" class="viewer" data-mode="smart">
       <section id="empty-state" class="empty-state">
-        <h2>Open a PDF, TXT, Markdown, or RTF file</h2>
-        <p>
-          PDF files render locally with smart dark conversion. Text documents
-          render in a clean dark reader with your selected colors.
+        <h2 id="empty-state-heading">Open a PDF, Word, PowerPoint, TXT, Markdown, or RTF file</h2>
+        <p id="empty-state-description">
+          PDF files render locally with smart dark conversion. Word and
+          PowerPoint files show a read-only content preview (text, headings,
+          lists, slides) in a clean dark reader with your selected colors.
         </p>
       </section>
 

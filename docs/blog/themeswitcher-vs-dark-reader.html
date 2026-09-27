@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ThemeSwitcher vs. Dark Reader: Which Chrome Dark Mode Extension Wins in 2026?</title>
+    <meta
+      name="description"
+      content="An honest, feature-by-feature comparison of ThemeSwitcher (Force Dark Mode) and Dark Reader — covering performance, PDF support, native dark-site detection, customization depth, and privacy."
+    />
+    <link rel="canonical" href="https://darkmode.pshah.fun/blog/themeswitcher-vs-dark-reader.html" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#090b0e" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://darkmode.pshah.fun/blog/themeswitcher-vs-dark-reader.html" />
+    <meta property="og:title" content="ThemeSwitcher vs. Dark Reader: Which Chrome Dark Mode Extension Wins in 2026?" />
+    <meta property="og:description" content="A feature-by-feature, no-spin comparison of ThemeSwitcher and Dark Reader: architecture, performance, PDF support, customization, and privacy." />
+    <meta property="og:image" content="https://darkmode.pshah.fun/assets/icon128.png" />
+
+    <link rel="icon" type="image/svg+xml" href="../assets/icon.svg" />
+    <link rel="stylesheet" href="../css/style.css" />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "ThemeSwitcher vs. Dark Reader: Which Chrome Dark Mode Extension Wins in 2026?",
+        "description": "Feature-by-feature comparison of ThemeSwitcher and Dark Reader covering architecture, performance, PDF support, customization, and privacy.",
+        "author": {
+          "@type": "Organization",
+          "name": "pshah-lab"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "ThemeSwitcher"
+        },
+        "datePublished": "2026-09-28",
+        "dateModified": "2026-09-28"
+      }
+    </script>
+  </head>
+
+  <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+      <div class="container nav-container">
+        <a href="../" class="logo-brand" aria-label="ThemeSwitcher Home">
+          <div class="logo-icon-wrapper">
+            <img src="../assets/icon.svg" alt="" class="logo-icon" width="32" height="32" />
+          </div>
+          <span>ThemeSwitcher</span>
+        </a>
+
+        <nav role="navigation" aria-label="Main Navigation">
+          <button class="mobile-toggle" aria-expanded="false" aria-label="Toggle navigation menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          <ul class="nav-menu">
+            <li><a href="../" class="nav-link">Home</a></li>
+            <li><a href="../features.html" class="nav-link">Features</a></li>
+            <li><a href="../how-it-works.html" class="nav-link">How It Works</a></li>
+            <li><a href="./" class="nav-link active">Guides</a></li>
+            <li><a href="../support.html" class="nav-link">Support</a></li>
+            <li><a href="../about.html" class="nav-link">About</a></li>
+          </ul>
+        </nav>
+
+        <div class="nav-cta">
+          <a
+            href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke"
+            class="btn btn-primary btn-chrome-store"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="4"></circle>
+              <line x1="21.17" y1="8" x2="12" y2="8"></line>
+              <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+              <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+            </svg>
+            <span>Add to Chrome</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="container article-container">
+      <article class="article-header">
+        <div class="badge">Head-to-Head Comparison</div>
+        <h1>ThemeSwitcher vs. Dark Reader: Which Chrome Dark Mode Extension Wins in 2026?</h1>
+        <div class="article-meta">
+          <span>By pshah-lab</span> &bull;
+          <span>Published September 2026</span> &bull;
+          <span>6 min read</span>
+        </div>
+        <p class="hero-subtitle">
+          Dark Reader has been the default answer to "best dark mode extension" for years, with millions of installs and a decade of iteration behind it. This is not a takedown — it's a straight, factual comparison so you can pick the right tool for what you actually do in your browser.
+        </p>
+
+        <div class="article-content">
+          <h2>The Short Answer</h2>
+          <p>
+            Both extensions solve the same core problem — no more blinding white pages — using different trade-offs. <strong>Dark Reader</strong> has been battle-tested since 2014, ships a deep manual filter toolkit (brightness, contrast, sepia, grayscale sliders per site), and supports Chrome, Firefox, and Safari. <strong>ThemeSwitcher</strong> is newer, Manifest V3 native, and trades some of that manual tuning depth for automatic engine selection, a built-in offline PDF/document dark reader, and a smaller permission footprint.
+          </p>
+          <p>
+            If you already have a Dark Reader setup you've spent years tuning per-site, there's little reason to switch. If you're starting fresh, want fewer settings to manage, or specifically need PDFs and Office documents darkened offline, ThemeSwitcher is built for that out of the box.
+          </p>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 2.5rem 0;" />
+
+          <h2>How They Actually Work</h2>
+          <p>
+            <strong>Dark Reader</strong> analyzes a page's computed styles at runtime and generates a dynamic stylesheet that recolors backgrounds, text, and borders, with three selectable modes (Dynamic, Filter+, and Static) plus per-site manual sliders for fine control. This gives you deep manual control, at the cost of a heavier per-page analysis pass — most noticeable on large, DOM-heavy single-page apps.
+          </p>
+          <p>
+            <strong>ThemeSwitcher</strong> injects CSS custom properties at <code>document_start</code> (before first paint, eliminating white flashes), then runs a lightweight luminance/structure read pass to pick one of three engines automatically: CSS Override for text-heavy sites, Invert for media-dense layouts, or "leave alone" for sites that are already natively dark. Reads and writes are batched into animation frames instead of continuous DOM analysis.
+          </p>
+
+          <h2>Factual Comparison Matrix</h2>
+          <div class="table-responsive">
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>Capability</th>
+                  <th>ThemeSwitcher</th>
+                  <th>Dark Reader</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Pricing / License</strong></td>
+                  <td>100% Free, MIT</td>
+                  <td>Free, open source</td>
+                </tr>
+                <tr>
+                  <td><strong>Manual Filter Sliders</strong></td>
+                  <td>Brightness, contrast, sepia</td>
+                  <td>Brightness, contrast, sepia, grayscale, plus per-mode tuning</td>
+                </tr>
+                <tr>
+                  <td><strong>Automatic Engine Selection</strong></td>
+                  <td>Yes (Auto engine picks per-page)</td>
+                  <td>No (you pick a mode; per-site memory)</td>
+                </tr>
+                <tr>
+                  <td><strong>Native Dark Site Detection</strong></td>
+                  <td>Automatic, leaves native dark sites untouched</td>
+                  <td>Manual site-list toggling</td>
+                </tr>
+                <tr>
+                  <td><strong>Offline PDF Dark Reader</strong></td>
+                  <td>Built-in, bundled PDF.js canvas renderer</td>
+                  <td>Not built-in for local/native PDFs</td>
+                </tr>
+                <tr>
+                  <td><strong>Local Document Preview (.docx/.pptx/.md/.txt/.rtf)</strong></td>
+                  <td>Built-in dark document viewer</td>
+                  <td>Not supported</td>
+                </tr>
+                <tr>
+                  <td><strong>Keyboard Shortcuts</strong></td>
+                  <td>Toggle, open viewer, open current doc</td>
+                  <td>Toggle only</td>
+                </tr>
+                <tr>
+                  <td><strong>Browser Support</strong></td>
+                  <td>Chrome / Chromium (Manifest V3)</td>
+                  <td>Chrome, Firefox, Safari, Edge</td>
+                </tr>
+                <tr>
+                  <td><strong>Track Record</strong></td>
+                  <td>Newer, smaller install base</td>
+                  <td>Since 2014, 5M+ installs</td>
+                </tr>
+                <tr>
+                  <td><strong>Zero Telemetry</strong></td>
+                  <td>Yes, 100% offline computation</td>
+                  <td>Yes</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin: 2.5rem 0;" />
+
+          <h2>Where Dark Reader Genuinely Wins</h2>
+          <ul>
+            <li><strong>Cross-browser reach:</strong> if you switch between Chrome, Firefox, and Safari, Dark Reader is consistent across all three. ThemeSwitcher currently targets Chromium only.</li>
+            <li><strong>Manual filter depth:</strong> its Dynamic mode's per-site slider set (including grayscale) offers more granular hand-tuning than ThemeSwitcher's three sliders, useful for sites that need very specific correction.</li>
+            <li><strong>Maturity:</strong> a decade of edge-case fixes across a huge install base means it has likely already been patched for whatever obscure site you're about to visit.</li>
+          </ul>
+
+          <h2>Where ThemeSwitcher Genuinely Wins</h2>
+          <ul>
+            <li><strong>PDFs and local documents:</strong> Dark Reader has no built-in offline dark reader for native PDF files or Office documents. ThemeSwitcher renders PDFs, .docx, .pptx, Markdown, .txt, and .rtf files dark, entirely offline.</li>
+            <li><strong>Less to configure:</strong> the Auto engine picks CSS Override, Invert, or "leave native dark sites alone" without you maintaining a per-site list.</li>
+            <li><strong>Smaller permission surface:</strong> <code>storage</code> and <code>activeTab</code>, plus content scripts for the actual recoloring — no broader host permissions than the job requires.</li>
+          </ul>
+
+          <h2>Known Trade-offs (Both Ways)</h2>
+          <p>
+            Neither tool is flawless. ThemeSwitcher's Invert engine can double-invert a small number of icons that a site already inverts for its own dark mode (documented in our <a href="../">README</a>), and its manual customization is intentionally simpler than Dark Reader's. Dark Reader, meanwhile, is heavier on very large SPAs due to its continuous DOM analysis, and has no answer at all for offline PDF or Office document darkening — a gap that comes up constantly for students and researchers.
+          </p>
+
+          <h2>Conclusion: Pick Based on What You Actually Do</h2>
+          <p>
+            If you live across multiple browsers, or you've already got Dark Reader's per-site sliders dialed in exactly how you like them, keep using it — there's no compelling reason to migrate a working setup.
+          </p>
+          <p>
+            If you're setting up dark mode fresh, want it to work correctly with less manual site-by-site tuning, or specifically need PDFs, Word docs, and PowerPoint slides readable in the dark, <a href="../">ThemeSwitcher</a> was built for exactly that.
+          </p>
+        </div>
+
+        <section class="cta-banner" aria-labelledby="cta-heading">
+          <div class="cta-content">
+            <h2 id="cta-heading">Try ThemeSwitcher Today</h2>
+            <p>Automatic engine selection, offline PDF &amp; document dark reader, zero telemetry.</p>
+            <a
+              href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke"
+              class="btn btn-primary btn-lg btn-chrome-store"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="4"></circle>
+                <line x1="21.17" y1="8" x2="12" y2="8"></line>
+                <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
+                <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
+              </svg>
+              <span>Add to Chrome — Free on Web Store</span>
+            </a>
+          </div>
+        </section>
+      </article>
+    </main>
+
+    <!-- Footer -->
+    <footer class="site-footer" role="contentinfo">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <div class="logo-brand">
+            <div class="logo-icon-wrapper">
+              <img src="../assets/icon.svg" alt="" class="logo-icon" width="28" height="28" />
+            </div>
+            <span>ThemeSwitcher</span>
+          </div>
+          <p>
+            Force Dark Mode - ThemeSwitcher is a lightweight, privacy-focused browser extension providing intelligent dark themes for websites and PDF documents.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="../">Home</a></li>
+            <li><a href="../features.html">Features</a></li>
+            <li><a href="../how-it-works.html">How It Works</a></li>
+            <li><a href="../support.html">Support</a></li>
+            <li><a href="../about.html">About Developer</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Guides &amp; Articles</h4>
+          <ul class="footer-links">
+            <li><a href="how-to-force-dark-mode-chrome.html">Force Dark Mode in Chrome</a></li>
+            <li><a href="dark-mode-pdf-guide.html">Dark Mode PDF Reader</a></li>
+            <li><a href="dark-mode-vs-night-mode.html">Dark Mode vs Night Mode</a></li>
+            <li><a href="best-dark-mode-extension-guide.html">Best Dark Mode Extension</a></li>
+            <li><a href="themeswitcher-vs-dark-reader.html">ThemeSwitcher vs Dark Reader</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Support &amp; Community</h4>
+          <ul class="footer-links">
+            <li><a href="../privacy.html">Privacy Policy</a></li>
+            <li><a href="../support.html#feedback">Feedback &amp; Suggestions</a></li>
+            <li><a href="../support.html">Help &amp; Troubleshooting</a></li>
+            <li><a href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke" target="_blank" rel="noopener noreferrer">Chrome Web Store</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="container footer-bottom">
+        <div>&copy; 2026 ThemeSwitcher (Force Dark Mode). Licensed under MIT.</div>
+        <div class="footer-live-status">
+          <span class="pulse-dot-sm" aria-hidden="true"></span>
+          <span><strong id="footerActiveCount">16</strong> active readers online &bull; Zero tracking</span>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+  </body>
+</html>

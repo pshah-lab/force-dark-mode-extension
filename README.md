@@ -119,6 +119,7 @@ Create a clean, production-ready ZIP archive for the Chrome Web Store:
 - [How to View and Read PDFs in Dark Mode on Chrome](https://darkmode.pshah.fun/blog/dark-mode-pdf-guide.html)
 - [Dark Mode vs Night Mode: What's the Difference?](https://darkmode.pshah.fun/blog/dark-mode-vs-night-mode.html)
 - [Choosing the Best Dark Mode Extension for Chrome](https://darkmode.pshah.fun/blog/best-dark-mode-extension-guide.html)
+- [ThemeSwitcher vs. Dark Reader: Which Wins in 2026?](https://darkmode.pshah.fun/blog/themeswitcher-vs-dark-reader.html)
 - [Chrome Web Store Listing Strategy](CHROMEWEBSTORE.md)
 
 ---

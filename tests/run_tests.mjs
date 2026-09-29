@@ -394,7 +394,7 @@ test("zero cookies used across entire extension and website codebase", () => {
     "src/shared/colorUtils.js",
     "src/shared/constants.js",
     "src/viewer/viewer.js",
-    "website/js/main.js",
+    "docs/js/main.js",
   ];
 
   for (const relPath of jsFiles) {
@@ -458,16 +458,19 @@ test("external blank links in extension and website enforce noopener", () => {
   const htmlFiles = [
     "src/popup/popup.html",
     "src/viewer/viewer.html",
-    "website/index.html",
-    "website/features.html",
-    "website/how-it-works.html",
-    "website/support.html",
-    "website/about.html",
-    "website/privacy.html",
-    "website/blog/how-to-force-dark-mode-chrome.html",
-    "website/blog/dark-mode-pdf-guide.html",
-    "website/blog/dark-mode-vs-night-mode.html",
-    "website/blog/best-dark-mode-extension-guide.html",
+    "docs/index.html",
+    "docs/features.html",
+    "docs/how-it-works.html",
+    "docs/support.html",
+    "docs/about.html",
+    "docs/privacy.html",
+    "docs/terms.html",
+    "docs/blog/index.html",
+    "docs/blog/how-to-force-dark-mode-chrome.html",
+    "docs/blog/dark-mode-pdf-guide.html",
+    "docs/blog/dark-mode-vs-night-mode.html",
+    "docs/blog/best-dark-mode-extension-guide.html",
+    "docs/blog/themeswitcher-vs-dark-reader.html",
   ];
 
   for (const relPath of htmlFiles) {
@@ -485,16 +488,19 @@ test("external blank links in extension and website enforce noopener", () => {
 
 test("all website HTML pages include security meta headers", () => {
   const pages = [
-    "website/index.html",
-    "website/features.html",
-    "website/how-it-works.html",
-    "website/support.html",
-    "website/about.html",
-    "website/privacy.html",
-    "website/blog/how-to-force-dark-mode-chrome.html",
-    "website/blog/dark-mode-pdf-guide.html",
-    "website/blog/dark-mode-vs-night-mode.html",
-    "website/blog/best-dark-mode-extension-guide.html",
+    "docs/index.html",
+    "docs/features.html",
+    "docs/how-it-works.html",
+    "docs/support.html",
+    "docs/about.html",
+    "docs/privacy.html",
+    "docs/terms.html",
+    "docs/blog/index.html",
+    "docs/blog/how-to-force-dark-mode-chrome.html",
+    "docs/blog/dark-mode-pdf-guide.html",
+    "docs/blog/dark-mode-vs-night-mode.html",
+    "docs/blog/best-dark-mode-extension-guide.html",
+    "docs/blog/themeswitcher-vs-dark-reader.html",
   ];
 
   for (const relPath of pages) {

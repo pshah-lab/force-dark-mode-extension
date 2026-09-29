@@ -128,7 +128,7 @@ Before tagging or submitting a release, all of the following files must be synch
    - `manifest.json`
    - `assets/` (icons, pdfjs)
    - `src/` (background, content, options, popup, shared, viewer)
-   - *Strictly excludes:* `documentation/`, `docs/`, `tests/`, `website/`, `.git/`, `.DS_Store`, markdown files.
+   - *Strictly excludes:* `documentation/`, `docs/`, `tests/`, `.git/`, `.DS_Store`, markdown files.
 4. **Git Commit & Tag**:
    ```bash
    git add .

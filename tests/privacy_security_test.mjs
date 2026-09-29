@@ -80,16 +80,16 @@ test("zero outbound network calls in extension core code", () => {
 });
 
 test("companion website makes zero third-party telemetry network calls", () => {
-  const websiteJs = fs.readFileSync(path.join(rootDir, "website/js/main.js"), "utf8");
+  const websiteJs = fs.readFileSync(path.join(rootDir, "docs/js/main.js"), "utf8");
   assert.strictEqual(
     websiteJs.includes("abacus.jasoncameron.dev"),
     false,
-    "website/js/main.js must not call external counter abacus"
+    "docs/js/main.js must not call external counter abacus"
   );
   assert.strictEqual(
     websiteJs.includes("countapi.mileshilliard.com"),
     false,
-    "website/js/main.js must not call external counter countapi"
+    "docs/js/main.js must not call external counter countapi"
   );
   assert.strictEqual(
     websiteJs.includes("google-analytics.com"),
@@ -324,13 +324,19 @@ test("manifest.json defines strict CSP with script-src self and object-src none"
 
 test("all website HTML files include nosniff and strict-origin-when-cross-origin", () => {
   const websiteFiles = [
-    "website/index.html",
-    "website/about.html",
-    "website/features.html",
-    "website/how-it-works.html",
-    "website/support.html",
-    "website/privacy.html",
-    "website/terms.html",
+    "docs/index.html",
+    "docs/about.html",
+    "docs/features.html",
+    "docs/how-it-works.html",
+    "docs/support.html",
+    "docs/privacy.html",
+    "docs/terms.html",
+    "docs/blog/index.html",
+    "docs/blog/how-to-force-dark-mode-chrome.html",
+    "docs/blog/dark-mode-pdf-guide.html",
+    "docs/blog/dark-mode-vs-night-mode.html",
+    "docs/blog/best-dark-mode-extension-guide.html",
+    "docs/blog/themeswitcher-vs-dark-reader.html",
   ];
 
   for (const relPath of websiteFiles) {

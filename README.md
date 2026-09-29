@@ -2,9 +2,9 @@
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-brightgreen.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.6.1-indigo.svg)](manifest.json)
+[![Version](https://img.shields.io/badge/version-1.7.0-indigo.svg)](manifest.json)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Free-blue.svg?logo=googlechrome)](https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke)
-[![Tests](https://img.shields.io/badge/tests-50%20passed-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-79%20passed-success.svg)](tests/)
 [![Website](https://img.shields.io/badge/website-live-cyan.svg)](https://darkmode.pshah.fun/)
 
 **Force Dark Mode - ThemeSwitcher** is a lightweight, privacy-first Chrome extension that transforms websites, local documents, and PDF files into eye-friendly, customizable dark themes.
@@ -96,13 +96,18 @@ Read our complete [Privacy Policy](https://darkmode.pshah.fun/privacy.html) or [
 4. Click **Load unpacked** and select the repository root directory.
 
 ### Running Automated Tests
-Run the comprehensive unit and DOM simulation test suites:
+Run the full test suite (79 tests across 6 files):
 ```bash
-# File integrity, color math, and security checks (28 tests)
-node tests/run_tests.mjs
-
-# DOM simulation, engine switching, and YouTube detection (4 tests)
-node tests/dom_engine_test.mjs
+npm test
+```
+Or run an individual suite:
+```bash
+node tests/run_tests.mjs             # File integrity, color math, and security checks (34 tests)
+node tests/dom_engine_test.mjs       # DOM simulation, engine switching, and YouTube detection (11 tests)
+node tests/privacy_security_test.mjs # Privacy, security, and versioning compliance (12 tests)
+node tests/zip_reader_test.mjs       # Dependency-free ZIP reader for docx/pptx (8 tests)
+node tests/docx_parser_test.mjs      # .docx paragraph/heading/list parser (8 tests)
+node tests/pptx_parser_test.mjs      # .pptx slide/run parser (6 tests)
 ```
 
 ### Packaging for Release

@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.7.0] - 2026-09-29
+
+### Added
+- **Dark Document Viewer: .docx / .pptx support**:
+  - Added a dependency-free ZIP reader (`src/viewer/parsers/zipReader.js`) using native `DecompressionStream`/`CompressionStream`, with encrypted-archive detection.
+  - Added a `.docx` paragraph/heading/list/run parser and a `.pptx` slide/run parser (`src/viewer/parsers/`).
+  - Wired both into the document viewer UI, rendering Word and PowerPoint files dark and read-only, entirely offline.
+  - Added a distinct "page card" surface for text-based documents (Markdown, plain text, RTF, docx, pptx) matching the PDF viewer's visual treatment.
+- **Viewer keyboard shortcuts & context menu**:
+  - Added `Alt+Shift+O` to open the file viewer directly, and `Alt+Shift+V` to open the current tab's document in the dark viewer, plus matching right-click context menu items.
+- **Popup filter controls**:
+  - Added brightness, contrast, and sepia sliders (`src/popup/popup.js`) with per-site persistence and clamped valid ranges.
+- **Automatic scheduling**:
+  - Added a scheduling mode (fixed time range or system dark-mode-linked) in Options, stored separately in `chrome.storage.local` to keep it independent of per-site export/import/erasure flows.
+- **Toggle shortcut & right-click**:
+  - Added `Alt+Shift+D` keyboard shortcut and a right-click context menu entry to toggle dark mode on the current tab.
+- **Permanent test fixtures**:
+  - Added `test-fixtures/` at the repo root with one sample file per supported viewer format (pdf, docx, pptx, txt, md, rtf), for manual testing via the viewer's "Open file" button.
+
+### Fixed
+- **PDF rendering**:
+  - Fixed Smart Dark mode double-processing the page background; PDFs now always render against a true white base before dark conversion is applied.
+  - Fixed PDF render scale to use the actual device pixel ratio instead of a forced high minimum, improving performance on high-DPI displays.
+
+### Changed
+- **Website**: added a real-screenshot gallery, a "ThemeSwitcher vs. Dark Reader" comparison guide, and a homepage visual refresh; removed fabricated "active users"/"visit count" figures that contradicted the site's zero-telemetry claims.
+
+---
+
 ## [1.6.1] - 2026-09-23
 
 ### Added

@@ -199,7 +199,7 @@ testAsync("exportSettingsJson exports sanitized JSON payload (Portability)", asy
   const exportedString = await storageModule.exportSettingsJson();
   const parsed = JSON.parse(exportedString);
 
-  assert.strictEqual(parsed.version, "1.6.1");
+  assert.strictEqual(parsed.version, "1.7.0");
   assert.ok(parsed.exportDate);
   assert.ok(parsed.settings["wikipedia.org"]);
   assert.strictEqual(parsed.settings["wikipedia.org"].engine, "css");
@@ -382,12 +382,12 @@ test("CHANGELOG.md and VERSIONING.md document current release and latest publish
     `CHANGELOG.md must contain a section for current version [${manifest.version}]`
   );
   assert.ok(
-    changelog.includes("## [1.6.0]"),
-    "CHANGELOG.md must document latest published version [1.6.0]"
+    changelog.includes("## [1.6.1]"),
+    "CHANGELOG.md must document latest published version [1.6.1]"
   );
   assert.ok(
-    versioning.includes("Latest Published Version:** `1.6.0`"),
-    "VERSIONING.md must state latest published version as 1.6.0"
+    versioning.includes("Latest Published Version:** `1.6.1`"),
+    "VERSIONING.md must state latest published version as 1.6.1"
   );
 });
 

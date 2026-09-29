@@ -10,7 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
   initSplitScreenSlider();
   initExtensionPopupSimulator();
   initAnalyticsTracking();
-  initActiveUserTracker();
   initFeedbackForm();
 });
 
@@ -249,97 +248,6 @@ function trackEvent(eventName, payload) {
     detail: { eventName, payload },
   });
   window.dispatchEvent(event);
-}
-
-/**
- * Privacy Analytics & Active Readers Tracker
- * Integrates zero-cookie, GDPR-compliant counter APIs (Abacus / CountAPI)
- * with real-time active reader session tracking and tab coordination.
- */
-function initActiveUserTracker() {
-  const activeCountEl = document.getElementById("activeUsersCount");
-  const totalVisitsEl = document.getElementById("totalVisitsCount");
-  const footerActiveEl = document.getElementById("footerActiveCount");
-
-  // Determine realistic active reader baseline from current hour
-  const hour = new Date().getUTCHours();
-  // Diurnal curve: peak during Americas/Europe overlap (13-22 UTC), lower during 03-08 UTC
-  const diurnalFactor = 14 + Math.round(8 * Math.sin(((hour - 6) / 24) * 2 * Math.PI));
-  let currentActive = Math.max(9, Math.min(32, diurnalFactor));
-
-  // Update elements helper with subtle pop animation
-  function updateActiveDisplay(val) {
-    [activeCountEl, footerActiveEl].forEach((el) => {
-      if (!el) return;
-      el.textContent = val;
-      el.classList.remove("count-flash");
-      // Trigger reflow for animation restart
-      void el.offsetWidth;
-      el.classList.add("count-flash");
-    });
-  }
-
-  function updateTotalDisplay(val) {
-    if (totalVisitsEl) {
-      totalVisitsEl.textContent = typeof val === "number" ? val.toLocaleString() : val;
-    }
-  }
-
-  // Initial display
-  updateActiveDisplay(currentActive);
-
-  // BroadcastChannel for cross-tab coordination
-  let channel = null;
-  try {
-    if ("BroadcastChannel" in window) {
-      channel = new BroadcastChannel("fdex_active_presence");
-      channel.onmessage = (event) => {
-        if (event.data && event.data.active) {
-          currentActive = event.data.active;
-          updateActiveDisplay(currentActive);
-        }
-      };
-    }
-  } catch (e) {
-    // Channel not supported or blocked, continue
-  }
-
-  // Set established community userbase count locally with zero network tracking
-  function initVisitDisplay() {
-    updateTotalDisplay("2,850+");
-  }
-
-  initVisitDisplay();
-
-  // Subtle natural active user fluctuations (people joining / leaving reading sessions)
-  const fluctuationInterval = setInterval(() => {
-    // Only update if document is visible
-    if (document.visibilityState !== "visible") return;
-
-    // Small random step: -1, 0, +1, or occasionally +2
-    const deltaOptions = [-1, -1, 0, 1, 1, 2];
-    const delta = deltaOptions[Math.floor(Math.random() * deltaOptions.length)];
-    const newCount = Math.max(8, Math.min(36, currentActive + delta));
-
-    if (newCount !== currentActive) {
-      currentActive = newCount;
-      updateActiveDisplay(currentActive);
-
-      if (channel) {
-        try {
-          channel.postMessage({ active: currentActive });
-        } catch (e) {}
-      }
-    }
-  }, 16000 + Math.random() * 8000);
-
-  // Clean up if page is unloaded
-  window.addEventListener("beforeunload", () => {
-    if (fluctuationInterval) clearInterval(fluctuationInterval);
-    if (channel) {
-      try { channel.close(); } catch (e) {}
-    }
-  });
 }
 
 /**

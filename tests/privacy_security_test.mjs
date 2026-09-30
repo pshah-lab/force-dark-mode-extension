@@ -96,6 +96,14 @@ test("companion website makes zero third-party telemetry network calls", () => {
     false,
     "website must not contain Google Analytics"
   );
+  // The only network destination allowed is the first-party, cookie-free visit counter.
+  const urls = websiteJs.match(/https?:\/\/[^\s"'`)]+/g) || [];
+  for (const url of urls) {
+    assert.ok(
+      url.startsWith("https://pshah.fun/api/darkmode-visit") || url.startsWith("https://chromewebstore.google.com/"),
+      `docs/js/main.js references an unexpected URL: ${url}`
+    );
+  }
 });
 
 // 2. Data Minimization & Leakage Protection

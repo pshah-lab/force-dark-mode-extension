@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initSplitScreenSlider();
   initExtensionPopupSimulator();
   initAnalyticsTracking();
+  countVisit();
   initFeedbackForm();
 });
 
@@ -241,6 +242,24 @@ function initAnalyticsTracking() {
       });
     });
   });
+}
+
+/**
+ * Cookie-free visit counter. Once per browser, sends one empty beacon to the developer's own
+ * site (pshah.fun), which adds 1 to a single total. No cookies, identifiers, page or referrer
+ * data are sent. Skipped when Do Not Track is on and anywhere other than the live site.
+ */
+const VISIT_COUNTER_URL = "https://pshah.fun/api/darkmode-visit";
+
+function countVisit() {
+  if (location.hostname !== "darkmode.pshah.fun" || navigator.doNotTrack === "1" || !navigator.sendBeacon) return;
+  try {
+    if (localStorage.getItem("fdm:visit-counted") === "1") return;
+    localStorage.setItem("fdm:visit-counted", "1");
+  } catch (e) {
+    return; // Storage blocked: don't count rather than count this browser repeatedly.
+  }
+  navigator.sendBeacon(VISIT_COUNTER_URL);
 }
 
 function trackEvent(eventName, payload) {

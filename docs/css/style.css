@@ -141,6 +141,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 h1 { font-size: clamp(2.5rem, 5.5vw, 4.25rem); font-weight: 800; }
+/* Visual-only copies of headings (the dark half of the demo slider), styled like headings without being headings. */
+.demo-title, .demo-subtitle { color: var(--text-primary); font-weight: 700; line-height: 1.2; letter-spacing: -0.025em; }
+.split-view-dark p.demo-title, .split-view-dark .sample-card p.demo-subtitle { line-height: 1.2; }
+.split-view-dark .sample-card p.demo-subtitle { font-size: 1rem; }
 h2 { font-size: clamp(1.85rem, 3.5vw, 2.75rem); }
 h3 { font-size: clamp(1.3rem, 2.2vw, 1.7rem); }
 p { color: var(--text-secondary); margin-bottom: 1rem; }
@@ -569,7 +573,8 @@ a:hover {
   transition: background 0.2s ease, opacity 0.3s ease, filter 0.3s ease;
 }
 
-.split-view-dark h2 {
+.split-view-dark h2,
+.split-view-dark .demo-title {
   color: #f8fafc;
   font-size: 2.2rem;
   margin-bottom: 0.75rem;
@@ -588,7 +593,8 @@ a:hover {
   margin-top: 1.5rem;
   max-width: 680px;
 }
-.split-view-dark .sample-card h4 {
+.split-view-dark .sample-card h4,
+.split-view-dark .sample-card .demo-subtitle {
   color: #f8fafc;
   margin-bottom: 0.4rem;
 }

@@ -14,6 +14,5 @@ scratch*
 !/documentation/**/*.md
 !/.github/**/*.md
 !/test-fixtures/**/*.md
-!/docs/superpowers/**/*.md
 /Role FDEx.docx
 /MASTER PROMPT_ PRIVACY, SECURITY & NATIONAL_INTERNATIONAL COMPLIANCE.docx

@@ -1,7 +1,7 @@
 # Chameleon Convert — Roadmap
 
 **Status:** Decomposition agreed. No sub-project has an approved detailed spec yet.
-**Last updated:** 2026-09-30
+**Last updated:** 2026-10-01
 
 ## Context
 
@@ -20,8 +20,10 @@ for files."
 
 ## Foundational decisions (already made)
 
-- **Hosting:** brand-new domain (name not yet chosen — "Chameleon Convert"
-  is the working title, not necessarily the final domain/brand name).
+- **Hosting:** `convert.pshah.fun` (subdomain of the user's existing
+  personal domain, same pattern as `darkmode.pshah.fun`), deployed on
+  Vercel. "Chameleon Convert" is the working product name, not
+  necessarily the final brand name.
 - **Stack:** React + Vite. A deliberate departure from the extension's
   zero-build vanilla-JS philosophy — justified because this app has real
   UI complexity ahead (file-type routing, an editing UI, a spreadsheet
@@ -40,16 +42,24 @@ turn comes. This roadmap is the decomposition, not the design for any one
 of them.
 
 ### 0. Chameleon Convert — scaffold (foundation, do first)
-New repo, React + Vite, new domain. Port the existing read-only PDF/docx/
-pptx viewer over as the app's starting baseline. "Done" state: feature
-parity with what the extension's viewer does today, running standalone.
+New repo, React + Vite, deployed to `convert.pshah.fun`. Port the
+existing read-only PDF/docx/pptx viewer over as the app's starting
+baseline, plus a landing page. "Done" state: feature parity with what
+the extension's viewer does today, running standalone. See the
+[scaffold design spec](2026-10-01-chameleon-convert-scaffold-design.md)
+for full detail.
 
-### 1. Extension simplification (do alongside #0, small)
-Once the webapp has viewer parity, strip the document viewer out of the
-extension. Popup's "Open file viewer" button becomes a link out to
-Chameleon Convert instead. Bounded-sized change to the existing extension
-repo — no new spec needed, just the normal bounded-change flow when we
-get here.
+### 1. Extension simplification (triggered by ~70% completion, not by #0)
+The extension **keeps its document viewer fully intact** through
+sub-projects 0–3 and partway into 4 — it is explicitly *not* removed
+just because Chameleon Convert reaches parity. Only once Chameleon
+Convert is roughly 70% through this whole roadmap (substantially more
+capable than what it's replacing, not just equal to it) does the
+extension's popup "Open file viewer" button get swapped for a link out
+to Chameleon Convert and the in-extension viewer gets stripped.
+Bounded-sized change to the existing extension repo when that threshold
+is judged reached — no new spec needed, just the normal bounded-change
+flow.
 
 ### 2. Font/style customization (smallest new feature)
 Extends the ported viewer's existing settings (font size already exists
@@ -82,7 +92,7 @@ treat it as an afterthought.
 
 ## Deliberately unresolved (don't block on these)
 
-- Final domain/brand name for the webapp.
+- Final brand name for the webapp (domain is settled: convert.pshah.fun).
 - Monetization — free like the extension, or not.
 - Exact scope of "other things" in the font/style customization feature.
 

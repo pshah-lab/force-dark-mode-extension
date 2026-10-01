@@ -22,10 +22,11 @@ introducing Chameleon Convert and linking to the live viewer.
   (font size slider, background/text color pickers) — that's sub-project 2.
 - Excel support — sub-project 3.
 - Any editing or file export/download — sub-project 4.
-- Removing the document viewer from the extension itself — sub-project 1,
-  sequenced right after this one reaches parity, not part of this spec.
-- A custom domain — ships on a `.vercel.app` URL; domain is on the
-  roadmap's deliberately-unresolved list.
+- Removing the document viewer from the extension itself — explicitly
+  **not** tied to this sub-project finishing. The extension keeps its
+  document viewer until Chameleon Convert is roughly 70% complete
+  (through sub-project 3, partway into 4), not just at feature parity.
+  See "Relationship to sub-project 1" below.
 - User accounts, cross-device settings sync, or any backend/database —
   this stays a 100% client-side static app, same as the extension.
 
@@ -150,22 +151,25 @@ extension's existing DOM-engine-style test patterns).
 - New Vercel project connected to the `chameleon-convert` GitHub repo.
 - Auto-deploy on push to `main`; preview deployments per PR (standard
   Vercel behavior, no custom CI config needed for a static Vite app).
-- Ships on the Vercel-assigned `.vercel.app` URL. Custom domain is
-  deliberately deferred (see roadmap doc).
+- Custom domain: **convert.pshah.fun** (CNAME onto Vercel, same pattern
+  as `darkmode.pshah.fun`'s GitHub Pages CNAME — just pointed at Vercel
+  instead). Set up as part of this sub-project, not deferred.
 
 ## Relationship to sub-project 1 (extension simplification)
 
-Not part of this spec, but the trigger condition: once this app reaches
-verified feature parity with the extension's current viewer (manually
-tested against the same `test-fixtures/` sample files used for the
-extension), sub-project 1 strips the document viewer out of the
-extension and points its popup's "Open file viewer" button here instead.
-That work gets its own short bounded-change design when it starts — it
-doesn't need a spec of its own given its size.
+Not part of this spec, and **not triggered by this sub-project reaching
+parity**. The extension keeps its document viewer fully intact and
+shipping until Chameleon Convert is roughly 70% through the full
+roadmap (through sub-project 3 — Excel support — and partway into
+sub-project 4 — editing). Rationale: don't remove a working, used
+feature from the extension until its replacement is substantially more
+capable than what it's replacing, not just at parity. Sub-project 1
+gets its own short bounded-change design when that threshold is judged
+to be reached — it doesn't need a spec of its own given its size.
 
 ## Open questions deliberately deferred
 
-- Final custom domain / brand name.
+- Final brand name (domain is settled: convert.pshah.fun).
 - Monetization.
 - Whether `doc`/`ppt` (legacy binary Office formats, currently detected
   but explicitly rejected with a "convert to .docx/.pptx first" message

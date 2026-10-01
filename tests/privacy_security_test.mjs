@@ -395,14 +395,17 @@ test("CHANGELOG.md and VERSIONING.md document current release and latest publish
     changelog.includes(`## [${manifest.version}]`),
     `CHANGELOG.md must contain a section for current version [${manifest.version}]`
   );
+  // The published version is whatever VERSIONING.md declares; it must be documented and not ahead of the manifest.
+  const published = versioning.match(/Latest Published Version:\*\* `(\d+\.\d+\.\d+)`/)?.[1];
+  assert.ok(published, "VERSIONING.md must state the latest published version");
   assert.ok(
-    changelog.includes("## [1.6.1]"),
-    "CHANGELOG.md must document latest published version [1.6.1]"
+    changelog.includes(`## [${published}]`),
+    `CHANGELOG.md must document latest published version [${published}]`
   );
-  assert.ok(
-    versioning.includes("Latest Published Version:** `1.6.1`"),
-    "VERSIONING.md must state latest published version as 1.6.1"
-  );
+  const toNums = (v) => v.split(".").map(Number);
+  const [a, b] = [toNums(published), toNums(manifest.version)];
+  const cmp = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
+  assert.ok(cmp <= 0, `Published version ${published} cannot be ahead of manifest version ${manifest.version}`);
 });
 
 // Final summary

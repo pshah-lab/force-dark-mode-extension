@@ -3,9 +3,9 @@
 **Project:** Force Dark Mode - ThemeSwitcher  
 **Standard:** [Semantic Versioning 2.0.0 (SemVer)](https://semver.org/spec/v2.0.0.html)  
 **Target Platform:** Google Chrome Web Store (Manifest V3)  
-**Latest Published Version:** `1.6.1`  
+**Latest Published Version:** `1.7.0`  
 **Current Active Release:** `1.7.0`  
-**Last Updated:** 2026-09-29  
+**Last Updated:** 2026-10-01  
 
 ---
 
@@ -54,7 +54,7 @@ Git release tags must strictly adhere to the prefix format:
 
 $$\text{v}\text{MAJOR}.\text{MINOR}.\text{PATCH}$$
 
-- **Published Baseline:** `v1.6.1` (Latest release published on the Chrome Web Store)
+- **Published Baseline:** `v1.7.0` (Latest release published on the Chrome Web Store)
 - **Current Release:** `v1.7.0` (Document Viewer & Customization Release)
 - **Command to Tag:**
   ```bash

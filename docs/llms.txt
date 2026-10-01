@@ -11,7 +11,7 @@
 - Website: https://darkmode.pshah.fun/
 - Chrome Web Store: https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke
 - Source code: https://github.com/pshah-lab/force-dark-mode-extension
-- Developer: Pratham Shah (https://pshah.fun)
+- Maker: Chameleon Labs, founded by Pratham Shah (https://pshah.fun)
 
 ## What it does
 - Three theme engines: Auto (samples page luminance and picks an approach), CSS Override (recolors backgrounds and text by contrast) and Invert (inverts the page while keeping images and video as they are). An OLED preset uses pure black.

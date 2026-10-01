@@ -1,5 +1,5 @@
 /**
- * ThemeSwitcher (Force Dark Mode) — Website Client Script
+ * Force Dark Mode - ThemeSwitcher — Website Client Script
  * Ultra-smooth interactive before/after split slider, extension popup simulator,
  * accessible accordions, and privacy-first event telemetry.
  */

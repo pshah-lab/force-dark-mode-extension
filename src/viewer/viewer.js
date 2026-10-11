@@ -2,6 +2,10 @@ import * as pdfjsLib from "./vendor/pdf.min.mjs";
 import { listZipEntryNames, readZipEntryText, readZipEntryTextOrNull } from "../shared/zipReader.js";
 import { parseDocxDocument } from "./parsers/docxParser.js";
 import { parsePptxPresentation } from "./parsers/pptxParser.js";
+import { parseXlsx } from "./spreadsheet/xlsxParser.js";
+import { parseCsv } from "./spreadsheet/csvParser.js";
+import { renderSpreadsheet } from "./spreadsheet/spreadsheetRenderer.js";
+import { MAX_CSV_BYTES } from "./spreadsheet/spreadsheetLimits.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
   "src/viewer/vendor/pdf.worker.min.mjs"
@@ -38,6 +42,7 @@ const pdfStatus = document.getElementById("pdf-status");
 const pdfPages = document.getElementById("pdf-pages");
 const pdfPanel = document.getElementById("pdf-panel");
 const documentPanel = document.getElementById("document-panel");
+const spreadsheetPanel = document.getElementById("spreadsheet-panel");
 const pdfFrame = document.getElementById("pdf-frame");
 const pdfFallbackLink = document.getElementById("pdf-fallback-link");
 const documentName = document.getElementById("document-name");
@@ -54,6 +59,9 @@ let currentPdfSource = null;
 let currentPdfName = "";
 let renderGeneration = 0;
 let rerenderDebounceTimer = null;
+let spreadsheetRerenderTimer = null;
+// Parsed workbook + tab state, kept so colour/mode changes can re-render the grid.
+let currentSpreadsheet = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const settings = await getViewerSettings();
@@ -64,8 +72,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 function bindControls() {
   modeInput.onchange = persistCurrentSettingsAndRerenderPdf;
-  backgroundColorInput.oninput = debouncedPersistAndRerenderPdf;
-  textColorInput.oninput = debouncedPersistAndRerenderPdf;
+  backgroundColorInput.oninput = onColorInput;
+  textColorInput.oninput = onColorInput;
   fontSizeInput.oninput = debouncedPersistAndRerenderPdf;
   contrastInput.oninput = debouncedPersistAndRerenderPdf;
 
@@ -106,12 +114,19 @@ function loadInitialDocument() {
 async function openLocalFile(file) {
   revokeCurrentObjectUrl();
   currentPdfSource = null;
+  currentSpreadsheet = null;
   renderGeneration += 1;
 
   if (isPdfFile(file)) {
     const data = new Uint8Array(await file.arrayBuffer());
     currentObjectUrl = URL.createObjectURL(file);
     openPdf(data, file.name, currentObjectUrl);
+    return;
+  }
+
+  // Spreadsheets must be routed before isReadableDocument: text/csv starts with text/.
+  if (isSpreadsheetFile(file)) {
+    await openSpreadsheetFile(file);
     return;
   }
 
@@ -122,7 +137,7 @@ async function openLocalFile(file) {
   }
 
   if (isLegacyOfficeDocument(file)) {
-    showEmptyState(`${file.name} is a legacy Office format — only .docx and .pptx are supported.`);
+    showEmptyState(`${file.name} is a legacy Office format — only .docx, .pptx and .xlsx are supported.`);
     return;
   }
 
@@ -308,6 +323,114 @@ async function openOfficeFile(file) {
   renderPptxSlidesSafely(result, documentPanel);
 }
 
+async function openSpreadsheetFile(file) {
+  renderGeneration += 1;
+  const generation = renderGeneration;
+
+  showPanel("spreadsheet");
+  documentName.textContent = file.name;
+  spreadsheetPanel.replaceChildren();
+
+  const isCsv = isCsvFile(file);
+  const csvTooLarge = isCsv && file.size > MAX_CSV_BYTES;
+  let bytes;
+  try {
+    bytes = new Uint8Array(await (csvTooLarge ? file.slice(0, MAX_CSV_BYTES) : file).arrayBuffer());
+  } catch (error) {
+    if (generation !== renderGeneration) return;
+    if (isOutOfMemoryError(error)) {
+      showEmptyState(`Not enough available memory to open ${file.name}.`);
+    } else {
+      showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+    }
+    return;
+  }
+
+  if (generation !== renderGeneration) return;
+
+  let workbook;
+  if (isCsv) {
+    try {
+      const sheet = parseCsv(new TextDecoder("utf-8").decode(bytes));
+      sheet.name = file.name;
+      if (csvTooLarge) sheet.truncated = true;
+      workbook = { sheets: [sheet], sheetsCapped: false, tabs: false };
+    } catch (error) {
+      if (generation !== renderGeneration) return;
+      if (isOutOfMemoryError(error)) {
+        showEmptyState(`Not enough available memory to open ${file.name}.`);
+      } else {
+        showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+      }
+      return;
+    }
+  } else {
+    if (isEncryptedOfficeContainer(bytes)) {
+      showEmptyState(`${file.name} is password-protected and can't be previewed.`);
+      return;
+    }
+
+    try {
+      workbook = await parseXlsx(bytes);
+    } catch (error) {
+      if (generation !== renderGeneration) return;
+      if (error.code === "ENCRYPTED") {
+        showEmptyState(`${file.name} is password-protected and can't be previewed.`);
+      } else if (isOutOfMemoryError(error)) {
+        showEmptyState(`Not enough available memory to open ${file.name}.`);
+      } else {
+        showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
+      }
+      return;
+    }
+  }
+
+  if (generation !== renderGeneration) return;
+
+  showPanel("spreadsheet");
+  currentSpreadsheet = { workbook, state: { selected: 0 } };
+  renderSpreadsheet(spreadsheetPanel, workbook, getCurrentSettings(), currentSpreadsheet.state);
+}
+
+// Re-draws the grid after a Mode/Background/Text change, keeping scroll position
+// and tab focus. Size and Contrast are CSS variables and need no re-render.
+function rerenderSpreadsheet() {
+  if (!currentSpreadsheet) return;
+
+  const scroller = spreadsheetPanel.querySelector(".spreadsheet-scroll");
+  const scrollTop = scroller ? scroller.scrollTop : 0;
+  const scrollLeft = scroller ? scroller.scrollLeft : 0;
+  const active = document.activeElement;
+  const tabHadFocus =
+    !!active && spreadsheetPanel.contains(active) && active.getAttribute("role") === "tab";
+
+  renderSpreadsheet(
+    spreadsheetPanel,
+    currentSpreadsheet.workbook,
+    getCurrentSettings(),
+    currentSpreadsheet.state,
+    tabHadFocus
+  );
+
+  const nextScroller = spreadsheetPanel.querySelector(".spreadsheet-scroll");
+  if (nextScroller) {
+    nextScroller.scrollTop = scrollTop;
+    nextScroller.scrollLeft = scrollLeft;
+  }
+}
+
+function onColorInput() {
+  debouncedPersistAndRerenderPdf();
+
+  if (!currentSpreadsheet) return;
+
+  if (spreadsheetRerenderTimer) {
+    clearTimeout(spreadsheetRerenderTimer);
+  }
+
+  spreadsheetRerenderTimer = setTimeout(rerenderSpreadsheet, 140);
+}
+
 function showEmptyState(message) {
   showPanel("empty");
   documentName.textContent = message;
@@ -320,6 +443,12 @@ function showPanel(panel) {
   pdfRenderPanel.hidden = panel !== "pdf-render";
   pdfPanel.hidden = panel !== "pdf";
   documentPanel.hidden = panel !== "document";
+  spreadsheetPanel.hidden = panel !== "spreadsheet";
+
+  if (panel !== "spreadsheet") {
+    currentSpreadsheet = null;
+    spreadsheetPanel.replaceChildren();
+  }
 }
 
 function getPdfDocumentSource(source) {
@@ -538,6 +667,7 @@ function transformSepiaPixel(pixel) {
 
 async function persistCurrentSettingsAndRerenderPdf() {
   await persistCurrentSettings();
+  rerenderSpreadsheet();
 
   if (!currentPdfSource) return;
 
@@ -591,8 +721,24 @@ function isLegacyOfficeDocument(file) {
   return (
     file.type === "application/msword" ||
     file.type === "application/vnd.ms-powerpoint" ||
+    file.type === "application/vnd.ms-excel" ||
     name.endsWith(".doc") ||
-    name.endsWith(".ppt")
+    name.endsWith(".ppt") ||
+    name.endsWith(".xls")
+  );
+}
+
+const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+function isCsvFile(file) {
+  return file.type === "text/csv" || file.name.toLowerCase().endsWith(".csv");
+}
+
+function isSpreadsheetFile(file) {
+  return (
+    isCsvFile(file) ||
+    file.type === XLSX_MIME ||
+    file.name.toLowerCase().endsWith(".xlsx")
   );
 }
 

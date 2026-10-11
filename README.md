@@ -24,6 +24,7 @@ Unlike crude global inverters that turn photos, videos, and layouts into neon ne
 - **Layout-Safe CSS Override Engine**: Recolors backgrounds, typography, forms, and borders with contrast-tested CSS custom properties while preserving media elements.
 - **Smart Logo Inversion**: Selectively inverts dark/black logos on dark backgrounds for crystal-clear readability.
 - **Built-in Offline Dark PDF & Document Reader**: Render online and local PDF files locally using bundled PDF.js with saturation-aware pixel conversion. Also supports Markdown (`.md`), Plain Text (`.txt`), and RTF.
+- **Local Spreadsheet Viewer**: Open Excel (`.xlsx`) and CSV files as a read-only dark grid with sheet tabs, entirely on your device. Legacy `.xls` files must be converted to `.xlsx` first.
 - **Per-Site Background Customizer**: Choose between pitch-black (`#000000`) for OLED power savings or midnight slate (`#0f1115`) from the popup. Surfaces and borders adapt automatically.
 - **Zero White Flashes**: Injected at `document_start` so pages render dark immediately without blinding white flashes.
 - **Instant Toggle**: Toggle themes on the fly without refreshing the page.
@@ -104,7 +105,7 @@ Or run an individual suite:
 ```bash
 node tests/run_tests.mjs             # File integrity, color math, and security checks (34 tests)
 node tests/dom_engine_test.mjs       # DOM simulation, engine switching, and YouTube detection (11 tests)
-node tests/privacy_security_test.mjs # Privacy, security, and versioning compliance (12 tests)
+node tests/privacy_security_test.mjs # Privacy, security, and versioning compliance (15 tests)
 node tests/zip_reader_test.mjs       # Dependency-free ZIP reader for docx/pptx (8 tests)
 node tests/docx_parser_test.mjs      # .docx paragraph/heading/list parser (8 tests)
 node tests/pptx_parser_test.mjs      # .pptx slide/run parser (6 tests)

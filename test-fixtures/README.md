@@ -8,5 +8,7 @@ Sample files covering every format the Dark Document Viewer supports, for manual
 - `sample.txt` — plain text
 - `sample.md` — headings, bold/italic, inline code, a bulleted list
 - `sample.rtf` — minimal RTF
+- `sample.xlsx` — multi-sheet workbook (formatted numbers/dates, merged cells, cell colours)
+- `sample.csv` — simple CSV table
 
 All generated programmatically (no real Office/Adobe installation used) — see git history for the generator scripts if you need to regenerate or extend these.

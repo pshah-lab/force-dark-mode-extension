@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "node tests/run_tests.mjs && node tests/dom_engine_test.mjs && node tests/privacy_security_test.mjs && node tests/zip_reader_test.mjs && node tests/docx_parser_test.mjs && node tests/pptx_parser_test.mjs && node tests/seo_test.mjs && node tests/csv_parser_test.mjs && node tests/number_format_test.mjs && node tests/xlsx_styles_test.mjs && node tests/xlsx_parser_test.mjs",
+    "test": "node tests/run_tests.mjs && node tests/dom_engine_test.mjs && node tests/privacy_security_test.mjs && node tests/zip_reader_test.mjs && node tests/docx_parser_test.mjs && node tests/pptx_parser_test.mjs && node tests/seo_test.mjs && node tests/csv_parser_test.mjs && node tests/number_format_test.mjs && node tests/xlsx_styles_test.mjs && node tests/xlsx_parser_test.mjs && node tests/cell_colors_test.mjs",
     "test:core": "node tests/run_tests.mjs",
     "test:dom": "node tests/dom_engine_test.mjs",
     "test:privacy": "node tests/privacy_security_test.mjs",
@@ -17,6 +17,7 @@
     "test:numberformat": "node tests/number_format_test.mjs",
     "test:xlsxstyles": "node tests/xlsx_styles_test.mjs",
     "test:xlsx": "node tests/xlsx_parser_test.mjs",
+    "test:cellcolors": "node tests/cell_colors_test.mjs",
     "serve": "python3 -m http.server 8080 --directory docs"
   },
   "keywords": [

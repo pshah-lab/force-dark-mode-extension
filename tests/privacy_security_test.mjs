@@ -307,6 +307,53 @@ test("viewer.js completely avoids innerHTML", () => {
   );
 });
 
+test("spreadsheet modules contain no network APIs, eval, or HTML-string DOM writes", () => {
+  const dir = path.join(rootDir, "src/viewer/spreadsheet");
+  const files = fs.readdirSync(dir).filter((name) => name.endsWith(".js"));
+  assert.ok(files.length >= 9, "expected the spreadsheet modules to be present");
+
+  const prohibited = [
+    [/\bfetch\s*\(/, "fetch"],
+    [/\bXMLHttpRequest\b/, "XMLHttpRequest"],
+    [/\bsendBeacon\b/, "sendBeacon"],
+    [/\bWebSocket\b/, "WebSocket"],
+    [/\bimportScripts\b/, "importScripts"],
+    [/\beval\s*\(/, "eval"],
+    [/\bnew\s+Function\b/, "new Function"],
+    [/\.innerHTML\b/, ".innerHTML"],
+    [/\binsertAdjacentHTML\b/, "insertAdjacentHTML"],
+    [/\bouterHTML\b/, "outerHTML"],
+    [/\bhttps?:\/\//, "hard-coded URL"],
+  ];
+
+  for (const name of files) {
+    const code = fs.readFileSync(path.join(dir, name), "utf8");
+    for (const [pattern, label] of prohibited) {
+      assert.strictEqual(
+        pattern.test(code),
+        false,
+        `Prohibited pattern (${label}) detected in src/viewer/spreadsheet/${name}`
+      );
+    }
+  }
+});
+
+test("viewer.html declares the spreadsheet panel and accepts spreadsheet files", () => {
+  const viewerHtml = fs.readFileSync(path.join(rootDir, "src/viewer/viewer.html"), "utf8");
+  assert.ok(
+    /<section id="spreadsheet-panel" class="spreadsheet-panel" hidden>/.test(viewerHtml),
+    "viewer.html must contain the hidden spreadsheet panel"
+  );
+  for (const token of [".xlsx", ".csv", ".xls", "text/csv"]) {
+    assert.ok(viewerHtml.includes(token), `file input accept list must include ${token}`);
+  }
+});
+
+test("manifest permissions are unchanged by the spreadsheet viewer", () => {
+  const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "manifest.json"), "utf8"));
+  assert.deepStrictEqual(manifest.permissions, ["storage", "activeTab", "contextMenus"]);
+});
+
 test("viewer.html sandboxes iframe without allow-same-origin", () => {
   const viewerHtml = fs.readFileSync(path.join(rootDir, "src/viewer/viewer.html"), "utf8");
   assert.ok(

@@ -48,7 +48,7 @@
         <input
           id="file-input"
           type="file"
-          accept=".pdf,.txt,.md,.markdown,.rtf,.docx,.pptx,.doc,.ppt,application/pdf,text/plain,text/markdown,application/rtf,text/rtf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/msword,application/vnd.ms-powerpoint"
+          accept=".pdf,.txt,.md,.markdown,.rtf,.docx,.pptx,.xlsx,.csv,.doc,.ppt,.xls,application/pdf,text/plain,text/markdown,application/rtf,text/rtf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/msword,application/vnd.ms-powerpoint,application/vnd.ms-excel"
           hidden
         />
       </div>
@@ -61,6 +61,7 @@
           PDF files render locally with smart dark conversion. Word and
           PowerPoint files show a read-only content preview (text, headings,
           lists, slides) in a clean dark reader with your selected colors.
+          Spreadsheets open as a read-only dark grid.
         </p>
       </section>
 
@@ -81,6 +82,8 @@
           <a id="pdf-fallback-link" target="_blank" rel="noopener noreferrer">Open PDF</a>
         </div>
       </section>
+
+      <section id="spreadsheet-panel" class="spreadsheet-panel" hidden></section>
 
       <article id="document-panel" class="document-panel" hidden></article>
     </main>

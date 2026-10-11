@@ -1,5 +1,5 @@
 import * as pdfjsLib from "./vendor/pdf.min.mjs";
-import { listZipEntryNames, readZipEntryText } from "../shared/zipReader.js";
+import { listZipEntryNames, readZipEntryText, readZipEntryTextOrNull } from "../shared/zipReader.js";
 import { parseDocxDocument } from "./parsers/docxParser.js";
 import { parsePptxPresentation } from "./parsers/pptxParser.js";
 
@@ -286,7 +286,7 @@ async function openOfficeFile(file) {
 
   let result;
   try {
-    result = await parsePptxPresentation(entryNames, (entryName) => readZipEntryText(bytes, entryName));
+    result = await parsePptxPresentation(entryNames, (entryName) => readZipEntryTextOrNull(bytes, entryName));
   } catch (error) {
     if (generation !== renderGeneration) return;
     if (error.code === "ENCRYPTED") {

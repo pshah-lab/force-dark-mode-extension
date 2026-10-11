@@ -1,6 +1,6 @@
 // tests/zip_reader_test.mjs
 import assert from "assert";
-import { listZipEntryNames, readZipEntryText } from "../src/shared/zipReader.js";
+import { listZipEntryNames, readZipEntryText, readZipEntryTextOrNull } from "../src/shared/zipReader.js";
 
 console.log("=========================================");
 console.log("📦 Running ZIP Reader Tests");
@@ -200,6 +200,53 @@ await test("a non-ZIP buffer's error is not tagged as ENCRYPTED", async () => {
   } catch (error) {
     assert.notStrictEqual(error.code, "ENCRYPTED");
   }
+});
+
+await test("readZipEntryText rejects with TOO_LARGE and a bounded partialText for an oversize deflate entry", async () => {
+  const zip = await buildZip([{ name: "big.xml", data: enc.encode("a".repeat(5000)), method: 8 }]);
+  const error = await readZipEntryText(zip, "big.xml", { maxEntrySize: 1000 }).catch((e) => e);
+  assert.ok(error instanceof Error);
+  assert.strictEqual(error.code, "TOO_LARGE");
+  assert.strictEqual(error.partialText, "a".repeat(1000));
+});
+
+await test("readZipEntryText rejects with TOO_LARGE for an oversize stored entry", async () => {
+  const zip = await buildZip([{ name: "big.xml", data: enc.encode("b".repeat(300)), method: 0 }]);
+  const error = await readZipEntryText(zip, "big.xml", { maxEntrySize: 100 }).catch((e) => e);
+  assert.strictEqual(error.code, "TOO_LARGE");
+  assert.strictEqual(error.partialText, "b".repeat(100));
+});
+
+await test("readZipEntryText reads an entry exactly at the cap", async () => {
+  const zip = await buildZip([{ name: "ok.xml", data: enc.encode("c".repeat(100)), method: 8 }]);
+  assert.strictEqual(await readZipEntryText(zip, "ok.xml", { maxEntrySize: 100 }), "c".repeat(100));
+});
+
+await test("readZipEntryText still throws ENCRYPTED when a size cap is given", async () => {
+  const zip = await buildZip([
+    { name: "s.xml", data: enc.encode("secret"), method: 0, generalPurposeFlag: 0x1 },
+  ]);
+  const error = await readZipEntryText(zip, "s.xml", { maxEntrySize: 1000 }).catch((e) => e);
+  assert.strictEqual(error.code, "ENCRYPTED");
+});
+
+await test("readZipEntryTextOrNull returns null for an oversize entry (slide is skipped)", async () => {
+  const zip = await buildZip([{ name: "ppt/slides/slide1.xml", data: enc.encode("d".repeat(5000)), method: 8 }]);
+  assert.strictEqual(await readZipEntryTextOrNull(zip, "ppt/slides/slide1.xml", { maxEntrySize: 1000 }), null);
+});
+
+await test("readZipEntryTextOrNull returns text for a normal entry and null for a missing one", async () => {
+  const zip = await buildZip([{ name: "a.xml", data: enc.encode("hello"), method: 8 }]);
+  assert.strictEqual(await readZipEntryTextOrNull(zip, "a.xml"), "hello");
+  assert.strictEqual(await readZipEntryTextOrNull(zip, "nope.xml"), null);
+});
+
+await test("readZipEntryTextOrNull still propagates ENCRYPTED", async () => {
+  const zip = await buildZip([
+    { name: "s.xml", data: enc.encode("secret"), method: 0, generalPurposeFlag: 0x1 },
+  ]);
+  const error = await readZipEntryTextOrNull(zip, "s.xml").catch((e) => e);
+  assert.strictEqual(error.code, "ENCRYPTED");
 });
 
 console.log("\n=========================================");

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.0] - 2026-10-12
+
+### Added
+- **Dark Document Viewer: .xlsx / .csv support**:
+  - Excel workbooks and CSV files open as a read-only dark grid with sheet tabs, entirely offline and with no new permissions.
+  - Number, percent, currency and date formats are shown as the author formatted them; merged cells, column widths, bold/italic, alignment and cell fills are preserved.
+  - Cell colours are re-mapped for the active viewer mode and always keep at least 4.5:1 text contrast (except in the "original" colour mode).
+  - Large files are capped (5,000 rows, 50 columns, 100,000 cells, 50 sheets; CSV read limit 64 MB) with a visible notice when truncated.
+  - Clear messages for password-protected, corrupt, and legacy `.xls` files (convert to `.xlsx` first).
+  - Added `test-fixtures/sample.xlsx` and `sample.csv`.
+- **Tests**: 8 new suites covering the CSV parser, number formats, styles, workbook parser, colour mapping, view model, DOM renderer and error classification (268 tests across 15 suites).
+
+### Changed
+- The ZIP reader (`src/shared/zipReader.js`) now enforces a per-entry size limit and can report oversized entries without failing the whole file. Existing `.docx` and `.pptx` behaviour is unchanged.
+
+---
+
 ## [1.7.0] - 2026-09-29
 
 ### Added

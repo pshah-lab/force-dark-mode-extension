@@ -2,7 +2,7 @@
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-brightgreen.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.7.0-indigo.svg)](manifest.json)
+[![Version](https://img.shields.io/badge/version-1.8.0-indigo.svg)](manifest.json)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Free-blue.svg?logo=googlechrome)](https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke)
 [![Tests](https://img.shields.io/badge/tests-268%20passed-success.svg)](tests/)
 [![Website](https://img.shields.io/badge/website-live-cyan.svg)](https://darkmode.pshah.fun/)

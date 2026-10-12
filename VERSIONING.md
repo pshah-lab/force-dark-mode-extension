@@ -4,8 +4,8 @@
 **Standard:** [Semantic Versioning 2.0.0 (SemVer)](https://semver.org/spec/v2.0.0.html)  
 **Target Platform:** Google Chrome Web Store (Manifest V3)  
 **Latest Published Version:** `1.7.0`  
-**Current Active Release:** `1.7.0`  
-**Last Updated:** 2026-10-01  
+**Current Active Release:** `1.8.0`  
+**Last Updated:** 2026-10-12  
 
 ---
 
@@ -55,10 +55,10 @@ Git release tags must strictly adhere to the prefix format:
 $$\text{v}\text{MAJOR}.\text{MINOR}.\text{PATCH}$$
 
 - **Published Baseline:** `v1.7.0` (Latest release published on the Chrome Web Store)
-- **Current Release:** `v1.7.0` (Document Viewer & Customization Release)
+- **Current Release:** `v1.8.0` (Spreadsheet Viewer Release)
 - **Command to Tag:**
   ```bash
-  git tag -a v1.7.0 -m "Release v1.7.0: docx/pptx document viewer, filter sliders, scheduling, and viewer shortcuts"
+  git tag -a v1.8.0 -m "Release v1.8.0: xlsx/csv spreadsheet viewer"
   ```
 
 ### 4.2 Release Archive Nomenclature
@@ -67,7 +67,8 @@ Distribution ZIP archives submitted to the Chrome Web Store Developer Console fo
 $$\text{force-dark-mode-v}\{\text{VERSION}\}\text{.zip}$$
 
 - **v1.6.1 Package:** `force-dark-mode-v1.6.1.zip` (Historical)
-- **v1.7.0 Package:** `force-dark-mode-v1.7.0.zip` (Current)
+- **v1.7.0 Package:** `force-dark-mode-v1.7.0.zip` (Historical)
+- **v1.8.0 Package:** `force-dark-mode-v1.8.0.zip` (Current)
 - **Generated via:** `./package-extension.sh`
 
 ### 4.3 Git Commit Nomenclature (Conventional Commits)
@@ -99,15 +100,15 @@ Legal and compliance documentation adheres to dedicated lifecycle versioning ind
 
 Before tagging or submitting a release, all of the following files must be synchronized:
 
-- [ ] **`manifest.json`**: `"version": "1.7.0"`
-- [ ] **`package.json`**: `"version": "1.7.0"`
-- [ ] **`src/shared/storage.js`**: Exported JSON backup metadata contains `version: "1.7.0"`
-- [ ] **`src/options/options.html`**: Footer contains `ThemeSwitcher v1.7.0`
-- [ ] **`README.md`**: Version badge points to `version-1.7.0-indigo.svg`
-- [ ] **`SECURITY.md`**: Supported versions table lists `1.7.x` as active and `< 1.7.0` as deprecated
-- [ ] **`CHROMEWEBSTORE.md`**: Version history table documents `1.7.0` with release notes
-- [ ] **`CHANGELOG.md`**: Section `## [1.7.0] - 2026-09-29` contains all additions and changes
-- [ ] **`docs/index.html`**: Schema.org `softwareVersion` set to `"1.7.0"`
+- [ ] **`manifest.json`**: `"version": "1.8.0"`
+- [ ] **`package.json`**: `"version": "1.8.0"`
+- [ ] **`src/shared/storage.js`**: Exported JSON backup metadata contains `version: "1.8.0"`
+- [ ] **`src/options/options.html`**: Footer contains `ThemeSwitcher v1.8.0`
+- [ ] **`README.md`**: Version badge points to `version-1.8.0-indigo.svg`
+- [ ] **`SECURITY.md`**: Supported versions table lists `1.8.x` as active and `< 1.8.0` as deprecated
+- [ ] **`CHROMEWEBSTORE.md`**: Version history table documents `1.8.0` with release notes
+- [ ] **`CHANGELOG.md`**: Section `## [1.8.0] - 2026-10-12` contains all additions and changes
+- [ ] **`docs/index.html`**: Schema.org `softwareVersion` set to `"1.8.0"`
 - [ ] **Automated Tests**: Run `npm test` to verify that all unit, DOM, and privacy tests pass cleanly
 
 ---
@@ -122,7 +123,7 @@ Before tagging or submitting a release, all of the following files must be synch
    ```bash
    ./package-extension.sh
    ```
-   *Output: `force-dark-mode-v1.7.0.zip`*
+   *Output: `force-dark-mode-v1.8.0.zip`*
 3. **Inspect Package Contents**:
    Ensure the ZIP archive contains only production files:
    - `manifest.json`
@@ -132,13 +133,13 @@ Before tagging or submitting a release, all of the following files must be synch
 4. **Git Commit & Tag**:
    ```bash
    git add .
-   git commit -m "feat(release): v1.7.0 docx/pptx viewer, filter sliders, scheduling, viewer shortcuts"
-   git tag -a v1.7.0 -m "Release v1.7.0"
+   git commit -m "feat(release): v1.8.0 xlsx/csv spreadsheet viewer"
+   git tag -a v1.8.0 -m "Release v1.8.0"
    git push origin main --tags
    ```
 5. **Chrome Web Store Submission**:
    - Log in to the [Chrome Developer Dashboard](https://chrome.google.com/webstore/devconsole).
    - Select **Force Dark Mode - ThemeSwitcher**.
-   - Upload `force-dark-mode-v1.7.0.zip` via the "Package" tab.
+   - Upload `force-dark-mode-v1.8.0.zip` via the "Package" tab.
    - Confirm Privacy declarations match `CHROMEWEBSTORE.md`.
    - Submit for review.

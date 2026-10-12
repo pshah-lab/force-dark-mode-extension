@@ -4,7 +4,7 @@
 
 ## Facts
 - Name: Force Dark Mode - ThemeSwitcher
-- Current version: 1.7.0 (29 September 2026)
+- Current version: 1.8.0 (12 October 2026)
 - Platform: Google Chrome, Manifest V3
 - License: MIT
 - Users: 1,270+ weekly users (Chrome Web Store developer dashboard, September 2026)
@@ -17,7 +17,7 @@
 - Three theme engines: Auto (samples page luminance and picks an approach), CSS Override (recolors backgrounds and text by contrast) and Invert (inverts the page while keeping images and video as they are). An OLED preset uses pure black.
 - Detects sites that already have a native dark theme and leaves them alone, to avoid double inversion.
 - Injects styles at `document_start`, so pages don't flash white before the theme applies.
-- Built-in offline document viewer: PDF (via a bundled PDF.js), Markdown, plain text, RTF, and since 1.7.0 read-only DOCX and PPTX. Files are never uploaded.
+- Built-in offline document viewer: PDF (via a bundled PDF.js), Markdown, plain text, RTF, and since 1.7.0 read-only DOCX and PPTX, and since 1.8.0 read-only XLSX and CSV spreadsheets. Files are never uploaded.
 - Per-site settings, custom colors, brightness, contrast and sepia sliders, and scheduling by time range or the system dark-mode setting.
 - Keyboard shortcuts: Alt+Shift+D toggles dark mode; Alt+Shift+O and Alt+Shift+V open the document viewer.
 

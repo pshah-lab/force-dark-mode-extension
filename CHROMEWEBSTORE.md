@@ -32,7 +32,7 @@ KEY FEATURES
 
 ✦ Smart Invert Engine: Protected color inversion with re-inversion for media, perfect for complex graphics-heavy pages and specialized web applications.
 
-✦ Local Document & PDF Reader: Open online and local PDFs, Word (.docx), PowerPoint (.pptx), Markdown (.md), TXT, and RTF files in a built-in dark reader. PDFs render through bundled PDF.js with saturation-aware canvas pixel conversion—diagrams and text stay crisp without uploading confidential files to external servers.
+✦ Local Document & PDF Reader: Open online and local PDFs, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), CSV, Markdown (.md), TXT, and RTF files in a built-in dark reader. PDFs render through bundled PDF.js with saturation-aware canvas pixel conversion—diagrams and text stay crisp without uploading confidential files to external servers.
 
 ✦ Per-Site Custom Background Colors: Choose between pitch black (#000000) for OLED displays or a soft midnight slate (#0f1115) from the popup. Surfaces and borders adapt automatically to guarantee WCAG AA contrast.
 
@@ -159,6 +159,7 @@ https://darkmode.pshah.fun/privacy.html
 
 | Version | Date | Changes | Status |
 | :--- | :--- | :--- | :--- |
+| 1.8.0 | 2026-10-12 | Added offline, read-only Excel (.xlsx) and CSV viewing to the Dark Document Viewer. No permission or manifest changes. | Prepared (not yet submitted) |
 | 1.7.0 | 2026-09-29 | Added offline .docx/.pptx support to the Dark Document Viewer, a matching "page card" surface for text-based documents, brightness/contrast/sepia filter sliders, automatic scheduling, toggle/viewer keyboard shortcuts with right-click equivalents, and a permanent `test-fixtures/` sample suite. Fixed PDF Smart Dark double-processing and render-scale performance. First submission rejected 2026-09-30 for keyword spam (the same file-format list was repeated in two sections of the description); resubmitted after removing the duplication. | Published |
 | 1.6.1 | 2026-09-23 | Privacy & Security compliance update: added User Control Center in Options (JSON settings export/import, one-click data erasure for GDPR Art. 17 / DPDP Sec. 12), hardened iframe sandbox without allow-same-origin, refactored document viewer to safe DOM construction (0 innerHTML), minimized runtime messaging to host-only, eliminated third-party count APIs on companion site, and added 47 automated security/privacy compliance tests. | Published |
 | 1.6.0 | 2026-09-22 | Unified branding as Force Dark Mode - ThemeSwitcher, added local PDF/document dark viewer with PDF.js, enhanced YouTube/SPA native dark detection, improved smart SVG logo inversion, tightened CSP, and production SEO landing site. | Published |

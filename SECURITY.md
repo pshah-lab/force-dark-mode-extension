@@ -10,8 +10,8 @@ Security updates and patches are actively maintained for the latest stable relea
 
 | Version | Supported          | Security Maintenance Status |
 | ------- | ------------------ | --------------------------- |
-| 1.7.x   | :white_check_mark: | Active support & patches    |
-| < 1.7.0 | :x:                | Deprecated. Please update   |
+| 1.8.x   | :white_check_mark: | Active support & patches    |
+| < 1.8.0 | :x:                | Deprecated. Please update   |
 
 ---
 

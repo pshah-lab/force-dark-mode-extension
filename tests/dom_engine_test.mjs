@@ -731,11 +731,65 @@ test("imageDim sets the image brightness variable and 0 clears it", () => {
   const dimRule = css.split("}").find((block) => block.includes("--force-dark-image-brightness, 100%"));
   assert.ok(dimRule, "brightness rule exists");
   const selector = dimRule.split("{")[0];
-  for (const tag of ["img", "picture", "video"]) assert.ok(new RegExp(`\\b${tag}\\b`).test(selector), `${tag} is dimmed`);
+  for (const tag of ["img", "video"]) assert.ok(new RegExp(`\\b${tag}\\b`).test(selector), `${tag} is dimmed`);
+  assert.ok(!/\bpicture\b/.test(selector), "picture must not be dimmed: its <img> already is (I1)");
   for (const tag of ["svg", "canvas", "iframe", "embed", "object"]) assert.ok(!new RegExp(`\\b${tag}\\b`).test(selector), `${tag} must not be dimmed`);
   assert.ok(css.includes("filter: none !important"), "full media list keeps filter: none");
   assert.ok(css.includes('[data-force-dark-image="invert"]') && css.includes("invert(0.9) hue-rotate(180deg) !important"), "logo invert rule kept");
   assert.ok(css.indexOf("filter: none !important") < css.indexOf("--force-dark-image-brightness, 100%"), "dimming rule comes after the reset");
+});
+
+test("I1/I2: the image-dim attribute is set only while imageDim > 0 and removed otherwise", () => {
+  const root = mockDoc.documentElement;
+  try {
+    enableDarkMode({ backgroundColor: "#0f1115", imageDim: 50 });
+    assert.strictEqual(root.getAttribute("data-force-dark-image-dim"), "true");
+    assert.strictEqual(root.style.getPropertyValue("--force-dark-image-brightness"), "50%");
+    vm.runInThisContext("scanFrame = 0");
+    enableDarkMode({ backgroundColor: "#0f1115", imageDim: 0 });
+    assert.strictEqual(root.hasAttribute("data-force-dark-image-dim"), false, "imageDim 0 removes it");
+    vm.runInThisContext("scanFrame = 0");
+    enableDarkMode({ backgroundColor: "#0f1115", imageDim: 30 });
+    vm.runInThisContext("scanFrame = 0");
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assert.strictEqual(root.hasAttribute("data-force-dark-image-dim"), false, "absent imageDim removes it");
+    vm.runInThisContext("scanFrame = 0");
+    enableDarkMode({ backgroundColor: "#0f1115", imageDim: 30 });
+    disableDarkMode();
+    assert.strictEqual(root.hasAttribute("data-force-dark-image-dim"), false, "disabling removes it");
+    assert.strictEqual(root.style.getPropertyValue("--force-dark-image-brightness"), "");
+    vm.runInThisContext("scanFrame = 0");
+    currentUserThemes = [{ id: "user:dim", name: "Dim", colors: { background: "#101820" }, imageDim: 20 }];
+    applyEngine({ enabled: true, engine: "css", themeId: "user:dim" });
+    assert.strictEqual(root.getAttribute("data-force-dark-image-dim"), "true", "theme imageDim sets it through applyEngine");
+    vm.runInThisContext("scanFrame = 0");
+    applyEngine({ enabled: true, engine: "invert", themeId: "user:dim" });
+    assert.strictEqual(root.hasAttribute("data-force-dark-image-dim"), false, "switching engine removes it");
+  } finally {
+    currentUserThemes = [];
+    applyEngine({ enabled: false });
+    vm.runInThisContext("scanFrame = 0");
+  }
+});
+
+test("I1/I2: every non-none image filter rule is scoped to the image-dim attribute and the logo invert rule still wins", () => {
+  enableDarkMode({});
+  const css = mockDoc.getElementById("__force_dark_mode__").textContent;
+  disableDarkMode();
+  vm.runInThisContext("scanFrame = 0");
+  const blocks = css.split("}").map((b) => b.split("{"));
+  const dimBlocks = blocks.filter(([, body]) => body && body.includes("--force-dark-image-brightness"));
+  assert.strictEqual(dimBlocks.length, 1, "exactly one dimming rule");
+  const selector = dimBlocks[0][0];
+  assert.ok(selector.includes('[data-force-dark-mode="css"][data-force-dark-image-dim]'), "scoped to the attribute (no effect when dimming is off)");
+  assert.ok(!/\bpicture\b/.test(selector), "never matches an ancestor <picture> and its <img>");
+  assert.ok(selector.includes(':not([data-force-dark-image="invert"])'), "an inverted logo is excluded so the invert rule wins");
+  // Without the attribute, the only rule giving img/picture/video a filter is filter: none.
+  for (const [sel, body] of blocks) {
+    if (!body || !/\bfilter:/.test(body) || /filter: none/.test(body)) continue;
+    if (!/\b(img|picture|video)\b/.test(sel)) continue;
+    assert.ok(sel.includes("[data-force-dark-image-dim]"), `unscoped media filter rule: ${sel.trim()}`);
+  }
 });
 
 test("engine tolerates bad or partial palettes by deriving per key", () => {

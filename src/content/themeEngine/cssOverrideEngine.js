@@ -9,6 +9,9 @@ const IMAGE_ATTR = "data-force-dark-image";
 const KEEP_ATTR = "data-force-dark-keep";
 const MAX_PACK_FIXES = 50;
 const IMAGE_BRIGHTNESS_PROPERTY = "--force-dark-image-brightness";
+// Set on the root only while a theme dims images, so undimmed images keep filter: none.
+// The dimming rule matches img and video, never picture (its img is already dimmed).
+const IMAGE_DIM_ATTR = "data-force-dark-image-dim";
 const CUSTOM_PROPERTIES = [
   "--force-dark-bg",
   "--force-dark-surface",
@@ -149,7 +152,7 @@ function enableDarkMode(config = {}) {
       background-color: transparent !important;
     }
 
-    :root[${ROOT_MODE_ATTR}="css"] :is(img, picture, video) {
+    :root[${ROOT_MODE_ATTR}="css"][${IMAGE_DIM_ATTR}] :is(img, video):not([${IMAGE_ATTR}="invert"]) {
       filter: brightness(var(--force-dark-image-brightness, 100%)) !important;
     }
 
@@ -572,8 +575,10 @@ function applyCustomPalette(config) {
   const dim = config && Number.isFinite(config.imageDim) ? Math.min(60, Math.max(0, config.imageDim)) : 0;
   if (dim > 0) {
     rootStyle.setProperty(IMAGE_BRIGHTNESS_PROPERTY, `${100 - dim}%`);
+    document.documentElement.setAttribute(IMAGE_DIM_ATTR, "true");
   } else {
     rootStyle.removeProperty(IMAGE_BRIGHTNESS_PROPERTY);
+    document.documentElement.removeAttribute(IMAGE_DIM_ATTR);
   }
 }
 
@@ -581,6 +586,7 @@ function clearCustomPalette() {
   CUSTOM_PROPERTIES.forEach((property) => {
     document.documentElement.style.removeProperty(property);
   });
+  document.documentElement.removeAttribute(IMAGE_DIM_ATTR);
 }
 
 function clearDarkAttributes(root) {

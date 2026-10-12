@@ -1359,6 +1359,145 @@ test("shapes inside defs, clipPath or mask do not make an svg look like a dark l
   }
 });
 
+// Live mock: like the browser, the svg's computed colour becomes the engine's text colour
+// as soon as it carries the text marker, and its path inherits that colour. `paint` is
+// either "follow" (CSS fill: currentColor) or a fixed colour set by site CSS.
+const PAGE_TEXT = "rgb(34, 34, 34)";
+
+function liveIcon({ fill, stroke, fillAttr, svgStrokeAttr }) {
+  const svg = mockDoc.createElement("svg");
+  if (svgStrokeAttr) svg.setAttribute("stroke", svgStrokeAttr);
+  Object.defineProperty(svg.style, "color", {
+    get: () => (svg.hasAttribute("data-force-dark-text") ? LIGHT_TEXT : PAGE_TEXT),
+  });
+  const path = mockDoc.createElement("path");
+  if (fillAttr) path.setAttribute("fill", fillAttr);
+  path.closest = () => svg; // as in the browser, the scan skips svg children
+  Object.defineProperty(path.style, "color", { get: () => svg.style.color });
+  Object.defineProperty(path.style, "fill", { get: () => (fill === "follow" ? svg.style.color : fill) });
+  if (stroke) Object.defineProperty(path.style, "stroke", { get: () => stroke });
+  svg.appendChild(path);
+  mockDoc.body.appendChild(svg);
+  return svg;
+}
+
+function assertSettledMarkers(svg, expected, label) {
+  const read = () => [svg.getAttribute("data-force-dark-text"), svg.getAttribute("data-force-dark-image")];
+  assert.deepStrictEqual(read(), expected, `${label}: markers after enabling (first scan, settled)`);
+  for (let i = 1; i <= 3; i++) {
+    rescan();
+    assert.deepStrictEqual(read(), expected, `${label}: rescan ${i} must not flip the markers`);
+  }
+}
+
+test("svg with a hard-coded CSS fill that equals the page text colour is inverted from the start (no later flip)", () => {
+  try {
+    // .logo path { fill: #222 } with color: #222. The engine only recolours `color`,
+    // so the fill stays dark: the steady state is text + invert, and it must be reached
+    // without waiting for an unrelated later rescan.
+    const svg = liveIcon({ fill: PAGE_TEXT });
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assertSettledMarkers(svg, ["true", "invert"], "coincidental CSS fill");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("svg whose CSS fill follows currentColor settles on text marker without invert", () => {
+  try {
+    const svg = liveIcon({ fill: "follow" });
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assertSettledMarkers(svg, ["true", null], "CSS currentColor (live)");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("svg with path fill=currentColor attribute (BBC) settles on text marker without invert", () => {
+  try {
+    const svg = liveIcon({ fill: "follow", fillAttr: "currentColor" });
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assertSettledMarkers(svg, ["true", null], "currentColor attribute (live)");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("svg whose currentColor stroke attribute is overridden by site CSS (Substack) stays inverted", () => {
+  try {
+    const svg = liveIcon({ fill: "none", stroke: "rgb(60, 60, 60)", svgStrokeAttr: "currentColor" });
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assertSettledMarkers(svg, ["true", "invert"], "overridden currentColor (live)");
+  } finally {
+    resetFixTest();
+  }
+});
+
+function countingShape(svg, parent, tag, fill, counter) {
+  const shape = mockDoc.createElement(tag);
+  shape.style.fill = fill;
+  shape.style.color = "rgb(20, 20, 20)";
+  shape.closest = () => svg; // the scan skips svg children, as in the browser
+  const getAttribute = shape.getAttribute.bind(shape);
+  shape.getAttribute = (name) => { counter.calls++; return getAttribute(name); };
+  parent.appendChild(shape);
+  return shape;
+}
+
+test("svg shape walk skips unpainted subtrees: 5,000 shapes under defs/symbol are never examined", () => {
+  try {
+    const counter = { calls: 0 };
+    const svg = mockDoc.createElement("svg");
+    svg.style.color = "rgb(20, 20, 20)";
+    const defs = mockDoc.createElement("defs");
+    const symbol = mockDoc.createElement("symbol");
+    defs.closest = symbol.closest = () => svg;
+    defs.appendChild(symbol);
+    svg.appendChild(defs);
+    for (let i = 0; i < 5000; i++) countingShape(svg, symbol, "path", "rgb(0, 0, 0)", counter);
+    const icon = mockDoc.createElement("path");
+    icon.setAttribute("fill", "currentColor");
+    icon.style.color = icon.style.fill = "rgb(20, 20, 20)";
+    icon.closest = () => svg;
+    svg.appendChild(icon);
+    mockDoc.body.appendChild(svg);
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assert.strictEqual(svg.getAttribute("data-force-dark-image"), null, "the visible currentColor path decides: not inverted");
+    assert.strictEqual(counter.calls, 0, `shapes under defs/symbol must not be examined (examined ${counter.calls} times)`);
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("svg shape walk stops as soon as a paint follows the text colour, and is bounded", () => {
+  try {
+    const counter = { calls: 0 };
+    const svg = mockDoc.createElement("svg");
+    svg.style.color = "rgb(20, 20, 20)";
+    const icon = mockDoc.createElement("path");
+    icon.setAttribute("fill", "currentColor");
+    icon.style.color = icon.style.fill = "rgb(20, 20, 20)";
+    icon.closest = () => svg;
+    svg.appendChild(icon);
+    for (let i = 0; i < 5000; i++) countingShape(svg, svg, "path", "rgb(255, 255, 255)", counter);
+    mockDoc.body.appendChild(svg);
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assert.strictEqual(svg.getAttribute("data-force-dark-image"), null);
+    assert.strictEqual(counter.calls, 0, `shapes after the deciding one must not be examined (examined ${counter.calls} times)`);
+
+    // Without an early answer, the walk still visits at most a bounded number of nodes.
+    const counter2 = { calls: 0 };
+    const big = mockDoc.createElement("svg");
+    big.style.color = "rgb(20, 20, 20)";
+    for (let i = 0; i < 5000; i++) countingShape(big, big, "g", "rgb(0, 0, 0)", counter2);
+    mockDoc.body.appendChild(big);
+    rescan();
+    assert.ok(counter2.calls <= 2 * 200, `at most ~200 nodes examined (getAttribute calls: ${counter2.calls})`);
+  } finally {
+    resetFixTest();
+  }
+});
+
 console.log("\n=========================================");
 console.log(`🎉 DOM Engine Results: ${passed} passed, ${failed} failed`);
 console.log("=========================================\n");

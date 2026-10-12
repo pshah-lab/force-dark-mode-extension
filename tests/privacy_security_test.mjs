@@ -52,6 +52,7 @@ test("zero outbound network calls in extension core code", () => {
     "src/popup/feedbackPrompt.js",
     "src/options/options.js",
     "src/options/themeEditor.js",
+    "src/options/customCssEditor.js",
     "src/shared/storage.js",
     "src/shared/colorUtils.js",
     "src/shared/sitePacks.js",

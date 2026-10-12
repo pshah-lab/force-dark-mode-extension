@@ -165,6 +165,39 @@
       </div>
     </section>
 
+    <!-- Custom CSS Card -->
+    <section class="card" id="css-card">
+      <h2>Custom CSS</h2>
+      <p class="card-desc">Add your own CSS for one site. It is applied after the dark theme, only on that site.</p>
+
+      <div class="field">
+        <label for="css-host">Site (hostname)</label>
+        <input type="text" id="css-host" class="text-input" placeholder="example.com" autocomplete="off" autocapitalize="off" spellcheck="false" />
+        <p class="subtext css-hint">Use the host exactly as it appears in the address bar, without https:// or a path. For example, www.example.com and example.com are different sites.</p>
+      </div>
+
+      <div class="field">
+        <label for="css-text">CSS</label>
+        <textarea id="css-text" class="css-textarea" maxlength="6000" rows="9" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="h1 { color: #ffeb3b; }"></textarea>
+        <div class="css-meta">
+          <span id="css-counter" class="css-counter">0 / 6000</span>
+        </div>
+        <div id="css-error" class="css-error" role="alert"></div>
+      </div>
+
+      <p class="subtext css-note">
+        Custom CSS cannot introduce a URL: <code>url()</code>, <code>@import</code>, <code>@font-face</code>, <code>image-set()</code> and escape characters (backslashes) are blocked. The extension itself never makes network requests.
+      </p>
+
+      <div class="actions editor-actions">
+        <button id="css-save" class="btn btn-primary" type="button">Save CSS</button>
+      </div>
+
+      <h3 class="sub-heading">Sites with custom CSS</h3>
+      <p class="subtext" id="css-empty">No sites have custom CSS yet.</p>
+      <ul id="css-list" class="theme-list" aria-label="Sites with custom CSS"></ul>
+    </section>
+
     <!-- Automatic Scheduling Card -->
     <section class="card">
       <h2>Automatic Scheduling</h2>
@@ -252,6 +285,7 @@
   <script src="../shared/themeCore.js"></script>
   <script src="../shared/builtinThemes.js"></script>
   <script src="../shared/sitePacks.js"></script>
+  <script src="../shared/customCss.js"></script>
   <script src="options.js" type="module"></script>
 </body>
 </html>

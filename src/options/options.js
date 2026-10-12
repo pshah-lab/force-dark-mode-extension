@@ -11,6 +11,7 @@ import {
   setScheduleConfig,
 } from "../shared/storage.js";
 import { initThemeEditor } from "./themeEditor.js";
+import { initCustomCssEditor } from "./customCssEditor.js";
 import { DEFAULT_ENGINE, DEFAULT_BACKGROUND_COLOR } from "../shared/constants.js";
 
 const PRESET_COLORS = {
@@ -86,6 +87,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     await initThemeEditor({ showStatus });
   } catch (err) {
     console.warn("Theme editor failed to start:", err);
+  }
+  try {
+    await initCustomCssEditor({ showStatus });
+  } catch (err) {
+    console.warn("Custom CSS editor failed to start:", err);
   }
 
   // Load schedule preferences

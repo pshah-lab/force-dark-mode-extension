@@ -139,6 +139,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   const host = isLocalFile ? "local_files" : parsedUrl.hostname;
   site.textContent = isLocalFile ? "Local Files" : host;
 
+  const siteCssLink = document.getElementById("site-css-link");
+  if (siteCssLink) {
+    siteCssLink.hidden = false;
+    siteCssLink.onclick = (event) => {
+      event.preventDefault();
+      chrome.tabs.create({ url: chrome.runtime.getURL("src/options/options.html") + "#css=" + encodeURIComponent(host) });
+    };
+  }
+
   if (isPdfUrl(parsedUrl)) {
     openPdfViewerButton.hidden = false;
     openPdfViewerButton.onclick = () => {

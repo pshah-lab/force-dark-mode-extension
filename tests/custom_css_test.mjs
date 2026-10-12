@@ -92,7 +92,7 @@ test("length limit is MAX_CSS_CHARS (6000)", () => {
   rejects("a{}".repeat(100000), "6000");
 });
 
-test("backslash, <, > and NUL are rejected outright", () => {
+test("backslash, < and NUL are rejected outright", () => {
   rejects("a{background:u\\72l(x)}", "\\");
   rejects("a{background:\\75rl(x)}", "\\");
   rejects("a{content:\"\\\"\"}", "\\");

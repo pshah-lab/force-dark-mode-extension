@@ -304,5 +304,69 @@ test("duplicateName chains never repeat, stay <= 40 and have clean spacing", () 
   }
 });
 
+// ----- Task 10: Custom CSS manager -----
+const CT = loadUmd(["src/shared/themeCore.js", "src/shared/customCss.js"]).ForceDarkThemes;
+
+test("options.html has the Custom CSS card markup and loads customCss.js before the module script", () => {
+  const html = read("src/options/options.html");
+  for (const id of ["css-card", "css-host", "css-text", "css-counter", "css-error", "css-save", "css-list", "css-empty"]) {
+    assert.ok(html.includes(`id="${id}"`), `missing #${id}`);
+  }
+  assert.ok(/<textarea[^>]*id="css-text"[^>]*maxlength="6000"/.test(html) || /<textarea[^>]*maxlength="6000"[^>]*id="css-text"/.test(html), "textarea maxlength 6000");
+  assert.ok(/id="css-error"[^>]*role="alert"/.test(html) || /role="alert"[^>]*id="css-error"/.test(html), "role=alert area");
+  assert.ok(/cannot introduce a URL/.test(html), "note must say CSS cannot introduce a URL");
+  assert.ok(!/cannot cause any (network )?request/i.test(html), "must not overclaim");
+  const sites = html.indexOf('src="../shared/sitePacks.js"');
+  const css = html.indexOf('src="../shared/customCss.js"');
+  const mod = html.indexOf('src="options.js"');
+  assert.ok(sites > -1 && css > sites && mod > css, "order: sitePacks, customCss, options.js");
+});
+
+test("the Custom CSS code never uses innerHTML and is on the egress list", () => {
+  const src = read("src/options/customCssEditor.js");
+  assert.ok(!/innerHTML|insertAdjacentHTML|outerHTML/.test(src));
+  assert.ok(read("src/options/options.js").includes("customCssEditor.js"));
+  assert.ok(read("tests/privacy_security_test.mjs").includes("src/options/customCssEditor.js"));
+  assert.ok(!/innerHTML/.test(read("src/options/options.html")));
+});
+
+test("popup has the Site CSS link and builds options.html#css= with encodeURIComponent", () => {
+  assert.ok(/id="site-css-link"/.test(read("src/popup/popup.html")));
+  const js = read("src/popup/popup.js");
+  assert.ok(js.includes("site-css-link"));
+  assert.ok(/getURL\("src\/options\/options\.html"\)\s*\+\s*"#css="\s*\+\s*encodeURIComponent\(host\)/.test(js));
+});
+
+test("canSaveCss: host validity, empty CSS, forbidden constructs, 6000 vs 6001", () => {
+  assert.strictEqual(CT.canSaveCss("", "a{color:red}").ok, false);
+  assert.strictEqual(CT.canSaveCss("   ", "").ok, false);
+  assert.strictEqual(CT.canSaveCss("https://a.com", "a{color:red}").ok, false);
+  assert.strictEqual(CT.canSaveCss("a.com/x", "a{color:red}").ok, false);
+  assert.strictEqual(CT.canSaveCss("__proto__", "a{color:red}").ok, false);
+  const good = CT.canSaveCss("  BBC.com ", "h1{color:#ff0}");
+  assert.strictEqual(good.ok, true);
+  assert.strictEqual(good.host, "bbc.com");
+  assert.strictEqual(CT.canSaveCss("bbc.com", "").ok, true, "empty css means delete");
+  const bad = CT.canSaveCss("bbc.com", "a{background:url(x)}");
+  assert.strictEqual(bad.ok, false);
+  assert.ok(typeof bad.error === "string" && bad.error.includes("url("));
+  const ok6000 = "a{color:red}" + " ".repeat(6000 - 12);
+  assert.strictEqual(CT.canSaveCss("bbc.com", ok6000).ok, true);
+  assert.strictEqual(CT.canSaveCss("bbc.com", ok6000 + " ").ok, false);
+  assert.strictEqual(CT.canSaveCss("local_files", "a{color:red}").ok, true);
+});
+
+test("cssSites lists __css:* string entries sorted, ignoring junk", () => {
+  const all = {
+    "__css:zed.com": "a{}", "__css:alpha.com": "h1{color:red}\nmore",
+    "__css:__proto__": "a{}", "__css:constructor": "a{}", "__css:": "a{}", "__css:bad host": "a{}",
+    "__css:num.com": 5, "__css:obj.com": { x: 1 }, "__css:empty.com": "", "__css:Up.com": "a{}",
+    "example.com": { enabled: true }, "__customThemes": [], "__css": "x",
+  };
+  assert.deepStrictEqual(plain(CT.cssSites(all)), [{ host: "alpha.com", length: 18 }, { host: "zed.com", length: 3 }]);
+  assert.deepStrictEqual(plain(CT.cssSites(null)), []);
+  assert.deepStrictEqual(plain(CT.cssSites({})), []);
+});
+
 console.log(`\n🎉 Results: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

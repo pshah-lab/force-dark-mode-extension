@@ -281,8 +281,65 @@
     return !file || typeof file.size !== "number" || file.size > LIMITS.MAX_IMPORT_BYTES;
   }
 
+  // ----- Custom CSS manager helpers (pure) -----
+  const HOST_PATTERN = /^[a-z0-9-]+(\.[a-z0-9-]+)*$/;
+  const CSS_KEY_PREFIX = "__css:";
+
+  // A bare hostname as location.hostname reports it (lowercase letters, digits, dots,
+  // hyphens, no empty labels), or the "local_files" token used for file URLs. Else "".
+  function cleanCssHost(value) {
+    if (typeof value !== "string") return "";
+    const host = value.trim().toLowerCase();
+    if (host.length === 0 || host.length > 253) return "";
+    if (host === "local_files") return host;
+    if (host === "constructor" || host === "prototype" || host === "__proto__") return "";
+    return HOST_PATTERN.test(host) ? host : "";
+  }
+
+  function hostFromHash(hash) {
+    if (typeof hash !== "string" || hash.slice(0, 5) !== "#css=") return "";
+    let raw = hash.slice(5);
+    try {
+      raw = decodeURIComponent(raw);
+    } catch {
+      return "";
+    }
+    return cleanCssHost(raw);
+  }
+
+  // Combines host validity and the CSS sanitiser. Empty CSS is valid (it means delete).
+  function canSaveCss(host, css) {
+    const clean = cleanCssHost(host);
+    if (!clean) return { ok: false, error: "Enter a site name such as example.com (no https://, path or spaces)." };
+    const text = typeof css === "string" ? css : "";
+    if (text === "") return { ok: true, host: clean };
+    const validate = global.ForceDarkThemes && global.ForceDarkThemes.validateCss;
+    if (typeof validate !== "function") return { ok: false, error: "Custom CSS is not available yet." };
+    const result = validate(text);
+    if (!result || !result.ok) return { ok: false, error: (result && result.error) || "Custom CSS is invalid." };
+    return { ok: true, host: clean };
+  }
+
+  // Sites that have saved custom CSS, from the raw storage map: [{host, length}] sorted by host.
+  function cssSites(all) {
+    const out = [];
+    if (!all || typeof all !== "object") return out;
+    for (const key of Object.keys(all)) {
+      if (key.slice(0, CSS_KEY_PREFIX.length) !== CSS_KEY_PREFIX) continue;
+      const host = key.slice(CSS_KEY_PREFIX.length);
+      const value = all[key];
+      if (typeof value !== "string" || value === "") continue;
+      if (!cleanCssHost(host) || cleanCssHost(host) !== host) continue;
+      out.push({ host, length: value.length });
+    }
+    return out.sort((a, b) => (a.host < b.host ? -1 : a.host > b.host ? 1 : 0));
+  }
+
   global.ForceDarkThemes = Object.assign(global.ForceDarkThemes || {}, {
     LIMITS,
+    hostFromHash,
+    canSaveCss,
+    cssSites,
     duplicateName,
     templateName,
     safeFileName,

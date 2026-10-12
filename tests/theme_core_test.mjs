@@ -99,5 +99,25 @@ test("derivePalette output is pinned to the exact values the engine produced bef
   }
 });
 
+test("hostFromHash accepts bare hosts and lowercases them", () => {
+  assert.strictEqual(T.hostFromHash("#css=bbc.com"), "bbc.com");
+  assert.strictEqual(T.hostFromHash("#css=BBC.com"), "bbc.com");
+  assert.strictEqual(T.hostFromHash("#css=www.bbc.co.uk"), "www.bbc.co.uk");
+  assert.strictEqual(T.hostFromHash("#css=localhost"), "localhost");
+  assert.strictEqual(T.hostFromHash("#css=127.0.0.1"), "127.0.0.1");
+  assert.strictEqual(T.hostFromHash("#css=local_files"), "local_files");
+  assert.strictEqual(T.hostFromHash("#css=" + encodeURIComponent("bbc.com")), "bbc.com");
+});
+
+test("hostFromHash rejects everything else", () => {
+  const bad = ["#css=../x", "#css=", "#x", "", undefined, null, 5, "#css=a b.com", "#css=a/b.com", "#css=https://a.com",
+    "#css=a.com:80", "#css=u@a.com", "#css=a.com?x", "#css=a.com#y", "#css=.a.com", "#css=a..com", "#css=a.com.",
+    "#css=a_b.com", "#css=local_files2", "#css=%2e%2e%2fx", "#css=%zz", "css=bbc.com", "#CSS=bbc.com", "#css=__proto__", "#css=constructor", "#css=prototype",
+    "#css=" + "a".repeat(254), "#css=a.com&css=b.com"];
+  for (const h of bad) assert.strictEqual(T.hostFromHash(h), "", String(h));
+  assert.strictEqual(T.hostFromHash("#css=" + "a".repeat(63) + "." + "b".repeat(63) + "." + "c".repeat(63) + "." + "d".repeat(61)).length, 253);
+  assert.strictEqual(T.hostFromHash("#css=" + "a".repeat(250) + ".com").length, 0);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

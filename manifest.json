@@ -39,6 +39,7 @@
         "src/shared/themeCore.js",
         "src/shared/builtinThemes.js",
         "src/shared/sitePacks.js",
+        "src/shared/customCss.js",
         "src/content/themeEngine/cssOverrideEngine.js",
         "src/content/themeEngine/invertEngine.js",
         "src/content/index.js"

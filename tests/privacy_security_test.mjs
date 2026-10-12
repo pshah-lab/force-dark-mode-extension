@@ -55,6 +55,7 @@ test("zero outbound network calls in extension core code", () => {
     "src/shared/storage.js",
     "src/shared/colorUtils.js",
     "src/shared/sitePacks.js",
+    "src/shared/customCss.js",
     "src/shared/constants.js",
     "src/viewer/viewer.js",
   ];

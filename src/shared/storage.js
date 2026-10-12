@@ -8,6 +8,7 @@ import {
 } from "./constants.js";
 import "./colorUtils.js";
 import "./themeCore.js";
+import "./customCss.js";
 
 // Single place to bump the exported settings version (the privacy test matches this literal).
 const EXTENSION_VERSION_META = { version: "1.8.0" };

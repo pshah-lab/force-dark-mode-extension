@@ -39,6 +39,33 @@ globalThis.chrome = {
 const S = await import("../src/shared/storage.js");
 const { THEME_ID_PATTERN } = await import("../src/shared/constants.js");
 const Themes = globalThis.ForceDarkThemes;
+// The real sanitiser installed by storage.js's import of customCss.js. The test() harness
+// deletes Themes.validateCss before every test, so tests that need it restore it explicitly
+// and the "not available" test below covers a deliberately absent validator.
+const realValidateCss = Themes.validateCss;
+const useRealCss = () => { Themes.validateCss = realValidateCss; };
+const UNSAFE_CSS = [
+  "@import \"x\";",
+  "@IMPORT 'x';",
+  "@namespace x;",
+  "@font-face{font-family:x}",
+  "a{background:url(x)}",
+  "a{background:URL( x )}",
+  "a{background:ur/**/l(x)}",
+  "a{background:u\\72l(x)}",
+  "a{background:image-set(\"x\" 1x)}",
+  "a{background:-webkit-image-set(\"x\" 1x)}",
+  "a{background:image(\"x\")}",
+  "a{background:src(\"x\")}",
+  "a{background:cross-fade(\"a\",\"b\",5%)}",
+  "a{width:expression(1)}",
+  "a{behavior:x}",
+  "a{-moz-binding:x}",
+  "a{x:javascript:1}",
+  "</style><script>",
+  "/* open",
+  "x".repeat(6001),
+];
 
 let passed = 0, failed = 0;
 async function test(name, fn) {
@@ -211,6 +238,7 @@ await test("setCustomCss rejects unsafe host keys and over-limit sites", async (
   assert.strictEqual((await S.setCustomCss("extra.com", "a{}")).ok, true);
 });
 
+// validateCss is deleted by the harness here, so this covers a deliberately absent validator.
 await test("setCustomCss reports not available while validateCss is undefined", async () => {
   assert.deepStrictEqual(await S.setCustomCss("g.com", "a{}"), { ok: false, error: "Custom CSS is not available yet." });
   assert.strictEqual(await S.getCustomCss("g.com"), "");
@@ -222,6 +250,49 @@ await test("setCustomCss surfaces quota errors", async () => {
   const r = await S.setCustomCss("h.com", "a{}");
   assert.strictEqual(r.ok, false);
   assert.ok(r.error.length > 0);
+});
+
+await test("importing storage.js installs the real validateCss from customCss.js", async () => {
+  assert.strictEqual(typeof realValidateCss, "function");
+  assert.strictEqual(realValidateCss("a{background:url(x)}").ok, false);
+  assert.deepStrictEqual(realValidateCss("a{color:red}"), { ok: true, css: "a{color:red}" });
+});
+
+await test("setCustomCss with the real validator stores valid CSS unchanged", async () => {
+  useRealCss();
+  const css = "/* mine */ body{font-family:Inter,sans-serif !important} pre{border-radius:12px}";
+  assert.deepStrictEqual(await S.setCustomCss("v.com", css), { ok: true });
+  assert.strictEqual(await S.getCustomCss("v.com"), css);
+  assert.strictEqual(store["__css:v.com"], css);
+});
+
+await test("setCustomCss with the real validator rejects every unsafe construct and stores nothing", async () => {
+  useRealCss();
+  for (const css of UNSAFE_CSS) {
+    const r = await S.setCustomCss("w.com", css);
+    assert.strictEqual(r.ok, false, css.slice(0, 40));
+    assert.strictEqual(r.error, realValidateCss(css).error, "the sanitiser's sentence is surfaced");
+    assert.ok(typeof r.error === "string" && r.error.length > 0);
+    assert.strictEqual(await S.getCustomCss("w.com"), "");
+    assert.ok(!Object.keys(store).some((k) => k.startsWith("__css:")), "nothing stored");
+  }
+});
+
+await test("a rejected update keeps the previously saved CSS", async () => {
+  useRealCss();
+  assert.deepStrictEqual(await S.setCustomCss("k.com", "a{color:red}"), { ok: true });
+  assert.strictEqual((await S.setCustomCss("k.com", "a{background:url(x)}")).ok, false);
+  assert.strictEqual(await S.getCustomCss("k.com"), "a{color:red}");
+});
+
+await test("import with the real validator keeps safe CSS and drops unsafe CSS", async () => {
+  useRealCss();
+  const customCss = { "ok.com": "a{color:red}" };
+  UNSAFE_CSS.forEach((css, i) => { customCss[`bad${i}.com`] = css; });
+  await S.importSettingsJson(JSON.stringify({ settings: { "ok.com": { enabled: true } }, customCss }));
+  assert.strictEqual(await S.getCustomCss("ok.com"), "a{color:red}");
+  const cssKeys = Object.keys(store).filter((k) => k.startsWith("__css:"));
+  assert.deepStrictEqual(cssKeys, ["__css:ok.com"]);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

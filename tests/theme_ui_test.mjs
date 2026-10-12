@@ -392,5 +392,72 @@ test("cssSites lists __css:* string entries sorted, ignoring junk", () => {
   assert.deepStrictEqual(plain(CT.cssSites({})), []);
 });
 
+// ----- Final fix wave: options items (M4, T10, M6, M7, T8) -----
+test("T10: cssSaveAction decides save, delete, confirm-delete or invalid", () => {
+  assert.strictEqual(typeof CT.cssSaveAction, "function");
+  assert.strictEqual(CT.cssSaveAction("a.com", "a{color:red}", false), "save");
+  assert.strictEqual(CT.cssSaveAction("a.com", "a{color:red}", true), "save");
+  assert.strictEqual(CT.cssSaveAction("a.com", "", true), "confirm-delete", "emptying stored CSS asks first");
+  assert.strictEqual(CT.cssSaveAction("a.com", "", false), "delete", "nothing stored: nothing to confirm");
+  assert.strictEqual(CT.cssSaveAction("", "a{color:red}", false), "invalid");
+  assert.strictEqual(CT.cssSaveAction("https://a.com", "", true), "invalid");
+  assert.strictEqual(CT.cssSaveAction("a.com", "a{background:url(x)}", true), "invalid");
+  assert.strictEqual(CT.cssSaveAction("a.com", undefined, true), "confirm-delete");
+});
+
+test("T10: the Custom CSS editor disables Save while a load is pending and confirms before deleting stored CSS", () => {
+  const js = read("src/options/customCssEditor.js");
+  const load = js.slice(js.indexOf("async function loadHost"), js.indexOf("async function startEditing"));
+  assert.ok(/saveBtn\.disabled\s*=\s*true/.test(load), "Save disabled when a load starts");
+  assert.ok(/saveBtn\.disabled\s*=\s*false/.test(load), "Save re-enabled when the load finishes");
+  const save = js.slice(js.indexOf("async function save"), js.indexOf("textArea.addEventListener"));
+  assert.ok(/saveBtn\.disabled/.test(save), "save() refuses while a load is pending");
+  assert.ok(/cssSaveAction\(/.test(save), "save() uses the pure decision helper");
+  assert.ok(/"confirm-delete"/.test(save) && /window\.confirm\(/.test(save), "confirm before deleting stored CSS");
+});
+
+test("M4: both editors expose refresh() and options.js refreshes them after import and erase", () => {
+  const theme = read("src/options/themeEditor.js");
+  const css = read("src/options/customCssEditor.js");
+  assert.ok(/return\s*\{\s*refresh/.test(theme), "themeEditor returns { refresh }");
+  assert.ok(/return\s*\{\s*refresh/.test(css), "customCssEditor returns { refresh }");
+  const js = read("src/options/options.js");
+  const imp = js.slice(js.indexOf("importFileInput.addEventListener(\"change\""), js.indexOf("// Right to Erasure"));
+  const erase = js.slice(js.indexOf("// Right to Erasure"));
+  for (const [label, block] of [["import", imp], ["erase", erase]]) {
+    assert.ok(/refreshEditors\(\)/.test(block), `${label} refreshes both lists`);
+  }
+  const at = js.indexOf("function refreshEditors");
+  assert.ok(at > -1, "refreshEditors exists");
+  const helper = js.slice(at, at + 400);
+  assert.ok(/themeEditor\?*\.refresh\(\)/.test(helper) && /cssEditor\?*\.refresh\(\)/.test(helper), "refreshEditors calls both refresh()");
+});
+
+test("M4: the erase confirmation mentions site settings, saved themes and custom CSS", () => {
+  const js = read("src/options/options.js");
+  const erase = js.slice(js.indexOf("// Right to Erasure"));
+  const text = erase.slice(erase.indexOf("window.confirm("), erase.indexOf(");", erase.indexOf("window.confirm(")));
+  for (const words of ["site settings", "saved themes", "custom CSS"]) assert.ok(text.includes(words), `mentions ${words}`);
+});
+
+test("M6: the Custom CSS card says it applies only while dark mode is on for that site", () => {
+  const html = read("src/options/options.html");
+  const desc = html.slice(html.indexOf('id="css-card"'), html.indexOf('id="css-host"'));
+  assert.ok(/applied after the dark theme[^<]*\(applied only while dark mode is on for that site\)/.test(desc), desc);
+});
+
+test("M7 and T8: theme delete wording and failure handling", () => {
+  const js = read("src/options/themeEditor.js");
+  const fn = js.slice(js.indexOf("async function removeTheme"), js.indexOf("function editTheme"));
+  assert.ok(fn.includes("Sites using it fall back to their site pack theme or the default colour."), "M7 wording");
+  assert.ok(!/go back to the default colour/.test(fn));
+  assert.ok(/const result = await deleteCustomTheme\(/.test(fn), "uses the {ok} result");
+  const fail = fn.indexOf("!result.ok");
+  assert.ok(fail > -1, "checks result.ok");
+  const failBlock = fn.slice(fail, fn.indexOf("}", fail));
+  assert.ok(/showStatus\([\s\S]*"error"\)/.test(failBlock) && /return/.test(failBlock), "error banner and keep the list unchanged");
+  assert.ok(fn.indexOf("Theme deleted") > fail, "success message only after the check");
+});
+
 console.log(`\n🎉 Results: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

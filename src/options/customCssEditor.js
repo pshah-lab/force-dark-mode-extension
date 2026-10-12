@@ -35,13 +35,20 @@ export async function initCustomCssEditor({ showStatus }) {
     return first.trim().slice(0, 80);
   }
 
+  // Save stays disabled while stored CSS is loading, so a Save in that window can
+  // never write the blanked textarea over the stored CSS.
   async function loadHost(host) {
     const token = ++loadToken;
-    const css = await getCustomCss(host);
-    if (token !== loadToken || hostInput.value.trim().toLowerCase() !== host) return;
-    textArea.value = css;
-    updateCounter();
-    setError("");
+    saveBtn.disabled = true;
+    try {
+      const css = await getCustomCss(host);
+      if (token !== loadToken || hostInput.value.trim().toLowerCase() !== host) return;
+      textArea.value = css;
+      updateCounter();
+      setError("");
+    } finally {
+      if (token === loadToken) saveBtn.disabled = false;
+    }
   }
 
   async function startEditing(host) {
@@ -112,12 +119,17 @@ export async function initCustomCssEditor({ showStatus }) {
   }
 
   async function save() {
+    if (saveBtn.disabled) return;
     const check = T.canSaveCss(hostInput.value, textArea.value);
-    if (!check.ok) {
+    const stored = check.ok ? await getCustomCss(check.host) : "";
+    const action = T.cssSaveAction(hostInput.value, textArea.value, stored !== "");
+    if (action === "invalid") {
       setError(check.error);
       showStatus(check.error, "error");
       return;
     }
+    // An empty box deletes the stored CSS: ask first, like the Delete button.
+    if (action === "confirm-delete" && !window.confirm(`Delete the custom CSS for ${check.host}?`)) return;
     setError("");
     const result = await setCustomCss(check.host, textArea.value);
     if (!result.ok) {
@@ -144,4 +156,6 @@ export async function initCustomCssEditor({ showStatus }) {
   updateCounter();
   await renderList();
   await applyHash();
+  // Re-reads storage and re-renders the list (after an import or an erase).
+  return { refresh: renderList };
 }

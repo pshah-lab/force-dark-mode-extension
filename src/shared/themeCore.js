@@ -334,6 +334,15 @@
     return { ok: true, host: clean };
   }
 
+  // What the Custom CSS Save button should do: "invalid" (bad host or CSS), "save",
+  // "delete" (empty, nothing stored) or "confirm-delete" (empty while CSS is stored).
+  function cssSaveAction(host, css, hasStored) {
+    const text = typeof css === "string" ? css : "";
+    if (!canSaveCss(host, text).ok) return "invalid";
+    if (text !== "") return "save";
+    return hasStored ? "confirm-delete" : "delete";
+  }
+
   // Sites that have saved custom CSS, from the raw storage map: [{host, length}] sorted by host.
   function cssSites(all) {
     const out = [];
@@ -354,6 +363,7 @@
     hostFromHash,
     cleanCssHost,
     canSaveCss,
+    cssSaveAction,
     cssSites,
     duplicateName,
     templateName,

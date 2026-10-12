@@ -83,15 +83,26 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (bgColorInput) bgColorInput.value = globalConfig.backgroundColor || DEFAULT_BACKGROUND_COLOR;
 
   await refreshStats();
+  let themeEditor = null;
+  let cssEditor = null;
   try {
-    await initThemeEditor({ showStatus });
+    themeEditor = await initThemeEditor({ showStatus });
   } catch (err) {
     console.warn("Theme editor failed to start:", err);
   }
   try {
-    await initCustomCssEditor({ showStatus });
+    cssEditor = await initCustomCssEditor({ showStatus });
   } catch (err) {
     console.warn("Custom CSS editor failed to start:", err);
+  }
+
+  // "My themes" and "Sites with custom CSS" re-read storage after an import or an erase.
+  async function refreshEditors() {
+    try {
+      await Promise.all([themeEditor?.refresh(), cssEditor?.refresh()]);
+    } catch (err) {
+      console.warn("Could not refresh the theme and custom CSS lists:", err);
+    }
   }
 
   // Load schedule preferences
@@ -189,6 +200,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const content = await file.text();
         const count = await importSettingsJson(content);
         await refreshStats();
+        await refreshEditors();
         showStatus(`✓ Successfully imported ${count} items (sites, themes and custom CSS).`);
       } catch (err) {
         const message = String(err?.message || "");
@@ -203,12 +215,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (clearBtn) {
     clearBtn.addEventListener("click", async () => {
       const confirmed = window.confirm(
-        "Are you sure you want to erase all stored data?\n\nThis will permanently remove all custom site rules, dark mode preferences, and viewer settings from your Chrome profile."
+        "Are you sure you want to erase all stored data?\n\nThis will permanently remove all site settings, saved themes, custom CSS, dark mode preferences and viewer settings from your Chrome profile."
       );
       if (!confirmed) return;
 
       await clearAllConfigs();
       await refreshStats();
+      await refreshEditors();
       showStatus("✓ All stored preferences have been erased and reset to default.", "success");
     });
   }

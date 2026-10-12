@@ -10,7 +10,7 @@ function core() {
   return globalThis.ForceDarkThemes;
 }
 
-export function initThemeEditor({ showStatus }) {
+export async function initThemeEditor({ showStatus }) {
   const T = core();
   const $ = (id) => document.getElementById(id);
   const nameInput = $("theme-name");
@@ -167,8 +167,12 @@ export function initThemeEditor({ showStatus }) {
   }
 
   async function removeTheme(theme) {
-    if (!window.confirm(`Delete the theme "${theme.name}"?\n\nSites using it go back to the default colour.`)) return;
-    await deleteCustomTheme(theme.id);
+    if (!window.confirm(`Delete the theme "${theme.name}"?\n\nSites using it fall back to their site pack theme or the default colour.`)) return;
+    const result = await deleteCustomTheme(theme.id);
+    if (!result || !result.ok) {
+      showStatus((result && result.error) || "Could not delete the theme.", "error");
+      return;
+    }
     if (editingId === theme.id) resetEditor();
     showStatus("✓ Theme deleted.");
     await renderList();
@@ -255,6 +259,13 @@ export function initThemeEditor({ showStatus }) {
     }
   });
 
+  // Re-reads storage and re-renders "My themes" (after an import or an erase).
+  async function refreshList() {
+    await renderList();
+    if (editingId && !userThemes.some((theme) => theme.id === editingId)) resetEditor();
+  }
+
   resetEditor();
-  return renderList();
+  await renderList();
+  return { refresh: refreshList };
 }

@@ -423,6 +423,47 @@ test("A page that declares only a dark colour scheme is still treated as nativel
   mockDoc.body.children = [];
 });
 
+function buildNativeDarkPage() {
+  mockDoc.body.children = [];
+  mockDoc.documentElement.setAttribute("dark", "true");
+  mockDoc.documentElement.style.backgroundColor = "rgb(15, 15, 15)";
+  mockDoc.documentElement.style.color = "rgb(241, 241, 241)";
+  mockDoc.documentElement.style.colorScheme = "dark";
+  mockDoc.body.style.colorScheme = "dark";
+  const app = mockDoc.createElement("ytd-app");
+  app.style.backgroundColor = "rgb(15, 15, 15)";
+  mockDoc.body.appendChild(app);
+  for (let i = 0; i < 25; i++) {
+    const item = mockDoc.createElement("span");
+    item.textContent = `Dark page paragraph ${i} with readable content`;
+    item.style.backgroundColor = "rgb(15, 15, 15)";
+    item.style.color = "rgb(241, 241, 241)";
+    app.appendChild(item);
+  }
+}
+
+test("Invert engine is skipped on a page that is already natively dark (no double inversion)", () => {
+  buildNativeDarkPage();
+  applyEngine({ enabled: true, engine: "invert", brightness: 100, contrast: 100, sepia: 0 });
+  assert.strictEqual(mockDoc.getElementById("__force_dark_invert__"), null, "must not invert an already dark page");
+  assert.strictEqual(mockDoc.documentElement.getAttribute("data-force-dark-filter"), null);
+  applyEngine(null);
+});
+
+test("Invert engine still applies on a light page", () => {
+  buildSchemePage("light");
+  mockDoc.documentElement.style.backgroundColor = "rgb(255, 255, 255)";
+  mockDoc.body.style.backgroundColor = "rgb(255, 255, 255)";
+  for (const child of mockDoc.body.children) child.style.backgroundColor = "rgb(255, 255, 255)";
+  applyEngine({ enabled: true, engine: "invert", brightness: 100, contrast: 100, sepia: 0 });
+  assert.ok(mockDoc.getElementById("__force_dark_invert__"), "light page should still be inverted");
+  applyEngine(null);
+  mockDoc.body.children = [];
+  mockDoc.documentElement.style.colorScheme = "";
+  mockDoc.body.style.colorScheme = "";
+  mockDoc.documentElement.removeAttribute("dark");
+});
+
 test("applyEngine applies filter CSS variables and gates the filter attribute", () => {
   applyEngine({ enabled: true, engine: "css", brightness: 120, contrast: 90, sepia: 30 });
 

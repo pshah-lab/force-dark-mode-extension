@@ -74,12 +74,15 @@ function clearFilterVars() {
 function resolveEngine(config) {
   const engine = normalizeEngine(config?.engine);
 
-  if (engine !== "auto") {
+  if (engine !== "auto" && engine !== "invert") {
     return engine;
   }
 
+  // Inverting a page that is already dark turns it light again, so Invert is
+  // skipped on natively dark pages just like Auto.
   const analysis = analyzePageForEngine();
-  return analysis.nativeDark ? "" : analysis.engine;
+  if (analysis.nativeDark) return "";
+  return engine === "invert" ? "invert" : analysis.engine;
 }
 
 const SCHEDULE_STORAGE_KEY = "scheduleConfig";

@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CSS engine on sites that load styles late** (e.g. Wikipedia, GitHub): light panels stayed white while text was lightened, making pages unreadable. The page is now rescanned (debounced) when stylesheets load.
 - **Auto engine skipping pages that support both colour schemes** (e.g. MDN): `color-scheme: light dark` was mistaken for "already dark". Only a dark-only declaration or a dark system preference now counts.
 
+- **Dark text left on dark backgrounds on news sites** (e.g. BBC): sites using CSS-in-JS add colour rules after hydration without any DOM event, so headlines kept their dark text. The CSS engine now runs a few bounded rescans after the page loads.
 - **Invert engine double-inverting already dark pages**: the Invert engine is now skipped on pages detected as natively dark (e.g. Medium or YouTube in dark mode), as Auto already did, instead of turning them light again.
 
 ### Changed

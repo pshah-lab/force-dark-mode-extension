@@ -335,6 +335,50 @@ test("CSS Override Engine rescans the whole page when a stylesheet loads after t
   }
 });
 
+test("CSS Override Engine does bounded rescans after load to catch CSS-in-JS rules injected late", () => {
+  const realSetTimeout = global.setTimeout;
+  const realClearTimeout = global.clearTimeout;
+  const queue = [];
+  const cleared = new Set();
+  global.setTimeout = (fn, delay) => { queue.push({ fn, delay, id: queue.length + 1 }); return queue.length; };
+  global.clearTimeout = (id) => cleared.add(id);
+  try {
+    const headline = mockDoc.createElement("h2");
+    headline.style.color = "rgb(232, 234, 237)"; // inherited light text at first scan
+    headline.style.backgroundColor = "rgba(0, 0, 0, 0)";
+    mockDoc.body.appendChild(headline);
+
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    vm.runInThisContext("scanFrame = 0");
+    assert.strictEqual(headline.getAttribute("data-force-dark-text"), null);
+
+    // A CSS-in-JS rule (insertRule: no DOM mutation) later makes the headline dark.
+    headline.style.color = "rgb(32, 34, 36)";
+    for (const fn of global.window._listeners?.load || []) fn({});
+
+    const delays = queue.map((t) => t.delay).sort((a, b) => a - b);
+    for (const expected of [800, 2500, 6000]) {
+      assert.ok(delays.includes(expected), `expected a rescan scheduled at ${expected}ms, got ${delays}`);
+    }
+
+    for (const t of [...queue].sort((a, b) => a.delay - b.delay)) {
+      if (!cleared.has(t.id)) { vm.runInThisContext("scanFrame = 0"); t.fn(); }
+    }
+    assert.strictEqual(headline.getAttribute("data-force-dark-text"), "true", "late dark text must be recoloured");
+
+    // Disabling must cancel anything still pending.
+    queue.length = 0; cleared.clear();
+    for (const fn of global.window._listeners?.load || []) fn({});
+    const pending = queue.map((t) => t.id);
+    disableDarkMode();
+    for (const id of pending) assert.ok(cleared.has(id), "pending rescans must be cancelled on disable");
+  } finally {
+    global.setTimeout = realSetTimeout;
+    global.clearTimeout = realClearTimeout;
+    mockDoc.body.children = [];
+  }
+});
+
 test("Invert Engine enables and disables cleanly", () => {
   enableInvert();
   assert.ok(mockDoc.getElementById("__force_dark_invert__"), "Invert style tag should be injected");

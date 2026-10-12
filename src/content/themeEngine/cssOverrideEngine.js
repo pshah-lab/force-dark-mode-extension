@@ -39,9 +39,13 @@ const EXCLUDED_SELECTOR = [
 ].join(",");
 
 const STYLESHEET_RESCAN_DELAY_MS = 150;
+// CSS-in-JS libraries add rules through the stylesheet API after hydration, which
+// fires no DOM event; a few bounded rescans after load catch the colours they set.
+const LATE_RESCAN_DELAYS_MS = [800, 2500, 6000];
 
 let darkModeObserver = null;
 let styleRescanTimer = 0;
+let lateRescanTimers = [];
 let scanFrame = 0;
 let pendingScanRoots = new Set();
 
@@ -171,6 +175,19 @@ function scheduleFullRescan() {
   }, STYLESHEET_RESCAN_DELAY_MS);
 }
 
+function clearLateRescans() {
+  lateRescanTimers.forEach((id) => clearTimeout(id));
+  lateRescanTimers = [];
+}
+
+function scheduleLateRescans() {
+  clearLateRescans();
+  scheduleFullRescan();
+  lateRescanTimers = LATE_RESCAN_DELAYS_MS.map((delay) =>
+    setTimeout(() => scheduleScan(document.documentElement), delay)
+  );
+}
+
 function onResourceLoad(event) {
   if (isSiteStylesheet(event.target)) scheduleFullRescan();
 }
@@ -187,7 +204,8 @@ function disableDarkMode() {
 
   document.removeEventListener("load", onResourceLoad, true);
   document.removeEventListener("DOMContentLoaded", scheduleFullRescan);
-  window.removeEventListener("load", scheduleFullRescan);
+  window.removeEventListener("load", scheduleLateRescans);
+  clearLateRescans();
   if (styleRescanTimer) {
     clearTimeout(styleRescanTimer);
     styleRescanTimer = 0;
@@ -232,7 +250,8 @@ function observePageChanges() {
 
   document.addEventListener("load", onResourceLoad, true);
   document.addEventListener("DOMContentLoaded", scheduleFullRescan);
-  window.addEventListener("load", scheduleFullRescan);
+  window.addEventListener("load", scheduleLateRescans);
+  if (document.readyState === "complete") scheduleLateRescans();
 }
 
 function scheduleScan(root) {

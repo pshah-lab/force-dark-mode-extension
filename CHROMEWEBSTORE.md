@@ -7,17 +7,21 @@
 ## Store Listing
 
 **Extension Name** [REQUIRED]
+
 ```
 Force Dark Mode - ThemeSwitcher
 ```
+
 *(Alternative Options if character limits or branding priorities change: `Dark Mode - ThemeSwitcher` or `Force Dark Mode`) — `Force Dark Mode - ThemeSwitcher` is recommended because it captures both the high-volume query "force dark mode" and your unique brand identity "ThemeSwitcher".*
 
 **Short Description** [REQUIRED] (128 / 132 chars)
+
 ```
 Apply smart dark mode to websites, PDFs, and local docs with Auto detection, custom CSS palettes, and zero data tracking.
 ```
 
 **Detailed Description** [REQUIRED]
+
 ```
 Force Dark Mode - ThemeSwitcher transforms websites, PDFs, and local documents into a soothing, eye-friendly dark theme with intelligent engine selection and customizable color palettes.
 
@@ -33,8 +37,6 @@ KEY FEATURES
 ✦ Smart Invert Engine: Protected color inversion with re-inversion for media, perfect for complex graphics-heavy pages and specialized web applications.
 
 ✦ Local Document & PDF Reader: Open online and local PDFs, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), CSV, Markdown (.md), TXT, and RTF files in a built-in dark reader. PDFs render through bundled PDF.js with saturation-aware canvas pixel conversion—diagrams and text stay crisp without uploading confidential files to external servers.
-
-✦ Themes & Custom CSS: Choose from eight built-in themes in the popup, use ready-made settings for 20 popular sites, build your own in the theme editor with a live preview and contrast check, or add per-site custom CSS. Custom CSS is validated and cannot introduce a URL.
 
 ✦ Per-Site Custom Background Colors: Choose between pitch black (#000000) for OLED displays or a soft midnight slate (#0f1115) from the popup. Surfaces and borders adapt automatically to guarantee WCAG AA contrast.
 
@@ -71,16 +73,19 @@ Help & Guides: https://darkmode.pshah.fun/how-it-works.html
 ```
 
 **Category** [REQUIRED]
+
 ```
 Accessibility
 ```
 
 **Single Purpose** [REQUIRED]
+
 ```
 Applies customizable, layout-safe dark themes to websites, documents, and PDFs to improve readability and reduce digital eye strain.
 ```
 
 **Primary Language** [REQUIRED]
+
 ```
 English
 ```
@@ -89,53 +94,56 @@ English
 
 ## Graphics & Asset Strategy
 
-| Asset | Dimensions | Status | Recommendation |
-| :--- | :--- | :---: | :--- |
-| Store Icon [REQUIRED] | 128×128 PNG | ✅ Ready | `assets/icon128.png` |
-| Screenshot 1 [REQUIRED] | 1280×800 or 640×400 | 🟡 To Capture | Light Wikipedia / documentation page transformed into dark mode with popup open showing Auto Engine recommendation and color picker. |
-| Screenshot 2 [RECOMMENDED] | 1280×800 or 640×400 | 🟡 To Capture | Local Dark PDF Viewer rendering a complex PDF document with dark canvas rendering and toolbar controls. |
-| Screenshot 3 [RECOMMENDED] | 1280×800 or 640×400 | 🟡 To Capture | Complex web app (e.g. YouTube or GitHub) demonstrating native dark detection leaving already-dark surfaces alone. |
-| Screenshot 4 [RECOMMENDED] | 1280×800 or 640×400 | 🟡 To Capture | Side-by-side comparison illustrating glaring white vs. ThemeSwitcher soothing dark theme with preserved images. |
-| Small Promo Tile [RECOMMENDED] | 440×280 PNG/JPEG | ⬜ Optional | Dark background with crisp extension logo and title text. |
-| Marquee Promo Tile | 1400×560 PNG/JPEG | ⬜ Optional | Store front showcase banner. |
+| Asset                          | Dimensions            |    Status    | Recommendation                                                                                                                       |
+| :----------------------------- | :-------------------- | :-----------: | :----------------------------------------------------------------------------------------------------------------------------------- |
+| Store Icon [REQUIRED]          | 128×128 PNG          |   ✅ Ready   | `assets/icon128.png`                                                                                                               |
+| Screenshot 1 [REQUIRED]        | 1280×800 or 640×400 | 🟡 To Capture | Light Wikipedia / documentation page transformed into dark mode with popup open showing Auto Engine recommendation and color picker. |
+| Screenshot 2 [RECOMMENDED]     | 1280×800 or 640×400 | 🟡 To Capture | Local Dark PDF Viewer rendering a complex PDF document with dark canvas rendering and toolbar controls.                              |
+| Screenshot 3 [RECOMMENDED]     | 1280×800 or 640×400 | 🟡 To Capture | Complex web app (e.g. YouTube or GitHub) demonstrating native dark detection leaving already-dark surfaces alone.                    |
+| Screenshot 4 [RECOMMENDED]     | 1280×800 or 640×400 | 🟡 To Capture | Side-by-side comparison illustrating glaring white vs. ThemeSwitcher soothing dark theme with preserved images.                      |
+| Small Promo Tile [RECOMMENDED] | 440×280 PNG/JPEG     |  ⬜ Optional  | Dark background with crisp extension logo and title text.                                                                            |
+| Marquee Promo Tile             | 1400×560 PNG/JPEG    |  ⬜ Optional  | Store front showcase banner.                                                                                                         |
 
 ---
 
 ## Permissions Justification
 
-| Permission | Type | Detailed Plain-English Justification |
-| :--- | :--- | :--- |
-| `storage` | permissions | Required to store user settings (selected engine, custom background color, viewer preferences) per domain and sync them across the user's signed-in devices using Chrome Sync with zero external servers. |
-| `activeTab` | permissions | Required only when the user opens the extension popup to inspect page colors/luminance and apply theme changes without requesting broad, persistent tab access. |
-| `<all_urls>` | content_scripts | Required to inject styling rules and evaluate surface luminance on websites at `document_start` so pages render dark immediately without bright white flashes. |
+| Permission     | Type            | Detailed Plain-English Justification                                                                                                                                                                      |
+| :------------- | :-------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `storage`    | permissions     | Required to store user settings (selected engine, custom background color, viewer preferences) per domain and sync them across the user's signed-in devices using Chrome Sync with zero external servers. |
+| `activeTab`  | permissions     | Required only when the user opens the extension popup to inspect page colors/luminance and apply theme changes without requesting broad, persistent tab access.                                           |
+| `<all_urls>` | content_scripts | Required to inject styling rules and evaluate surface luminance on websites at`document_start` so pages render dark immediately without bright white flashes.                                           |
 
 ---
 
 ## Privacy & Data Use Disclosures
 
 ### Data Collection
+
 **Does the extension collect user data?** No
 
-| Data Type | Collected? | Transmitted Off-Device? | Purpose | Shared with Third Parties? |
-| :--- | :--- | :--- | :--- | :--- |
-| Personally identifiable info | No | No | None | No |
-| Health info | No | No | None | No |
-| Financial info | No | No | None | No |
-| Authentication info | No | No | None | No |
-| Personal communications | No | No | None | No |
-| Location | No | No | None | No |
-| Web history | No | No | None | No |
-| User activity | No | No | None | No |
-| Website content | No | No | None | No |
+| Data Type                    | Collected? | Transmitted Off-Device? | Purpose | Shared with Third Parties? |
+| :--------------------------- | :--------- | :---------------------- | :------ | :------------------------- |
+| Personally identifiable info | No         | No                      | None    | No                         |
+| Health info                  | No         | No                      | None    | No                         |
+| Financial info               | No         | No                      | None    | No                         |
+| Authentication info          | No         | No                      | None    | No                         |
+| Personal communications      | No         | No                      | None    | No                         |
+| Location                     | No         | No                      | None    | No                         |
+| Web history                  | No         | No                      | None    | No                         |
+| User activity                | No         | No                      | None    | No                         |
+| Website content              | No         | No                      | None    | No                         |
 
 ### Data Use Certification
-- [x] Data is NOT sold to third parties
-- [x] Data is NOT used for purposes unrelated to the extension's core functionality
-- [x] Data is NOT used for creditworthiness or lending purposes
+
+- [X] Data is NOT sold to third parties
+- [X] Data is NOT used for purposes unrelated to the extension's core functionality
+- [X] Data is NOT used for creditworthiness or lending purposes
 
 ---
 
 ## Privacy Policy URL
+
 ```
 https://darkmode.pshah.fun/privacy.html
 ```
@@ -159,11 +167,10 @@ https://darkmode.pshah.fun/privacy.html
 
 ## Version History
 
-| Version | Date | Changes | Status |
-| :--- | :--- | :--- | :--- |
-| 2.0.0 | 2026-10-12 | Added eight built-in themes with a popup theme dropdown, ready-made settings for 20 popular sites, a theme editor with live preview, contrast check and JSON import/export, and per-site custom CSS (validated, cannot introduce a URL). Also includes the 1.8.0 spreadsheet viewer. No new permissions and no network requests. | Prepared (not yet submitted) |
-| 1.8.0 | 2026-10-12 | Added offline, read-only Excel (.xlsx) and CSV viewing to the Dark Document Viewer. No permission or manifest changes. | Included in 2.0.0 (not separately submitted) |
-| 1.7.0 | 2026-09-29 | Added offline .docx/.pptx support to the Dark Document Viewer, a matching "page card" surface for text-based documents, brightness/contrast/sepia filter sliders, automatic scheduling, toggle/viewer keyboard shortcuts with right-click equivalents, and a permanent `test-fixtures/` sample suite. Fixed PDF Smart Dark double-processing and render-scale performance. First submission rejected 2026-09-30 for keyword spam (the same file-format list was repeated in two sections of the description); resubmitted after removing the duplication. | Published |
-| 1.6.1 | 2026-09-23 | Privacy & Security compliance update: added User Control Center in Options (JSON settings export/import, one-click data erasure for GDPR Art. 17 / DPDP Sec. 12), hardened iframe sandbox without allow-same-origin, refactored document viewer to safe DOM construction (0 innerHTML), minimized runtime messaging to host-only, eliminated third-party count APIs on companion site, and added 47 automated security/privacy compliance tests. | Published |
-| 1.6.0 | 2026-09-22 | Unified branding as Force Dark Mode - ThemeSwitcher, added local PDF/document dark viewer with PDF.js, enhanced YouTube/SPA native dark detection, improved smart SVG logo inversion, tightened CSP, and production SEO landing site. | Published |
-| 1.4.2 | 2026-08-18 | Initial multi-engine release with Auto, CSS, and Invert engines. | Published |
+| Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status    |
+| :------ | :--------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------- |
+| 1.8.0   | 2026-10-12 | Added offline, read-only Excel (.xlsx) and CSV viewing to the Dark Document Viewer. No permission or manifest changes. |
+| 1.7.0   | 2026-09-29 | Added offline .docx/.pptx support to the Dark Document Viewer, a matching "page card" surface for text-based documents, brightness/contrast/sepia filter sliders, automatic scheduling, toggle/viewer keyboard shortcuts with right-click equivalents, and a permanent`test-fixtures/` sample suite. Fixed PDF Smart Dark double-processing and render-scale performance. First submission rejected 2026-09-30 for keyword spam (the same file-format list was repeated in two sections of the description); resubmitted after removing the duplication. | Published |
+| 1.6.1   | 2026-09-23 | Privacy & Security compliance update: added User Control Center in Options (JSON settings export/import, one-click data erasure for GDPR Art. 17 / DPDP Sec. 12), hardened iframe sandbox without allow-same-origin, refactored document viewer to safe DOM construction (0 innerHTML), minimized runtime messaging to host-only, eliminated third-party count APIs on companion site, and added 47 automated security/privacy compliance tests.                                                                                                           | Published |
+| 1.6.0   | 2026-09-22 | Unified branding as Force Dark Mode - ThemeSwitcher, added local PDF/document dark viewer with PDF.js, enhanced YouTube/SPA native dark detection, improved smart SVG logo inversion, tightened CSP, and production SEO landing site.                                                                                                                                                                                                                                                                                                                      | Published |
+| 1.4.2   | 2026-08-18 | Initial multi-engine release with Auto, CSS, and Invert engines.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Published |

@@ -1,0 +1,53 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "serve",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "serve"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "convert-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "/Users/pshah/Documents/chameleon-convert",
+        "run",
+        "dev",
+        "--",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "convert-prod",
+      "runtimeExecutable": "/Users/pshah/Documents/chameleon-convert/node_modules/.bin/vite",
+      "runtimeArgs": [
+        "preview",
+        "/Users/pshah/Documents/chameleon-convert",
+        "--port",
+        "4173",
+        "--strictPort"
+      ],
+      "port": 4173
+    },
+    {
+      "name": "ext-viewer",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8081",
+        "--directory",
+        "/Users/pshah/Documents/force-dark-mode-extension"
+      ],
+      "port": 8081
+    }
+  ]
+}

@@ -242,8 +242,44 @@
     return { ok: true, theme: checked.theme };
   }
 
+  function withSuffix(name, suffix) {
+    const base = (typeof name === "string" ? name : "").trim().slice(0, LIMITS.MAX_NAME - suffix.length - 1).trim();
+    return base ? `${base} ${suffix}` : suffix;
+  }
+  function duplicateName(name) {
+    return withSuffix(name, "copy");
+  }
+  function templateName(name) {
+    return withSuffix(name, "custom");
+  }
+
+  function safeFileName(name) {
+    const base = String(name === undefined || name === null ? "" : name)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40)
+      .replace(/-+$/g, "");
+    return `themeswitcher-theme-${base || "theme"}.json`;
+  }
+
+  // Save guard: a valid name and colours, and contrast not blocked.
+  function canSaveTheme(theme) {
+    const checked = validateTheme(Object.assign({}, theme, { id: "user:check" }));
+    return checked.ok && contrastIssues(checked.theme).level !== "block";
+  }
+
+  function importFileTooLarge(file) {
+    return !file || typeof file.size !== "number" || file.size > LIMITS.MAX_IMPORT_BYTES;
+  }
+
   global.ForceDarkThemes = Object.assign(global.ForceDarkThemes || {}, {
     LIMITS,
+    duplicateName,
+    templateName,
+    safeFileName,
+    canSaveTheme,
+    importFileTooLarge,
     themeFromForm,
     importThemeFile,
     newThemeId: freshUserId,

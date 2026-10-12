@@ -10,15 +10,6 @@ function core() {
   return globalThis.ForceDarkThemes;
 }
 
-function safeFileName(name) {
-  const base = String(name || "theme")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 40);
-  return `themeswitcher-theme-${base || "theme"}.json`;
-}
-
 export function initThemeEditor({ showStatus }) {
   const T = core();
   const $ = (id) => document.getElementById(id);
@@ -151,7 +142,7 @@ export function initThemeEditor({ showStatus }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = safeFileName(theme.name);
+    a.download = T.safeFileName(theme.name);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -171,7 +162,7 @@ export function initThemeEditor({ showStatus }) {
   }
 
   async function duplicateTheme(theme) {
-    const name = `${theme.name} copy`.slice(0, T.LIMITS.MAX_NAME);
+    const name = T.duplicateName(theme.name);
     await persist({ ...theme, id: T.newThemeId(), name }, `✓ Duplicated as "${name}".`);
   }
 
@@ -187,6 +178,7 @@ export function initThemeEditor({ showStatus }) {
     editingId = theme.id;
     titleEl.textContent = "Edit theme";
     saveBtn.textContent = "Save changes";
+    startFrom.value = "";
     writeForm(theme);
     nameInput.focus();
     titleEl.scrollIntoView({ block: "start" });
@@ -215,9 +207,12 @@ export function initThemeEditor({ showStatus }) {
 
   fillStartFrom();
   startFrom.addEventListener("change", () => {
+    editingId = null;
+    titleEl.textContent = "Create theme";
+    saveBtn.textContent = "Save theme";
     const template = startFrom.value ? T.getBuiltinTheme(startFrom.value) : null;
     if (template) {
-      writeForm({ ...template, name: `${template.name} custom`.slice(0, T.LIMITS.MAX_NAME) });
+      writeForm({ ...template, name: T.templateName(template.name) });
     } else {
       writeForm({ name: nameInput.value, colors: { background: BLANK_BACKGROUND }, imageDim: 0 });
     }
@@ -231,7 +226,7 @@ export function initThemeEditor({ showStatus }) {
 
   saveBtn.addEventListener("click", async () => {
     const draft = readForm();
-    if (T.contrastIssues(draft).level === "block") return;
+    if (!T.canSaveTheme(draft)) return;
     const id = editingId || T.newThemeId();
     const saved = await persist({ ...draft, id }, `✓ Theme "${draft.name}" saved.`);
     if (saved) resetEditor();
@@ -243,7 +238,7 @@ export function initThemeEditor({ showStatus }) {
     const file = importInput.files && importInput.files[0];
     if (!file) return;
     try {
-      if (file.size > T.LIMITS.MAX_IMPORT_BYTES) {
+      if (T.importFileTooLarge(file)) {
         showStatus(`Import failed: theme files must be under ${T.LIMITS.MAX_IMPORT_BYTES} bytes.`, "error");
         return;
       }

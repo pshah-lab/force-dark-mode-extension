@@ -82,7 +82,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (bgColorInput) bgColorInput.value = globalConfig.backgroundColor || DEFAULT_BACKGROUND_COLOR;
 
   await refreshStats();
-  await initThemeEditor({ showStatus });
+  try {
+    await initThemeEditor({ showStatus });
+  } catch (err) {
+    console.warn("Theme editor failed to start:", err);
+  }
 
   // Load schedule preferences
   const scheduleConfig = (await getScheduleConfig()) || { mode: "off", start: "20:00", end: "07:00" };

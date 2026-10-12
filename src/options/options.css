@@ -503,7 +503,7 @@ input[type="range"] {
 
 .theme-preview .pv-headline { margin: 0 0 0.5rem; font-size: 1.1rem; color: var(--preview-text); }
 .theme-preview .pv-text { margin: 0 0 0.75rem; font-size: 0.9rem; line-height: 1.5; color: var(--preview-text); }
-.theme-preview .pv-link { color: var(--preview-link); }
+.theme-preview .pv-link { color: var(--preview-link); text-decoration: underline; }
 .theme-preview .pv-muted { color: var(--preview-muted); }
 .theme-preview .pv-row { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
 .theme-preview .pv-button {

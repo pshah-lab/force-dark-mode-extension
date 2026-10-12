@@ -212,5 +212,67 @@ test("options.js import message mentions sites, themes and custom CSS", () => {
   assert.ok(!/configuration entries/.test(js));
 });
 
+// ---- Editor pure helpers (fix round 1) ----
+test("duplicateName always differs, fits 40 chars and ends with ' copy'", () => {
+  for (const n of [1, 5, 30, 35, 36, 37, 38, 39, 40]) {
+    const name = "a".repeat(n);
+    const d = T.duplicateName(name);
+    assert.ok(d.length <= 40, `len ${n}`);
+    assert.notStrictEqual(d, name, `differs ${n}`);
+    assert.ok(d.endsWith(" copy"), `suffix ${n}`);
+    assert.ok(T.validateTheme({ id: "user:x", name: d, colors: { background: "#101010" } }).ok);
+  }
+  assert.strictEqual(T.duplicateName("Dusk"), "Dusk copy");
+  const spaced = T.duplicateName(("ab ").repeat(14));
+  assert.ok(!/\s{2}copy$/.test(spaced) && spaced.length <= 40);
+  assert.strictEqual(T.duplicateName("x".repeat(500)).length, 40);
+  assert.strictEqual(T.duplicateName(""), "copy");
+  assert.strictEqual(T.duplicateName(undefined), "copy");
+});
+
+test("templateName appends ' custom' within 40 chars", () => {
+  assert.strictEqual(T.templateName("Midnight"), "Midnight custom");
+  for (const n of [34, 35, 38, 40, 100]) {
+    const d = T.templateName("b".repeat(n));
+    assert.ok(d.length <= 40 && d.endsWith(" custom"), `len ${n}`);
+  }
+});
+
+test("safeFileName sanitises traversal, control chars, empties and long names", () => {
+  const ok = (n) => /^themeswitcher-theme-[a-z0-9-]+\.json$/.test(n);
+  for (const input of ["Dusk", "../../etc/passwd", "a\nb\u0000c\u0007", "", "@@@###", "x".repeat(500), "..\\..\\win", undefined, "Ünï"]) {
+    const f = T.safeFileName(input);
+    assert.ok(ok(f), `${JSON.stringify(input)} -> ${f}`);
+    assert.ok(!f.includes("/") && !f.includes("\\") && !f.includes(".."));
+    assert.ok(f.length <= 70);
+  }
+  assert.strictEqual(T.safeFileName("My Theme!"), "themeswitcher-theme-my-theme.json");
+  assert.strictEqual(T.safeFileName("@@@"), "themeswitcher-theme-theme.json");
+});
+
+test("decision helpers: canSaveTheme refuses blocked contrast and blank names", () => {
+  const good = { name: "A", colors: { background: "#101820" }, imageDim: 0 };
+  assert.strictEqual(T.canSaveTheme(good), true);
+  assert.strictEqual(T.canSaveTheme({ ...good, name: "" }), false);
+  assert.strictEqual(T.canSaveTheme({ ...good, colors: { background: "#101820", text: "#101820" } }), false);
+  assert.strictEqual(T.canSaveTheme({ ...good, colors: { background: "#101820", text: "#6b7480" } }), true); // warn still saves
+});
+
+test("decision helpers: importFileTooLarge guards on size before reading", () => {
+  assert.strictEqual(T.importFileTooLarge({ size: T.LIMITS.MAX_IMPORT_BYTES + 1 }), true);
+  assert.strictEqual(T.importFileTooLarge({ size: T.LIMITS.MAX_IMPORT_BYTES }), false);
+  assert.strictEqual(T.importFileTooLarge(null), true);
+});
+
+test("themeEditor.js uses the guards, resets editingId on start-from, no live preview anchor", () => {
+  const ed = read("src/options/themeEditor.js");
+  assert.ok(/importFileTooLarge\(file\)/.test(ed));
+  assert.ok(/canSaveTheme\(/.test(ed));
+  assert.ok(/duplicateName\(/.test(ed) && /templateName\(/.test(ed) && /safeFileName\(/.test(ed));
+  const h = ed.slice(ed.indexOf('startFrom.addEventListener("change"'));
+  assert.ok(/editingId = null/.test(h.slice(0, 400)), "start-from resets editingId");
+  assert.ok(!/<a\b/.test(read("src/options/options.html").match(/id="theme-preview"[\s\S]*?<\/section>/)[0]));
+});
+
 console.log(`\n🎉 Results: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

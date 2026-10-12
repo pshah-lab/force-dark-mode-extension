@@ -17,7 +17,7 @@
 - Three theme engines: Auto (samples page luminance and picks an approach), CSS Override (recolors backgrounds and text by contrast) and Invert (inverts the page while keeping images and video as they are). An OLED preset uses pure black.
 - Detects sites that already have a native dark theme and leaves them alone, to avoid double inversion.
 - Injects styles at `document_start`, so pages don't flash white before the theme applies.
-- Built-in offline document viewer: PDF (via a bundled PDF.js), Markdown, plain text, RTF, and since 1.7.0 read-only DOCX and PPTX, and since 1.8.0 read-only XLSX and CSV spreadsheets. Files are never uploaded.
+- Built-in offline document viewer: PDF (via a bundled PDF.js), Markdown, plain text, RTF, and since 1.7.0 read-only DOCX and PPTX, and since 2.0.0 read-only XLSX and CSV spreadsheets. Files are never uploaded.
 - Since 2.0.0: eight built-in color themes, site packs for 20 popular sites (with fixes for 3, such as hindustantimes.com, npr.org and theguardian.com), a theme editor with a contrast check, theme import and export, and per-site custom CSS that is validated and cannot introduce a URL. The extension itself never makes network requests.
 - Per-site settings, custom colors, brightness, contrast and sepia sliders, and scheduling by time range or the system dark-mode setting.
 - Keyboard shortcuts: Alt+Shift+D toggles dark mode; Alt+Shift+O and Alt+Shift+V open the document viewer.

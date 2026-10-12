@@ -19,8 +19,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Per-site custom CSS** in Options, checked by a sanitiser before it is stored or injected. Custom CSS cannot introduce a URL.
 
 ### Changed
-- Images, pictures and video are dimmed through one adjustable setting, and SVG icons and keep-light elements are handled more carefully by the CSS engine.
-- Settings export is now format v2 and adds `themes` and `customCss`. Exports from earlier versions still import.
+- Images and video are dimmed through one adjustable theme setting, and SVG icons and keep-light elements are handled more carefully by the CSS engine. Dimming applies only when a theme sets it above 0 (otherwise images keep no filter), and an image inside a `<picture>` is dimmed once, not twice.
+- A background colour you already chose for a site keeps working: on the 20 site-pack sites the pack theme is used only while the site still has the default colour, and changing the colour in the popup switches that site to "Default colour".
+- Settings export is now format v2 and adds `themes` and `customCss`. Exports from earlier versions still import, including the Options global defaults.
+- Custom CSS is limited to 40,000 characters across all sites together, so it can never fill browser sync storage.
 
 ### Privacy
 - No new permissions, host permissions or network requests. Themes and custom CSS are stored with the rest of your settings in `chrome.storage`, and the extension never makes network requests.

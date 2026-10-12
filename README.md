@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-2.0.0-indigo.svg)](manifest.json)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Free-blue.svg?logo=googlechrome)](https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke)
-[![Tests](https://img.shields.io/badge/tests-449%20passed-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-472%20passed-success.svg)](tests/)
 [![Website](https://img.shields.io/badge/website-live-cyan.svg)](https://darkmode.pshah.fun/)
 
 **Force Dark Mode - ThemeSwitcher** is a lightweight, privacy-first Chrome extension that transforms websites, local documents, and PDF files into eye-friendly, customizable dark themes.
@@ -99,14 +99,14 @@ Read our complete [Privacy Policy](https://darkmode.pshah.fun/privacy.html) or [
 4. Click **Load unpacked** and select the repository root directory.
 
 ### Running Automated Tests
-Run the full test suite (449 tests across 22 files):
+Run the full test suite (472 tests across 22 files):
 ```bash
 npm test
 ```
 Or run an individual suite:
 ```bash
 node tests/run_tests.mjs             # File integrity, color math, and security checks (34 tests)
-node tests/dom_engine_test.mjs       # DOM simulation, engine switching, and YouTube detection (72 tests)
+node tests/dom_engine_test.mjs       # DOM simulation, engine switching, and YouTube detection (75 tests)
 node tests/privacy_security_test.mjs # Privacy, security, and versioning compliance (27 tests)
 node tests/zip_reader_test.mjs       # Dependency-free ZIP reader for docx/pptx/xlsx (15 tests)
 node tests/docx_parser_test.mjs      # .docx paragraph/heading/list parser (8 tests)
@@ -121,11 +121,11 @@ node tests/spreadsheet_view_test.mjs # Spreadsheet view model (13 tests)
 node tests/spreadsheet_renderer_test.mjs # Spreadsheet DOM renderer, fake DOM (21 tests)
 node tests/spreadsheet_errors_test.mjs # Spreadsheet error classification (6 tests)
 node tests/feedback_prompt_test.mjs   # Popup feedback prompt state machine (7 tests)
-node tests/theme_core_test.mjs       # Theme model, validation, contrast and import/export (9 tests)
+node tests/theme_core_test.mjs       # Theme model, validation, contrast and import/export (12 tests)
 node tests/builtin_themes_test.mjs   # Built-in themes and their contrast ratios (6 tests)
 node tests/site_packs_test.mjs       # Site packs for popular sites (9 tests)
-node tests/storage_themes_test.mjs   # Theme and custom CSS storage, export format v2 (19 tests)
-node tests/theme_ui_test.mjs         # Popup theme dropdown and theme editor UI (33 tests)
+node tests/storage_themes_test.mjs   # Theme and custom CSS storage, export format v2 (28 tests)
+node tests/theme_ui_test.mjs         # Popup theme dropdown and theme editor UI (41 tests)
 node tests/custom_css_test.mjs       # Custom CSS sanitiser and injection (25 tests)
 ```
 

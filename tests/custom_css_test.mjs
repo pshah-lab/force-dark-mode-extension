@@ -99,10 +99,40 @@ test("backslash, <, > and NUL are rejected outright", () => {
   rejects("a{color:red}\\", "\\");
   rejects("</style><script>alert(1)</script>", "<");
   rejects("a{color:red}</style>", "<");
-  rejects("ul > li{color:red}", ">");
   rejects("<!-- a{color:red} -->", "<");
   rejects("a{color:red}\u0000", "NUL");
   rejects("a{col\u0000or:red}");
+});
+
+test("the child combinator > is allowed; < stays banned", () => {
+  accepts("ul > li{color:red}");
+  accepts("a>b{color:red}");
+  accepts("ul>li>a{color:red}");
+  accepts("@media (min-width: 600px){ .a > .b{color:red} }");
+  rejects("a < b{color:red}", "<");
+  rejects("<", "<");
+  rejects("a > b{color:red} </style>", "<");
+});
+
+test("scroll-behavior and overscroll-behavior are not the IE behavior property", () => {
+  accepts("html{scroll-behavior:smooth}");
+  accepts("body{overscroll-behavior:contain}");
+  accepts("body{overscroll-behavior-x:none}");
+  accepts("body{overscroll-behavior-inline:auto}");
+  accepts("HTML{SCROLL-BEHAVIOR : smooth}");
+  accepts(":root{--behavior:1}");
+});
+
+test("behavior: is still rejected at every declaration boundary", () => {
+  rejects("a{behavior:foo}", "behavior");
+  rejects("a{-ms-behavior:foo}", "behavior");
+  rejects("a{-MS-BEHAVIOR :foo}", "behavior");
+  rejects("a{color:red;behavior:foo}", "behavior");
+  rejects("a{color:red; behavior:foo}", "behavior");
+  rejects("a{ behavior:foo}", "behavior");
+  rejects("behavior:foo", "behavior");
+  rejects("a{color:red;\nbehavior:foo}", "behavior");
+  rejects("a{/* c */behavior:foo}", "behavior");
 });
 
 test("an unterminated comment is rejected", () => {

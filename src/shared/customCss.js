@@ -26,7 +26,8 @@
     ["src(", /src\s*\(/g, NETWORK],
     ["cross-fade(", /cross-fade\s*\(/g, NETWORK],
     ["expression(", /expression\s*\(/g, SCRIPT],
-    ["behavior:", /behavior\s*:/g, SCRIPT],
+    // Needs a left boundary: scroll-behavior and overscroll-behavior are ordinary properties.
+    ["behavior:", /(^|[^a-z0-9_-])(?:-ms-)?behavior\s*:/g, SCRIPT],
     ["-moz-binding", /-moz-binding/g, SCRIPT],
     ["javascript:", /javascript\s*:/g, SCRIPT],
   ];
@@ -75,7 +76,9 @@
     const max = maxChars();
     if (css.length > max) return fail(`Custom CSS must be at most ${max} characters.`);
     if (css.indexOf("\\") !== -1) return fail("Custom CSS cannot contain a backslash (\\).");
-    if (/[<>]/.test(css)) return fail("Custom CSS cannot contain < or >.");
+    // "<" stays banned as defence in depth: a page that serialises and re-parses its DOM
+    // would not escape "</style>". ">" is the child combinator and is harmless here.
+    if (css.indexOf("<") !== -1) return fail("Custom CSS cannot contain \"<\".");
     if (css.indexOf("\u0000") !== -1) return fail("Custom CSS cannot contain a NUL character.");
 
     const stripped = stripComments(css);
@@ -86,7 +89,8 @@
     for (const [label, pattern, why] of FORBIDDEN) {
       pattern.lastIndex = 0;
       const match = pattern.exec(scan);
-      if (match && (!first || match.index < first.index)) first = { index: match.index, label, why };
+      const index = match ? match.index + (match[1] || "").length : -1;
+      if (match && (!first || index < first.index)) first = { index, label, why };
     }
     if (first) return fail(`Custom CSS cannot use "${first.label}", which ${first.why}.`);
 

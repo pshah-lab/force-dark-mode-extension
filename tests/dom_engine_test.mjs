@@ -1611,20 +1611,23 @@ test("custom CSS is absent when the site is disabled, missing, or outside the sc
 });
 
 test("custom CSS is absent on a natively dark page where no engine runs", () => {
-  withCustomCssPage({ "example.com": { enabled: true, engine: "auto" }, [CSS_KEY]: "a{color:red}" }, () => {
-    buildNativeDarkPage();
-    loadSiteConfigAndApply();
-    assert.strictEqual(mockDoc.getElementById("__force_dark_mode__"), null);
-    assert.strictEqual(customEl(), null, "auto on a dark page");
-    currentSiteConfig = { enabled: true, engine: "invert" };
-    applyEffectiveEngine();
-    assert.strictEqual(mockDoc.getElementById("__force_dark_invert__"), null);
-    assert.strictEqual(customEl(), null, "invert on a dark page");
-  });
-  mockDoc.documentElement.removeAttribute("dark");
-  mockDoc.documentElement.style.colorScheme = "";
-  mockDoc.documentElement.style.backgroundColor = "rgb(255, 255, 255)";
-  mockDoc.body.style.colorScheme = "";
+  try {
+    withCustomCssPage({ "example.com": { enabled: true, engine: "auto" }, [CSS_KEY]: "a{color:red}" }, () => {
+      buildNativeDarkPage();
+      loadSiteConfigAndApply();
+      assert.strictEqual(mockDoc.getElementById("__force_dark_mode__"), null);
+      assert.strictEqual(customEl(), null, "auto on a dark page");
+      currentSiteConfig = { enabled: true, engine: "invert" };
+      applyEffectiveEngine();
+      assert.strictEqual(mockDoc.getElementById("__force_dark_invert__"), null);
+      assert.strictEqual(customEl(), null, "invert on a dark page");
+    });
+  } finally {
+    mockDoc.documentElement.removeAttribute("dark");
+    mockDoc.documentElement.style.colorScheme = "";
+    mockDoc.documentElement.style.backgroundColor = "rgb(255, 255, 255)";
+    mockDoc.body.style.colorScheme = "";
+  }
 });
 
 test("disableDarkMode, disableInvert and disabling the site remove the custom CSS", () => {

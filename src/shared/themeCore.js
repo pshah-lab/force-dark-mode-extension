@@ -310,7 +310,7 @@
   // Combines host validity and the CSS sanitiser. Empty CSS is valid (it means delete).
   function canSaveCss(host, css) {
     const clean = cleanCssHost(host);
-    if (!clean) return { ok: false, error: "Enter a site name such as example.com (no https://, path or spaces)." };
+    if (!clean) return { ok: false, error: "Enter a site name such as example.com (no scheme, path or spaces)." };
     const text = typeof css === "string" ? css : "";
     if (text === "") return { ok: true, host: clean };
     const validate = global.ForceDarkThemes && global.ForceDarkThemes.validateCss;

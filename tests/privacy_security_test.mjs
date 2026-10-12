@@ -3,6 +3,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import assert from "assert";
+import vm from "vm";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,24 +43,30 @@ async function testAsync(name, fn) {
 // 1. Network Isolation & Zero Egress
 console.log("1. Network Isolation & Egress Verification");
 
+// Single source of truth for the egress scan; the exhaustive src/ walk in section 8 reuses it.
+const EGRESS_SCANNED_FILES = [
+  "src/background/serviceWorker.js",
+  "src/content/index.js",
+  "src/content/themeEngine/cssOverrideEngine.js",
+  "src/content/themeEngine/invertEngine.js",
+  "src/popup/popup.js",
+  "src/popup/feedbackPrompt.js",
+  "src/options/options.js",
+  "src/options/themeEditor.js",
+  "src/options/customCssEditor.js",
+  "src/shared/storage.js",
+  "src/shared/themeCore.js",
+  "src/shared/builtinThemes.js",
+  "src/shared/zipReader.js",
+  "src/shared/colorUtils.js",
+  "src/shared/sitePacks.js",
+  "src/shared/customCss.js",
+  "src/shared/constants.js",
+  "src/viewer/viewer.js",
+];
+
 test("zero outbound network calls in extension core code", () => {
-  const extensionJsFiles = [
-    "src/background/serviceWorker.js",
-    "src/content/index.js",
-    "src/content/themeEngine/cssOverrideEngine.js",
-    "src/content/themeEngine/invertEngine.js",
-    "src/popup/popup.js",
-    "src/popup/feedbackPrompt.js",
-    "src/options/options.js",
-    "src/options/themeEditor.js",
-    "src/options/customCssEditor.js",
-    "src/shared/storage.js",
-    "src/shared/colorUtils.js",
-    "src/shared/sitePacks.js",
-    "src/shared/customCss.js",
-    "src/shared/constants.js",
-    "src/viewer/viewer.js",
-  ];
+  const extensionJsFiles = EGRESS_SCANNED_FILES;
 
   const prohibitedPatterns = [
     /\bfetch\s*\(/,
@@ -458,6 +465,256 @@ test("CHANGELOG.md and VERSIONING.md document current release and latest publish
   const [a, b] = [toNums(published), toNums(manifest.version)];
   const cmp = a[0] - b[0] || a[1] - b[1] || a[2] - b[2];
   assert.ok(cmp <= 0, `Published version ${published} cannot be ahead of manifest version ${manifest.version}`);
+});
+
+// 8. Themes, Custom CSS & New Surface
+console.log("\n8. Themes, Custom CSS & New Extension Surface");
+
+const readManifest = () => JSON.parse(fs.readFileSync(path.join(rootDir, "manifest.json"), "utf8"));
+
+function walkFiles(dir, ext, out = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walkFiles(full, ext, out);
+    else if (entry.name.endsWith(ext)) out.push(full);
+  }
+  return out;
+}
+const relToRoot = (full) => path.relative(rootDir, full).split(path.sep).join("/");
+
+// Exhaustive-walk rules: every .js file under src/ must appear in EGRESS_SCANNED_FILES,
+// except src/viewer/** (the document viewer, its parsers and spreadsheet modules have their own
+// parser/renderer suites plus the viewer-specific scans in section 5; viewer.js itself stays in the
+// egress list). Vendored pdf.js lives under assets/ and is outside src/, so it is never walked.
+// ALLOW_UNSCANNED holds any other file deliberately left out, with the reason. It must stay empty
+// unless a file genuinely cannot be scanned.
+const WALK_EXCLUDED_PREFIXES = ["src/viewer/"];
+const ALLOW_UNSCANNED = {};
+
+test("every src/ .js file is covered by the egress scan or an explicit allow-list", () => {
+  const found = walkFiles(path.join(rootDir, "src"), ".js").map(relToRoot);
+  assert.ok(found.length >= 18, "expected to find the extension source files");
+  const uncovered = found.filter(
+    (rel) =>
+      !WALK_EXCLUDED_PREFIXES.some((prefix) => rel.startsWith(prefix)) &&
+      !EGRESS_SCANNED_FILES.includes(rel) &&
+      !Object.prototype.hasOwnProperty.call(ALLOW_UNSCANNED, rel)
+  );
+  assert.deepStrictEqual(uncovered, [], `JS files skipped by the egress scan: ${uncovered.join(", ")}`);
+  for (const rel of EGRESS_SCANNED_FILES) {
+    assert.ok(fs.existsSync(path.join(rootDir, rel)), `egress list names a missing file: ${rel}`);
+  }
+  for (const rel of Object.keys(ALLOW_UNSCANNED)) {
+    assert.ok(ALLOW_UNSCANNED[rel], `allow-list entry ${rel} needs a documented reason`);
+  }
+});
+
+test("manifest permissions unchanged: storage, activeTab, contextMenus only", () => {
+  const manifest = readManifest();
+  assert.deepStrictEqual(manifest.permissions, ["storage", "activeTab", "contextMenus"]);
+  for (const key of ["host_permissions", "optional_permissions", "optional_host_permissions", "externally_connectable"]) {
+    assert.strictEqual(Object.prototype.hasOwnProperty.call(manifest, key), false, `manifest must not declare ${key}`);
+  }
+});
+
+test("no new web_accessible_resources", () => {
+  const manifest = readManifest();
+  assert.strictEqual(
+    Object.prototype.hasOwnProperty.call(manifest, "web_accessible_resources"),
+    false,
+    "manifest must not expose web_accessible_resources"
+  );
+});
+
+test("CSP unchanged and free of unsafe-eval, unsafe-inline and remote origins", () => {
+  const manifest = readManifest();
+  const csp = manifest.content_security_policy.extension_pages;
+  assert.strictEqual(csp, "script-src 'self' 'wasm-unsafe-eval'; object-src 'none';");
+  assert.strictEqual(Object.keys(manifest.content_security_policy).join(","), "extension_pages");
+  // 'wasm-unsafe-eval' (WebAssembly only, needed by the viewer) is the one allowed token containing "unsafe-eval".
+  assert.ok(!csp.replace("'wasm-unsafe-eval'", "").includes("unsafe-eval"), "CSP must not allow unsafe-eval");
+  assert.ok(!csp.includes("unsafe-inline"), "CSP must not allow unsafe-inline");
+  assert.ok(!/https?:|\*|data:|blob:/.test(csp), "CSP must not name remote origins or wildcards");
+});
+
+const DOM_AND_CODE_EXEC_PATTERNS = [
+  [/\binnerHTML\b/, "innerHTML"],
+  [/\bouterHTML\b/, "outerHTML"],
+  [/\binsertAdjacentHTML\b/, "insertAdjacentHTML"],
+  [/\bdocument\.write(ln)?\s*\(/, "document.write"],
+  [/\beval\s*\(/, "eval("],
+  [/\bnew\s+Function\b/, "new Function"],
+  [/\bsetTimeout\s*\(\s*["'`]/, "string setTimeout"],
+  [/\bsetInterval\s*\(\s*["'`]/, "string setInterval"],
+];
+
+test("extension pages and shared code never use HTML-string DOM writes, eval or string timers", () => {
+  const files = ["src/options", "src/popup", "src/content", "src/shared"].flatMap((dir) =>
+    walkFiles(path.join(rootDir, dir), ".js")
+  );
+  assert.ok(files.length >= 14, "expected to scan the options, popup, content and shared scripts");
+  for (const full of files) {
+    const code = fs.readFileSync(full, "utf8");
+    for (const [pattern, label] of DOM_AND_CODE_EXEC_PATTERNS) {
+      assert.strictEqual(pattern.test(code), false, `Prohibited pattern (${label}) detected in ${relToRoot(full)}`);
+    }
+  }
+});
+
+// Origins an <a href> may point to. Scripts, stylesheets and images may never be remote.
+const ALLOWED_ANCHOR_ORIGINS = [
+  "https://chromewebstore.google.com/detail/force-dark-mode/",
+  "https://darkmode.pshah.fun/",
+  "https://github.com/pshah-lab/force-dark-mode-extension",
+];
+
+test("extension HTML pages have no inline handlers, inline scripts or remote resources", () => {
+  const htmlFiles = walkFiles(path.join(rootDir, "src"), ".html");
+  assert.ok(htmlFiles.length >= 3, "expected popup, options and viewer pages");
+  for (const full of htmlFiles) {
+    const rel = relToRoot(full);
+    const html = fs.readFileSync(full, "utf8");
+    const tags = html.match(/<[a-zA-Z][^>]*>/g) || [];
+    for (const tag of tags) {
+      assert.ok(!/\son[a-z]+\s*=/i.test(tag), `Inline event handler in ${rel}: ${tag.slice(0, 80)}`);
+      assert.ok(!/\sstyle\s*=\s*["'][^"']*url\s*\(\s*["']?https?:/i.test(tag), `Remote url() in inline style in ${rel}`);
+      if (/^<script\b/i.test(tag)) {
+        assert.ok(/\ssrc\s*=/i.test(tag), `Inline <script> block (forbidden by MV3 CSP) in ${rel}`);
+      }
+      const remoteAttr = tag.match(/\s(src|href|srcset|action|formaction|data)\s*=\s*["']\s*(https?:)?\/\/[^"']*/i);
+      if (remoteAttr) {
+        const isAnchor = /^<a\b/i.test(tag) && /\shref\s*=/i.test(remoteAttr[0]);
+        const url = remoteAttr[0].replace(/^[^=]*=\s*["']\s*/, "");
+        assert.ok(
+          isAnchor && ALLOWED_ANCHOR_ORIGINS.some((origin) => url.startsWith(origin)),
+          `Remote reference in ${rel} is not an allowed anchor: ${tag.slice(0, 120)}`
+        );
+      }
+    }
+    assert.ok(!/<script\b(?![^>]*\ssrc\s*=)[^>]*>/i.test(html), `Inline <script> block in ${rel}`);
+    assert.ok(!/<iframe\b[^>]*\ssrc\s*=\s*["']\s*(https?:)?\/\//i.test(html), `Remote iframe in ${rel}`);
+  }
+});
+
+test("only chrome.storage.sync and chrome.storage.local are used; no cookies or web storage", () => {
+  const allowedNamespaces = new Set(["sync", "local", "onChanged"]);
+  const seen = new Set();
+  for (const full of walkFiles(path.join(rootDir, "src"), ".js")) {
+    const code = fs.readFileSync(full, "utf8");
+    const rel = relToRoot(full);
+    for (const match of code.matchAll(/\bchrome\.storage\.([A-Za-z_]+)/g)) {
+      seen.add(match[1]);
+      assert.ok(allowedNamespaces.has(match[1]), `Unexpected chrome.storage.${match[1]} in ${rel}`);
+    }
+    for (const [pattern, label] of [
+      [/\bdocument\.cookie\b/, "document.cookie"],
+      [/\bcookieStore\b/, "cookieStore"],
+      [/\blocalStorage\b/, "localStorage"],
+      [/\bsessionStorage\b/, "sessionStorage"],
+      [/\bindexedDB\b/, "indexedDB"],
+      [/\bchrome\.cookies\b/, "chrome.cookies"],
+    ]) {
+      assert.strictEqual(pattern.test(code), false, `Prohibited storage API (${label}) in ${rel}`);
+    }
+  }
+  assert.ok(seen.has("sync") && seen.has("local"), "expected both sync and local storage to be in use");
+});
+
+// Loads the UMD files into a vm sandbox in which every network entry point throws and records itself.
+function loadTrappedSandbox(overrides = {}) {
+  const tripped = [];
+  const trap = (name) => function () {
+    tripped.push(name);
+    throw new Error(`network API called: ${name}`);
+  };
+  const sandbox = {
+    fetch: trap("fetch"),
+    XMLHttpRequest: trap("XMLHttpRequest"),
+    WebSocket: trap("WebSocket"),
+    EventSource: trap("EventSource"),
+    Image: trap("Image"),
+    importScripts: trap("importScripts"),
+    navigator: { sendBeacon: trap("navigator.sendBeacon") },
+  };
+  const ctx = vm.createContext(sandbox);
+  for (const rel of [
+    "src/shared/colorUtils.js",
+    "src/shared/themeCore.js",
+    "src/shared/builtinThemes.js",
+    "src/shared/sitePacks.js",
+    "src/shared/customCss.js",
+  ]) {
+    const code = overrides[rel] ?? fs.readFileSync(path.join(rootDir, rel), "utf8");
+    vm.runInContext(code, ctx, { filename: rel });
+  }
+  return { ctx, tripped };
+}
+
+function exerciseThemeApis(ctx) {
+  const T = ctx.ForceDarkThemes;
+  const results = {};
+  results.hostileCss = [
+    "a { background: url(http://x) }",
+    "a { background: URL( 'https://evil.example/x.png' ) }",
+    "@import 'https://evil.example/a.css';",
+    "a { background: u\\72l(http://x) }",
+    "a { behavior: expression(alert(1)) }",
+    "</style><script>alert(1)</script>",
+    "a { width: expression(fetch('//x')) }",
+  ].map((css) => T.validateCss(css));
+  results.benignCss = [".x { color: #fff; }", "body > main { scroll-behavior: smooth }", ""].map((css) => T.validateCss(css));
+  const goodTheme = { id: "user:abc", name: "Mine", colors: { background: "#101010" }, imageDim: 10 };
+  results.themes = [
+    goodTheme,
+    { id: "user:evil", name: "<img src=x onerror=fetch(1)>", colors: { background: "#000000" } },
+    { id: "user:b", name: "B", colors: { background: "url(http://x)" } },
+    JSON.parse('{"id":"user:p","name":"P","colors":{"background":"#000000"},"__proto__":{"x":1}}'),
+    null,
+    "string",
+  ].map((theme) => T.validateTheme(theme));
+  results.palette = T.paletteFromTheme(goodTheme);
+  results.packs = ["github.com", "www.youtube.com", "evil.example", "", null].map((host) => T.findSitePack(host));
+  results.resolved = [
+    T.resolveTheme({ config: { themeId: "default" }, host: "github.com", userThemes: [] }),
+    T.resolveTheme({ config: {}, host: "github.com", userThemes: [goodTheme] }),
+    T.resolveTheme({ config: { themeId: "user:abc" }, host: "x.com", userThemes: [goodTheme] }),
+    T.resolveTheme({ config: { themeId: "nope" }, host: "x.com", userThemes: [] }),
+    T.resolveTheme(undefined),
+  ];
+  results.imported = [
+    JSON.stringify({ name: "Imp", colors: { background: "#202020" }, imageDim: 5 }),
+    JSON.stringify({ name: "X", colors: { background: "#202020", text: "http://x" } }),
+    "{ not json",
+    "x".repeat(T.LIMITS.MAX_IMPORT_BYTES + 1),
+  ].map((text) => T.importThemeFile(text));
+  results.options = [T.buildThemeOptions([goodTheme], T.findSitePack("github.com")), T.buildThemeOptions(null, null)];
+  return results;
+}
+
+test("custom CSS and themes never reach the network layer", () => {
+  const { ctx, tripped } = loadTrappedSandbox();
+  const results = exerciseThemeApis(ctx);
+  assert.deepStrictEqual(tripped, [], `Network APIs were called: ${tripped.join(", ")}`);
+
+  assert.strictEqual(results.hostileCss.filter((r) => r.ok).length, 0, "every hostile stylesheet must be rejected");
+  assert.strictEqual(results.hostileCss[0].ok, false, "url(http://x) must be rejected");
+  assert.ok(results.benignCss.every((r) => r.ok), "benign stylesheets must validate");
+  assert.strictEqual(results.themes[0].ok, true);
+  assert.strictEqual(results.themes.slice(1).filter((r) => r.ok).length, 0, "hostile themes must be rejected");
+  assert.strictEqual(results.imported[0].ok, true);
+  assert.strictEqual(results.imported.slice(1).filter((r) => r.ok).length, 0, "hostile imports must be rejected");
+  assert.ok(results.palette, "paletteFromTheme returns a palette");
+  assert.ok(results.options[0].length > 2 && results.options[1].length >= 2);
+});
+
+test("the network trap sandbox detects a violation (self-check)", () => {
+  const rel = "src/shared/customCss.js";
+  const original = fs.readFileSync(path.join(rootDir, rel), "utf8");
+  const mutated = original.replace("function validateCss(css) {", "function validateCss(css) {\n    fetch('/leak');");
+  assert.notStrictEqual(mutated, original, "mutation must apply");
+  const { ctx, tripped } = loadTrappedSandbox({ [rel]: mutated });
+  assert.throws(() => exerciseThemeApis(ctx), /network API called: fetch/);
+  assert.ok(tripped.includes("fetch"), "trap must record the fetch call");
 });
 
 // Final summary

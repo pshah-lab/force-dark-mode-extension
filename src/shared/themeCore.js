@@ -168,6 +168,34 @@
     return { theme: null, source: "default", pack };
   }
 
+  // Options for the popup theme dropdown. Labels are plain text; callers must use textContent.
+  function buildThemeOptions(userThemes, pack) {
+    const packName = pack && typeof pack.name === "string" && pack.name ? pack.name : "";
+    const options = [
+      { value: "", label: packName ? `Automatic (${packName} theme)` : "Automatic", group: "" },
+      { value: "default", label: "Default colour", group: "" },
+    ];
+    const lister = global.ForceDarkThemes && global.ForceDarkThemes.getBuiltinThemes;
+    const builtins = typeof lister === "function" ? lister() : [];
+    for (const theme of builtins) {
+      options.push({ value: theme.id, label: theme.name, group: "Built-in" });
+    }
+    if (Array.isArray(userThemes)) {
+      let count = 0;
+      for (const theme of userThemes) {
+        if (count >= LIMITS.MAX_USER_THEMES) break;
+        if (!isPlainObject(theme)) continue;
+        if (typeof theme.id !== "string" || !/^user:[a-z0-9-]{1,40}$/.test(theme.id)) continue;
+        if (typeof theme.name !== "string") continue;
+        const label = theme.name.trim().slice(0, LIMITS.MAX_NAME);
+        if (!label) continue;
+        options.push({ value: theme.id, label, group: "My themes" });
+        count++;
+      }
+    }
+    return options;
+  }
+
   global.ForceDarkThemes = Object.assign(global.ForceDarkThemes || {}, {
     LIMITS,
     THEME_ID_PATTERN,
@@ -176,5 +204,6 @@
     paletteFromTheme,
     contrastIssues,
     resolveTheme,
+    buildThemeOptions,
   });
 })(typeof globalThis !== "undefined" ? globalThis : self);

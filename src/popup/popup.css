@@ -313,3 +313,22 @@ body {
   color: #5f6368;
   font-size: 11px;
 }
+
+/* Theme dropdown */
+.theme-control {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #d6d9df;
+  font-size: 12px;
+}
+
+.theme-control select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #343b46;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #ffffff;
+  font: inherit;
+}

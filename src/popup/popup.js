@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const resetFiltersButton = document.getElementById("reset-filters");
   const openPdfViewerButton = document.getElementById("open-pdf-viewer");
   const openDocumentViewerButton = document.getElementById("open-document-viewer");
+  const themeSelect = document.getElementById("theme-select");
   const radios = document.querySelectorAll('input[name="engine"]');
   const defaultBackgroundColor = "#0f1115";
   const defaultEngine = "auto";
@@ -110,6 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     contrastInput.disabled = true;
     sepiaInput.disabled = true;
     resetFiltersButton.disabled = true;
+    themeSelect.disabled = true;
     radios.forEach((radio) => {
       radio.disabled = true;
     });
@@ -276,11 +278,61 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  function fillThemeOptions(userThemes) {
+    const finder = ForceDarkThemes.findSitePack;
+    const pack = typeof finder === "function" ? finder(host) : null;
+    const options = ForceDarkThemes.buildThemeOptions(userThemes, pack);
+    const groups = new Map();
+    themeSelect.replaceChildren();
+    for (const entry of options) {
+      const option = document.createElement("option");
+      option.value = entry.value;
+      option.textContent = entry.label;
+      if (!entry.group) {
+        themeSelect.append(option);
+        continue;
+      }
+      let optgroup = groups.get(entry.group);
+      if (!optgroup) {
+        optgroup = document.createElement("optgroup");
+        optgroup.label = entry.group;
+        groups.set(entry.group, optgroup);
+        themeSelect.append(optgroup);
+      }
+      optgroup.append(option);
+    }
+  }
+
+  function selectTheme(themeId) {
+    const wanted = typeof themeId === "string" ? themeId : "";
+    const known = Array.from(themeSelect.options).some((option) => option.value === wanted);
+    themeSelect.value = known ? wanted : "";
+  }
+
+  themeSelect.onchange = () => {
+    const themeId = themeSelect.value;
+    chrome.storage.sync.get(host, (data) => {
+      const enabled = data[host]?.enabled === true;
+
+      chrome.runtime.sendMessage({
+        type: "TOGGLE",
+        tabId: tab.id,
+        host,
+        engine: getSelectedEngine(),
+        backgroundColor: normalizeColor(backgroundColorInput.value),
+        themeId,
+        forceEnabled: enabled,
+        ...getFilterValues(),
+      });
+    });
+  };
+
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "sync") return;
     if (!changes[host]) return;
 
     const config = changes[host].newValue || {};
+    selectTheme(config.themeId);
     updateToggleUI(
       config.enabled === true,
       config.engine || defaultEngine,
@@ -290,8 +342,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   function updateUI() {
-    chrome.storage.sync.get(host, (data) => {
+    chrome.storage.sync.get([host, "__customThemes"], (data) => {
       const config = data[host] || {};
+      fillThemeOptions(data.__customThemes);
+      selectTheme(config.themeId);
       const hasSavedConfig = Boolean(data[host]?.engine);
       const enabled = config.enabled === true;
       const engine = config.engine || defaultEngine;

@@ -25,7 +25,7 @@ Unlike crude global inverters that turn photos, videos, and layouts into neon ne
 - **Smart Logo Inversion**: Selectively inverts dark/black logos on dark backgrounds for crystal-clear readability.
 - **Built-in Offline Dark PDF & Document Reader**: Render online and local PDF files locally using bundled PDF.js with saturation-aware pixel conversion. Also supports Markdown (`.md`), Plain Text (`.txt`), and RTF.
 - **Local Spreadsheet Viewer**: Open Excel (`.xlsx`) and CSV files as a read-only dark grid with sheet tabs, entirely on your device. Legacy `.xls` files must be converted to `.xlsx` first.
-- **Themes**: Eight built-in color themes chosen from the popup, tuned settings for 20 popular sites, and a theme editor in Options with a live preview, a contrast check and JSON import/export.
+- **Themes**: Eight built-in color themes chosen from the popup, ready-made settings for 20 popular sites, and a theme editor in Options with a live preview, a contrast check and JSON import/export.
 - **Per-Site Custom CSS**: Add your own CSS for a site in Options. It is validated before use and cannot introduce a URL.
 - **Per-Site Background Customizer**: Choose between pitch-black (`#000000`) for OLED power savings or midnight slate (`#0f1115`) from the popup. Surfaces and borders adapt automatically.
 - **Zero White Flashes**: Injected at `document_start` so pages render dark immediately without blinding white flashes.

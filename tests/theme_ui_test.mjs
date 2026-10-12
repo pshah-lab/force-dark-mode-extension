@@ -274,5 +274,35 @@ test("themeEditor.js uses the guards, resets editingId on start-from, no live pr
   assert.ok(!/<a\b/.test(read("src/options/options.html").match(/id="theme-preview"[\s\S]*?<\/section>/)[0]));
 });
 
+// ---- duplicateName counter scheme (fix round 2) ----
+test("duplicateName counter: explicit cases", () => {
+  assert.strictEqual(T.duplicateName("X"), "X copy");
+  assert.strictEqual(T.duplicateName("X copy"), "X copy 2");
+  assert.strictEqual(T.duplicateName("X copy 2"), "X copy 3");
+  assert.strictEqual(T.duplicateName("X copy 9"), "X copy 10");
+  assert.strictEqual(T.duplicateName("  X copy 2  "), "X copy 3");
+  const long = T.duplicateName("R".repeat(40));
+  assert.ok(long.length <= 40 && long.endsWith(" copy") && long.startsWith("RRR"));
+  const longN = T.duplicateName("R".repeat(33) + " copy 9");
+  assert.ok(longN.length <= 40 && longN.endsWith(" copy 10"), longN);
+});
+
+test("duplicateName chains never repeat, stay <= 40 and have clean spacing", () => {
+  for (const start of ["a".repeat(35) + " copy", "X", "Q".repeat(40), "Pad   ", "w ".repeat(19) + "w"]) {
+    const seen = new Set([start]);
+    let cur = start;
+    for (let i = 0; i < 60; i++) {
+      const next = T.duplicateName(cur);
+      assert.ok(next.length <= T.LIMITS.MAX_NAME, `len ${next.length} from ${start}`);
+      assert.notStrictEqual(next, cur);
+      assert.ok(!seen.has(next), `repeat ${JSON.stringify(next)} in chain from ${JSON.stringify(start)}`);
+      assert.ok(!/\s{2}/.test(next) && next === next.trim(), JSON.stringify(next));
+      assert.ok(T.validateTheme({ id: "user:x", name: next, colors: { background: "#101010" } }).ok);
+      seen.add(next);
+      cur = next;
+    }
+  }
+});
+
 console.log(`\n🎉 Results: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

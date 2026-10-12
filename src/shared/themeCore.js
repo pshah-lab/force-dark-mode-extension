@@ -246,8 +246,16 @@
     const base = (typeof name === "string" ? name : "").trim().slice(0, LIMITS.MAX_NAME - suffix.length - 1).trim();
     return base ? `${base} ${suffix}` : suffix;
   }
+  // "X" -> "X copy" -> "X copy 2" -> "X copy 3"... The root is truncated, never the suffix.
+  // The counter is read up to 4 digits (9999); beyond that a name is treated as a plain root.
   function duplicateName(name) {
-    return withSuffix(name, "copy");
+    const trimmed = (typeof name === "string" ? name : "").trim();
+    const match = /\s+copy(?:\s+(\d{1,4}))?$/.exec(trimmed);
+    const root = match ? trimmed.slice(0, match.index) : trimmed;
+    const suffix = match ? ` copy ${match[1] ? Number(match[1]) + 1 : 2}` : " copy";
+    const room = Math.max(1, LIMITS.MAX_NAME - suffix.length);
+    const base = root.slice(0, room).trim();
+    return base ? base + suffix : suffix.trim();
   }
   function templateName(name) {
     return withSuffix(name, "custom");

@@ -10,6 +10,7 @@ import {
   getScheduleConfig,
   setScheduleConfig,
 } from "../shared/storage.js";
+import { initThemeEditor } from "./themeEditor.js";
 import { DEFAULT_ENGINE, DEFAULT_BACKGROUND_COLOR } from "../shared/constants.js";
 
 const PRESET_COLORS = {
@@ -81,6 +82,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (bgColorInput) bgColorInput.value = globalConfig.backgroundColor || DEFAULT_BACKGROUND_COLOR;
 
   await refreshStats();
+  await initThemeEditor({ showStatus });
 
   // Load schedule preferences
   const scheduleConfig = (await getScheduleConfig()) || { mode: "off", start: "20:00", end: "07:00" };
@@ -177,7 +179,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const content = await file.text();
         const count = await importSettingsJson(content);
         await refreshStats();
-        showStatus(`✓ Successfully imported ${count} configuration entries.`);
+        showStatus(`✓ Successfully imported ${count} items (sites, themes and custom CSS).`);
       } catch (err) {
         showStatus(`Import failed: ${err.message}`, "error");
       } finally {

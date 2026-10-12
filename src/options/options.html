@@ -57,6 +57,114 @@
       </div>
     </section>
 
+    <!-- Themes Card -->
+    <section class="card" id="themes-card">
+      <h2>Themes</h2>
+      <p class="card-desc">Create your own colour themes and pick them for any site from the toolbar popup. Themes stay in your browser profile.</p>
+
+      <h3 class="sub-heading">My themes</h3>
+      <p class="subtext" id="my-themes-empty">You have not created any themes yet.</p>
+      <ul id="my-themes" class="theme-list" aria-label="My themes"></ul>
+      <div class="button-row import-row">
+        <button id="theme-import-btn" class="btn btn-secondary" type="button">Import theme (JSON)</button>
+        <input type="file" id="theme-import-input" accept=".json,application/json" hidden />
+      </div>
+
+      <h3 class="sub-heading" id="theme-editor-title">Create theme</h3>
+      <div class="editor-grid">
+        <div class="editor-form">
+          <div class="field">
+            <label for="theme-start-from">Start from</label>
+            <select id="theme-start-from"></select>
+          </div>
+          <div class="field">
+            <label for="theme-name">Theme name</label>
+            <input type="text" id="theme-name" class="text-input" maxlength="40" autocomplete="off" />
+          </div>
+          <div class="field color-field">
+            <label for="theme-color-background">Background</label>
+            <div class="color-picker-row">
+              <input type="color" id="theme-color-background" value="#0f1115" />
+            </div>
+          </div>
+          <div class="field color-field">
+            <label for="theme-color-surface">Surface (cards, panels)</label>
+            <div class="color-picker-row">
+              <input type="color" id="theme-color-surface" value="#0f1115" />
+            <label class="auto-toggle" for="theme-auto-surface">
+              <input type="checkbox" id="theme-auto-surface" checked />
+              <span>Auto</span>
+            </label>
+            </div>
+          </div>
+          <div class="field color-field">
+            <label for="theme-color-text">Text</label>
+            <div class="color-picker-row">
+              <input type="color" id="theme-color-text" value="#0f1115" />
+            <label class="auto-toggle" for="theme-auto-text">
+              <input type="checkbox" id="theme-auto-text" checked />
+              <span>Auto</span>
+            </label>
+            </div>
+          </div>
+          <div class="field color-field">
+            <label for="theme-color-muted">Muted text</label>
+            <div class="color-picker-row">
+              <input type="color" id="theme-color-muted" value="#0f1115" />
+            <label class="auto-toggle" for="theme-auto-muted">
+              <input type="checkbox" id="theme-auto-muted" checked />
+              <span>Auto</span>
+            </label>
+            </div>
+          </div>
+          <div class="field color-field">
+            <label for="theme-color-link">Links</label>
+            <div class="color-picker-row">
+              <input type="color" id="theme-color-link" value="#0f1115" />
+            <label class="auto-toggle" for="theme-auto-link">
+              <input type="checkbox" id="theme-auto-link" checked />
+              <span>Auto</span>
+            </label>
+            </div>
+          </div>
+          <div class="field color-field">
+            <label for="theme-color-border">Borders</label>
+            <div class="color-picker-row">
+              <input type="color" id="theme-color-border" value="#0f1115" />
+            <label class="auto-toggle" for="theme-auto-border">
+              <input type="checkbox" id="theme-auto-border" checked />
+              <span>Auto</span>
+            </label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="theme-image-dim">Dim images: <output id="theme-image-dim-value" for="theme-image-dim">0</output>%</label>
+            <input type="range" id="theme-image-dim" min="0" max="60" step="1" value="0" />
+          </div>
+        </div>
+
+        <div class="editor-side">
+          <section id="theme-preview" class="theme-preview" aria-label="Theme preview">
+            <h4 class="pv-headline">Sample headline</h4>
+            <p class="pv-text">Body text looks like this. <a href="#theme-preview" class="pv-link" tabindex="-1">A sample link</a> sits inside it, and <span class="pv-muted">muted text</span> is quieter.</p>
+            <div class="pv-row">
+              <button type="button" class="pv-button" tabindex="-1">Button</button>
+              <input type="text" class="pv-input" value="Input" aria-label="Preview input" tabindex="-1" readonly />
+            </div>
+            <pre class="pv-code"><code>const dark = true;</code></pre>
+            <div class="pv-card"><strong>Card</strong><span class="pv-muted"> on the surface colour</span></div>
+            <div class="pv-image" role="img" aria-label="Image placeholder"></div>
+          </section>
+          <div id="theme-contrast" class="contrast-message" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <div class="actions editor-actions">
+        <button id="theme-cancel" class="btn btn-secondary" type="button">Cancel</button>
+        <button id="theme-save" class="btn btn-primary" type="button">Save theme</button>
+      </div>
+    </section>
+
     <!-- Automatic Scheduling Card -->
     <section class="card">
       <h2>Automatic Scheduling</h2>
@@ -140,6 +248,10 @@
     </footer>
   </div>
 
+  <script src="../shared/colorUtils.js"></script>
+  <script src="../shared/themeCore.js"></script>
+  <script src="../shared/builtinThemes.js"></script>
+  <script src="../shared/sitePacks.js"></script>
   <script src="options.js" type="module"></script>
 </body>
 </html>

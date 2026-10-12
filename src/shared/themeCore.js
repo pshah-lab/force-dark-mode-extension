@@ -196,8 +196,57 @@
     return options;
   }
 
+  // Turns the editor's form fields into a theme without an id. Pure and forgiving: validateTheme decides validity.
+  function themeFromForm(formState) {
+    const form = isPlainObject(formState) ? formState : {};
+    const src = isPlainObject(form.colors) ? form.colors : {};
+    const colors = {};
+    for (const key of ["background"].concat(OPTIONAL_COLORS)) {
+      const value = typeof src[key] === "string" ? src[key].trim().toLowerCase() : "";
+      if (value) colors[key] = value;
+    }
+    const dim = Math.round(Number(form.imageDim));
+    const imageDim = Number.isFinite(dim) ? Math.min(LIMITS.MAX_IMAGE_DIM, Math.max(0, dim)) : 0;
+    const name = typeof form.name === "string" ? form.name.trim() : "";
+    return { name, colors, imageDim };
+  }
+
+  function freshUserId() {
+    let rand = "";
+    const c = global.crypto;
+    if (c && typeof c.getRandomValues === "function") {
+      const bytes = c.getRandomValues(new Uint8Array(6));
+      for (const b of bytes) rand += b.toString(16).padStart(2, "0");
+    } else {
+      rand = Math.random().toString(16).slice(2, 14).padEnd(12, "0");
+    }
+    return `user:${Date.now().toString(36)}-${rand}`;
+  }
+
+  // Parses one exported theme file. The id in the file is never trusted: a fresh user: id is always assigned.
+  function importThemeFile(text) {
+    if (typeof text !== "string") return fail("The file could not be read.");
+    if (text.length > LIMITS.MAX_IMPORT_BYTES) {
+      return fail(`The file is too large. Theme files must be under ${LIMITS.MAX_IMPORT_BYTES} bytes.`);
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return fail("The file is not valid JSON.");
+    }
+    if (!isPlainObject(parsed)) return fail("The file does not contain a theme.");
+    if (hasForbiddenKey(parsed, 0)) return fail("Theme contains a forbidden key.");
+    const checked = validateTheme(Object.assign({}, parsed, { id: freshUserId() }));
+    if (!checked.ok) return checked;
+    return { ok: true, theme: checked.theme };
+  }
+
   global.ForceDarkThemes = Object.assign(global.ForceDarkThemes || {}, {
     LIMITS,
+    themeFromForm,
+    importThemeFile,
+    newThemeId: freshUserId,
     THEME_ID_PATTERN,
     validateTheme,
     derivePalette,

@@ -90,5 +90,127 @@ test("buildThemeOptions does not throw on corrupt user themes", () => {
   }
 });
 
+// ---- Theme editor helpers ----
+const ID_RE = /^user:[a-z0-9-]{1,40}$/;
+const formState = (over = {}) => ({
+  name: "  Dusk  ",
+  colors: { background: "#101820", surface: "", text: "#E8EAED", muted: "  ", link: "#8AB4F8", border: "" },
+  imageDim: 20,
+  ...over,
+});
+
+test("themeFromForm trims the name, lowercases hex, omits blank optional colours, assigns no id", () => {
+  const t = plain(T.themeFromForm(formState()));
+  assert.deepStrictEqual(t, { name: "Dusk", colors: { background: "#101820", text: "#e8eaed", link: "#8ab4f8" }, imageDim: 20 });
+  assert.ok(!("id" in t));
+});
+
+test("themeFromForm clamps imageDim to 0..MAX_IMAGE_DIM and survives junk", () => {
+  assert.strictEqual(T.themeFromForm(formState({ imageDim: 999 })).imageDim, T.LIMITS.MAX_IMAGE_DIM);
+  assert.strictEqual(T.themeFromForm(formState({ imageDim: -5 })).imageDim, 0);
+  assert.strictEqual(T.themeFromForm(formState({ imageDim: "30" })).imageDim, 30);
+  assert.strictEqual(T.themeFromForm(formState({ imageDim: "abc" })).imageDim, 0);
+  assert.strictEqual(T.themeFromForm(formState({ imageDim: 12.7 })).imageDim, 13);
+  const t = plain(T.themeFromForm(null));
+  assert.strictEqual(t.name, "");
+  assert.strictEqual(t.imageDim, 0);
+});
+
+test("themeFromForm output validates once an id is added", () => {
+  const t = plain(T.themeFromForm(formState()));
+  assert.ok(T.validateTheme({ ...t, id: "user:x" }).ok);
+});
+
+const file = (o) => JSON.stringify(o);
+const good = { id: "user:abc", name: "Mine", colors: { background: "#101820", text: "#eeeeee" }, imageDim: 10 };
+
+test("importThemeFile accepts a valid file and assigns a fresh user: id", () => {
+  const r = T.importThemeFile(file(good));
+  assert.ok(r.ok, r.error);
+  assert.match(r.theme.id, ID_RE);
+  assert.notStrictEqual(r.theme.id, "user:abc");
+  assert.strictEqual(r.theme.name, "Mine");
+  assert.notStrictEqual(T.importThemeFile(file(good)).theme.id, r.theme.id);
+});
+
+test("importThemeFile never trusts a builtin: id from the file", () => {
+  const r = T.importThemeFile(file({ ...good, id: "builtin:midnight" }));
+  assert.ok(r.ok, r.error);
+  assert.match(r.theme.id, ID_RE);
+});
+
+test("newThemeId returns distinct ids matching the user: pattern", () => {
+  const a = T.newThemeId(), b = T.newThemeId();
+  assert.match(a, ID_RE);
+  assert.notStrictEqual(a, b);
+});
+
+test("importThemeFile accepts a file with no id", () => {
+  const { id, ...noId } = good;
+  const r = T.importThemeFile(file(noId));
+  assert.ok(r.ok, r.error);
+  assert.match(r.theme.id, ID_RE);
+});
+
+test("importThemeFile rejects oversize, bad JSON, non-objects", () => {
+  const big = file({ ...good, name: "x".repeat(T.LIMITS.MAX_IMPORT_BYTES) });
+  assert.strictEqual(T.importThemeFile(big).ok, false);
+  for (const bad of ["{nope", "", "[]", "null", "5", '"s"']) {
+    const r = T.importThemeFile(bad);
+    assert.strictEqual(r.ok, false, bad);
+    assert.strictEqual(typeof r.error, "string");
+  }
+  assert.strictEqual(T.importThemeFile(undefined).ok, false);
+  assert.strictEqual(T.importThemeFile(42).ok, false);
+});
+
+test("importThemeFile rejects __proto__, constructor and markup in names", () => {
+  assert.strictEqual(T.importThemeFile('{"id":"user:a","name":"A","colors":{"background":"#101010"},"__proto__":{"x":1}}').ok, false);
+  assert.strictEqual(T.importThemeFile('{"name":"A","colors":{"background":"#101010","constructor":"x"}}').ok, false);
+  assert.strictEqual(T.importThemeFile(file({ ...good, name: "<img onerror=x>" })).ok, false);
+  assert.strictEqual(T.importThemeFile(file({ ...good, colors: { background: "red" } })).ok, false);
+});
+
+test("importThemeFile drops unknown keys", () => {
+  const r = T.importThemeFile(file({ ...good, evil: "x", css: "body{}" }));
+  assert.ok(r.ok);
+  assert.deepStrictEqual(Object.keys(plain(r.theme)).sort(), ["colors", "id", "imageDim", "name"]);
+});
+
+test("options.html has the theme editor markup and loads theme scripts before options.js", () => {
+  const html = read("src/options/options.html");
+  for (const id of ["theme-name", "theme-start-from", "theme-image-dim", "theme-contrast", "theme-save", "theme-cancel", "my-themes", "theme-import-input", "theme-import-btn"]) {
+    assert.ok(new RegExp(`id="${id}"`).test(html), `missing #${id}`);
+  }
+  assert.ok(/<section[^>]*id="theme-preview"[^>]*aria-label="Theme preview"/.test(html) || /<section[^>]*aria-label="Theme preview"[^>]*id="theme-preview"/.test(html));
+  assert.ok(/id="theme-contrast"[^>]*role="status"|role="status"[^>]*id="theme-contrast"/.test(html));
+  assert.ok(/maxlength="40"/.test(html));
+  const order = ["colorUtils.js", "themeCore.js", "builtinThemes.js", "sitePacks.js", "options.js"].map((f) => html.indexOf(`src="${f.startsWith("options") ? "" : "../shared/"}${f}"`));
+  assert.ok(order.every((i) => i > -1), "all scripts present");
+  assert.deepStrictEqual(order, [...order].sort((a, b) => a - b), "script order");
+  for (const key of ["background", "surface", "text", "muted", "link", "border"]) {
+    assert.ok(new RegExp(`id="theme-color-${key}"`).test(html), `missing colour ${key}`);
+    assert.ok(new RegExp(`for="theme-color-${key}"`).test(html), `missing label ${key}`);
+  }
+});
+
+test("options editor code avoids innerHTML and writes theme text with textContent", () => {
+  for (const f of ["src/options/options.js", "src/options/themeEditor.js"]) {
+    const js = read(f);
+    for (const re of [/innerHTML/, /outerHTML/, /insertAdjacentHTML/, /\bfetch\s*\(/, /\beval\s*\(/, /https?:\/\//]) assert.ok(!re.test(js), `${f} has ${re}`);
+  }
+  const ed = read("src/options/themeEditor.js");
+  assert.ok(/textContent/.test(ed));
+  assert.ok(/revokeObjectURL/.test(ed));
+  assert.ok(/confirm\(/.test(ed));
+  assert.ok(!/\.style\.cssText|setAttribute\("style"/.test(ed), "no style strings");
+});
+
+test("options.js import message mentions sites, themes and custom CSS", () => {
+  const js = read("src/options/options.js");
+  assert.ok(/items \(sites, themes and custom CSS\)/.test(js));
+  assert.ok(!/configuration entries/.test(js));
+});
+
 console.log(`\n🎉 Results: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

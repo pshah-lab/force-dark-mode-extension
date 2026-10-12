@@ -136,6 +136,14 @@ class MockDocument {
     this.documentElement.appendChild(this.body);
   }
 
+  addEventListener(type, fn) {
+    (this._listeners ||= {})[type] = (this._listeners[type] || []).concat(fn);
+  }
+
+  removeEventListener(type, fn) {
+    if (this._listeners?.[type]) this._listeners[type] = this._listeners[type].filter((f) => f !== fn);
+  }
+
   createElement(tag) {
     return new MockElement(tag);
   }
@@ -190,6 +198,12 @@ global.window = {
   innerHeight: 768,
   getComputedStyle: (el) => el.style,
   location: { hostname: "example.com" },
+  addEventListener(type, fn) {
+    (this._listeners ||= {})[type] = (this._listeners[type] || []).concat(fn);
+  },
+  removeEventListener(type, fn) {
+    if (this._listeners?.[type]) this._listeners[type] = this._listeners[type].filter((f) => f !== fn);
+  },
   matchMedia: () => ({ matches: false }),
 };
 global.getComputedStyle = global.window.getComputedStyle;
@@ -281,6 +295,44 @@ test("CSS Override Engine applies dark mode and root attributes", () => {
   assert.strictEqual(mockDoc.getElementById("__force_dark_mode__"), null);
   assert.strictEqual(card.getAttribute("data-force-dark-surface"), null);
   assert.strictEqual(logo.getAttribute("data-force-dark-image"), null);
+});
+
+test("CSS Override Engine rescans the whole page when a stylesheet loads after the first scan", () => {
+  const realSetTimeout = global.setTimeout;
+  global.setTimeout = (fn) => { fn(); return 1; };
+  try {
+    const container = mockDoc.createElement("div");
+    container.style.backgroundColor = "rgba(0, 0, 0, 0)"; // transparent until the site's CSS arrives
+    mockDoc.body.appendChild(container);
+
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assert.strictEqual(container.getAttribute("data-force-dark-surface"), null);
+
+    // The mock rAF runs synchronously, which leaves scanFrame stuck; real rAF is always async.
+    vm.runInThisContext("scanFrame = 0");
+
+    // The site's stylesheet finishes loading and turns the container white.
+    container.style.backgroundColor = "rgb(255, 255, 255)";
+    const link = mockDoc.createElement("link");
+    link.setAttribute("rel", "stylesheet");
+    for (const fn of mockDoc._listeners?.load || []) fn({ target: link });
+
+    assert.strictEqual(container.getAttribute("data-force-dark-surface"), "strong");
+
+    // Unrelated load events (images) and our own style tag must not trigger rescans.
+    container.style.backgroundColor = "rgb(255, 255, 255)";
+    container.removeAttribute("data-force-dark-surface");
+    vm.runInThisContext("scanFrame = 0");
+    const img = mockDoc.createElement("img");
+    for (const fn of mockDoc._listeners?.load || []) fn({ target: img });
+    assert.strictEqual(container.getAttribute("data-force-dark-surface"), null);
+
+    disableDarkMode();
+    assert.strictEqual((mockDoc._listeners?.load || []).length, 0, "load listener must be removed on disable");
+  } finally {
+    global.setTimeout = realSetTimeout;
+    mockDoc.body.children = [];
+  }
 });
 
 test("Invert Engine enables and disables cleanly", () => {

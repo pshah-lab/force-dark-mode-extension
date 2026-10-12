@@ -38,7 +38,10 @@ const EXCLUDED_SELECTOR = [
   "video",
 ].join(",");
 
+const STYLESHEET_RESCAN_DELAY_MS = 150;
+
 let darkModeObserver = null;
+let styleRescanTimer = 0;
 let scanFrame = 0;
 let pendingScanRoots = new Set();
 
@@ -150,6 +153,28 @@ function enableDarkMode(config = {}) {
   scheduleScan(document.documentElement);
 }
 
+// Sites often attach their stylesheets after the first scan. Computed colours
+// change without any DOM mutation on the affected elements, so a late stylesheet
+// must trigger a full, debounced rescan or light panels stay white.
+function isSiteStylesheet(node) {
+  if (!node || node.nodeType !== Node.ELEMENT_NODE || node.id === STYLE_ID) return false;
+  const tag = node.tagName.toLowerCase();
+  if (tag === "style") return true;
+  return tag === "link" && /\bstylesheet\b/i.test(node.getAttribute("rel") || "");
+}
+
+function scheduleFullRescan() {
+  if (styleRescanTimer) clearTimeout(styleRescanTimer);
+  styleRescanTimer = setTimeout(() => {
+    styleRescanTimer = 0;
+    scheduleScan(document.documentElement);
+  }, STYLESHEET_RESCAN_DELAY_MS);
+}
+
+function onResourceLoad(event) {
+  if (isSiteStylesheet(event.target)) scheduleFullRescan();
+}
+
 function disableDarkMode() {
   document.getElementById(STYLE_ID)?.remove();
   document.documentElement.removeAttribute(ROOT_MODE_ATTR);
@@ -158,6 +183,14 @@ function disableDarkMode() {
   if (darkModeObserver) {
     darkModeObserver.disconnect();
     darkModeObserver = null;
+  }
+
+  document.removeEventListener("load", onResourceLoad, true);
+  document.removeEventListener("DOMContentLoaded", scheduleFullRescan);
+  window.removeEventListener("load", scheduleFullRescan);
+  if (styleRescanTimer) {
+    clearTimeout(styleRescanTimer);
+    styleRescanTimer = 0;
   }
 
   if (scanFrame) {
@@ -183,6 +216,7 @@ function observePageChanges() {
 
       record.addedNodes.forEach((node) => {
         if (node.nodeType === Node.ELEMENT_NODE) {
+          if (isSiteStylesheet(node)) scheduleFullRescan();
           scheduleScan(node);
         }
       });
@@ -195,6 +229,10 @@ function observePageChanges() {
     childList: true,
     subtree: true,
   });
+
+  document.addEventListener("load", onResourceLoad, true);
+  document.addEventListener("DOMContentLoaded", scheduleFullRescan);
+  window.addEventListener("load", scheduleFullRescan);
 }
 
 function scheduleScan(root) {

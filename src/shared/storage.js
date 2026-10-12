@@ -11,7 +11,7 @@ import "./themeCore.js";
 import "./customCss.js";
 
 // Single place to bump the exported settings version (the privacy test matches this literal).
-const EXTENSION_VERSION_META = { version: "1.8.0" };
+const EXTENSION_VERSION_META = { version: "2.0.0" };
 const EXTENSION_VERSION = EXTENSION_VERSION_META.version;
 const THEMES_KEY = "__customThemes";
 const CSS_PREFIX = "__css:";

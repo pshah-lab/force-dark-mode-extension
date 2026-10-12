@@ -201,7 +201,7 @@ await test("export then import round-trips themes, css and configs", async () =>
   assert.deepStrictEqual(await S.setCustomCss("e.com", "body{color:red}"), { ok: true });
   const json = await S.exportSettingsJson();
   const parsed = JSON.parse(json);
-  assert.strictEqual(parsed.version, "1.8.0");
+  assert.strictEqual(parsed.version, "2.0.0");
   assert.strictEqual(parsed.themes.length, 1);
   assert.deepStrictEqual(parsed.customCss, { "e.com": "body{color:red}" });
   assert.deepStrictEqual(Object.keys(parsed.settings), ["e.com"]);

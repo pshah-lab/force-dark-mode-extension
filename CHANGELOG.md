@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0] - 2026-10-12
+
+2.0.0 supersedes 1.8.0, which was never separately submitted to the Chrome Web Store; the 1.8.0 section below is kept as history and its changes ship in 2.0.0.
+
+### Added
+- **Built-in themes**: eight ready-made colour themes, chosen from a new theme dropdown in the popup and applied per site.
+- **Site themes**: tuned fixes for 20 popular sites, including corrections for hindustantimes.com, npr.org and theguardian.com.
+- **Theme editor** in Options: create and edit your own themes with a live preview and a contrast guard. Text and link colours at or above 4.5:1 save cleanly, below 4.5:1 shows a warning, and below 3:1 cannot be saved.
+- **Theme import and export** as JSON files, with size and field validation on import.
+- **Per-site custom CSS** in Options, checked by a sanitiser before it is stored or injected. Custom CSS cannot introduce a URL.
+
+### Changed
+- Images, pictures and video are dimmed through one adjustable setting, and SVG icons and keep-light elements are handled more carefully by the CSS engine.
+- Settings export is now format v2 and adds `themes` and `customCss`. Exports from earlier versions still import.
+
+### Privacy
+- No new permissions, host permissions or network requests. Themes and custom CSS are stored with the rest of your settings in `chrome.storage`, and the extension never makes network requests.
+
+---
+
 ## [1.8.0] - 2026-10-12
 
 ### Added

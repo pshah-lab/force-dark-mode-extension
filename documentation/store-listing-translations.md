@@ -27,6 +27,7 @@ PRINCIPAIS RECURSOS
 • Motor Invert: inversão protegida, com reinversão de mídia, para páginas muito gráficas.
 • Leitor de documentos local: abra PDFs, Word, PowerPoint, Excel, CSV, Markdown, TXT e RTF em um leitor escuro integrado. Seus arquivos nunca são enviados a servidores.
 • Cor de fundo por site: preto puro para telas OLED ou um cinza-azulado suave, com contraste WCAG AA garantido.
+• Temas e CSS personalizado: escolha entre oito temas integrados no popup, use ajustes prontos para sites populares, crie o seu no editor de temas com prévia e verificação de contraste, ou adicione CSS personalizado por site. O CSS personalizado é validado e não pode introduzir uma URL.
 • Sem flashes brancos e ativação instantânea. Atalho: Alt+Shift+D.
 
 100% PRIVADO E OFFLINE
@@ -60,6 +61,7 @@ FUNCIONES PRINCIPALES
 • Motor Invert: inversión protegida, con reinversión de medios, para páginas muy gráficas.
 • Lector de documentos local: abre PDF, Word, PowerPoint, Excel, CSV, Markdown, TXT y RTF en un lector oscuro integrado. Tus archivos nunca se suben a ningún servidor.
 • Color de fondo por sitio: negro puro para pantallas OLED o un gris azulado suave, con contraste WCAG AA garantizado.
+• Temas y CSS personalizado: elige entre ocho temas integrados en el popup, usa ajustes preparados para sitios populares, crea el tuyo en el editor de temas con vista previa y comprobación de contraste, o añade CSS personalizado por sitio. El CSS personalizado se valida y no puede introducir una URL.
 • Sin destellos blancos y activación instantánea. Atajo: Alt+Shift+D.
 
 100 % PRIVADO Y SIN CONEXIÓN
@@ -93,6 +95,7 @@ FITUR UTAMA
 • Mesin Invert: pembalikan terlindungi dengan pembalikan ulang untuk media, cocok untuk halaman yang padat grafis.
 • Pembaca dokumen lokal: buka PDF, Word, PowerPoint, Excel, CSV, Markdown, TXT, dan RTF dalam pembaca gelap bawaan. File Anda tidak pernah diunggah ke server mana pun.
 • Warna latar per situs: hitam pekat untuk layar OLED atau abu-abu kebiruan lembut, dengan kontras WCAG AA terjamin.
+• Tema dan CSS kustom: pilih dari delapan tema bawaan di popup, gunakan pengaturan siap pakai untuk situs populer, buat tema sendiri di editor tema dengan pratinjau dan pemeriksaan kontras, atau tambahkan CSS kustom per situs. CSS kustom divalidasi dan tidak dapat menyertakan URL.
 • Tanpa kilatan putih dan bisa diaktifkan seketika. Pintasan: Alt+Shift+D.
 
 100% PRIVAT DAN OFFLINE
@@ -126,6 +129,7 @@ WICHTIGSTE FUNKTIONEN
 • Invert-Engine: Geschützte Invertierung mit Rück-Invertierung von Medien für grafiklastige Seiten.
 • Lokaler Dokumentenleser: Öffnet PDF, Word, PowerPoint, Excel, CSV, Markdown, TXT und RTF in einem integrierten dunklen Reader. Ihre Dateien werden nie auf einen Server hochgeladen.
 • Hintergrundfarbe pro Website: reines Schwarz für OLED-Displays oder ein weiches Blaugrau, mit garantiertem WCAG-AA-Kontrast.
+• Themes und eigenes CSS: Wähle im Popup aus acht integrierten Themes, nutze fertige Einstellungen für beliebte Websites, erstelle im Theme-Editor mit Vorschau und Kontrastprüfung eigene Themes oder füge pro Website eigenes CSS hinzu. Eigenes CSS wird geprüft und kann keine URL einbinden.
 • Keine weißen Blitze und sofortiges Umschalten. Tastenkürzel: Alt+Shift+D.
 
 100 % PRIVAT UND OFFLINE
@@ -159,6 +163,7 @@ FONCTIONNALITÉS PRINCIPALES
 • Moteur Invert : inversion protégée, avec ré-inversion des médias, pour les pages très graphiques.
 • Lecteur de documents local : ouvrez PDF, Word, PowerPoint, Excel, CSV, Markdown, TXT et RTF dans un lecteur sombre intégré. Vos fichiers ne sont jamais envoyés à un serveur.
 • Couleur de fond par site : noir pur pour les écrans OLED ou gris ardoise doux, avec un contraste WCAG AA garanti.
+• Thèmes et CSS personnalisé : choisissez parmi huit thèmes intégrés dans la popup, utilisez des réglages prêts pour les sites populaires, créez le vôtre dans l'éditeur de thèmes avec aperçu et vérification du contraste, ou ajoutez du CSS personnalisé par site. Le CSS personnalisé est validé et ne peut pas introduire d'URL.
 • Aucun flash blanc et activation instantanée. Raccourci : Alt+Maj+D.
 
 100 % PRIVÉ ET HORS LIGNE
@@ -192,6 +197,7 @@ Fotoğrafları, video küçük resimlerini ve sayfa düzenini bozan basit renk t
 • Invert motoru: Medya için yeniden terslemeli korumalı tersleme; grafik ağırlıklı sayfalar için uygundur.
 • Yerel belge okuyucu: PDF, Word, PowerPoint, Excel, CSV, Markdown, TXT ve RTF dosyalarını yerleşik koyu okuyucuda açın. Dosyalarınız hiçbir sunucuya yüklenmez.
 • Site başına arka plan rengi: OLED ekranlar için saf siyah veya yumuşak bir kurşuni ton; WCAG AA kontrastı garantilidir.
+• Temalar ve özel CSS: açılır pencereden sekiz yerleşik tema arasından seçin, popüler siteler için hazır ayarları kullanın, önizleme ve kontrast denetimi olan tema düzenleyicide kendi temanızı oluşturun veya site başına özel CSS ekleyin. Özel CSS doğrulanır ve bir URL ekleyemez.
 • Beyaz parlama yok, anında açma/kapama. Kısayol: Alt+Shift+D.
 
 %100 GİZLİ VE ÇEVRİMDIŞI
@@ -225,6 +231,7 @@ TÍNH NĂNG CHÍNH
 • Công cụ Invert: đảo màu có bảo vệ, đảo lại phần phương tiện, phù hợp với trang nhiều đồ họa.
 • Trình đọc tài liệu cục bộ: mở PDF, Word, PowerPoint, Excel, CSV, Markdown, TXT và RTF trong trình đọc tối tích hợp. Tệp của bạn không bao giờ được tải lên máy chủ nào.
 • Màu nền theo từng trang: đen tuyền cho màn hình OLED hoặc xám xanh dịu, đảm bảo độ tương phản WCAG AA.
+• Giao diện và CSS tùy chỉnh: chọn trong tám giao diện tích hợp ở cửa sổ popup, dùng thiết lập sẵn cho các trang phổ biến, tự tạo giao diện trong trình chỉnh sửa với bản xem trước và kiểm tra độ tương phản, hoặc thêm CSS tùy chỉnh cho từng trang. CSS tùy chỉnh được kiểm tra và không thể chèn URL.
 • Không nháy trắng và bật tắt tức thì. Phím tắt: Alt+Shift+D.
 
 100% RIÊNG TƯ VÀ NGOẠI TUYẾN

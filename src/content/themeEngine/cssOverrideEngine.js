@@ -373,7 +373,12 @@ function batchScanTrees(roots) {
         alt.includes("logo") ||
         alt.includes("wikipedia");
 
-      if (isLogoOrTextGraphic) {
+      // An svg's own fill is often not what is painted (fill="none" on the root, or the
+      // initial black when unset). When its shapes follow the text colour or are all
+      // light, it is never inverted; otherwise the svg's own colours decide, as before.
+      const shapesStayLight = tag === "svg" && svgShapesStayLight(element, parseCssColor, getLuminance);
+
+      if (isLogoOrTextGraphic && !shapesStayLight) {
         const fill = parseCssColor(styles.fill);
         const color = parseCssColor(styles.color);
         const fillLum = fill ? getLuminance(fill) : 0;
@@ -560,6 +565,71 @@ function shouldSkipElement(element) {
   }
 
   return element.closest("svg, canvas, video, picture") !== null;
+}
+
+const SVG_SHAPE_SELECTOR = "path, circle, rect, ellipse, line, polyline, polygon, text, use";
+// Containers whose shapes are never painted directly.
+const SVG_UNPAINTED_CONTAINERS = new Set([
+  "defs", "clippath", "mask", "symbol", "pattern", "marker", "lineargradient", "radialgradient",
+]);
+const MAX_SVG_SHAPES = 40;
+
+// Finds the nearest fill/stroke attributes from the shape up to the svg, and whether
+// the shape sits in a container that is never painted.
+function readSvgShapeContext(shape, svg) {
+  const context = { fill: null, stroke: null, unpainted: false };
+  for (let node = shape; node; node = node.parentElement) {
+    if (node !== shape && node !== svg && SVG_UNPAINTED_CONTAINERS.has(node.tagName.toLowerCase())) {
+      context.unpainted = true;
+    }
+    if (context.fill === null && node.getAttribute("fill") !== null) context.fill = node.getAttribute("fill");
+    if (context.stroke === null && node.getAttribute("stroke") !== null) context.stroke = node.getAttribute("stroke");
+    if (node === svg) break;
+  }
+  return context;
+}
+
+function sameColor(a, b) {
+  return Boolean(a && b) && a.r === b.r && a.g === b.g && a.b === b.b && a.a === b.a;
+}
+
+// True when the svg's painted shapes will be light on the dark page without an invert:
+// a shape's fill or stroke follows the text colour (currentColor), which the text marker
+// makes light, or every colour paint is already light. Inverting such an svg would
+// darken it again. A paint follows the text colour when it equals the shape's computed
+// colour and its nearest fill/stroke attribute is currentColor or absent (an explicit
+// colour attribute is hard-coded even if it happens to match). That answer is the same
+// before and after the engine recolours the text, so rescans do not flip.
+// Anything else (dark or saturated hard-coded paints, gradients only, no shapes) returns
+// false and the caller keeps its earlier decision.
+function svgShapesStayLight(svg, parseCssColor, getLuminance) {
+  let seen = 0;
+  let follows = false;
+  let lightPaints = 0;
+  let otherPaints = 0;
+  for (const shape of svg.querySelectorAll(SVG_SHAPE_SELECTOR)) {
+    if (seen >= MAX_SVG_SHAPES) break;
+    const context = readSvgShapeContext(shape, svg);
+    if (context.unpainted) continue;
+    seen++;
+    const styles = getComputedStyle(shape);
+    for (const [property, attribute] of [["fill", context.fill], ["stroke", context.stroke]]) {
+      const value = (styles[property] || "").trim();
+      if (!value || value === "none") continue;
+      if (value.startsWith("url(")) continue; // gradient or pattern paint
+      const paint = parseCssColor(value);
+      if (!paint || paint.a <= 0.35) continue;
+      const attr = attribute === null ? null : attribute.trim().toLowerCase();
+      if ((attr === null || attr === "currentcolor") && sameColor(paint, parseCssColor(styles.color))) {
+        follows = true;
+      } else if (getLuminance(paint) >= 0.45) {
+        lightPaints++;
+      } else {
+        otherPaints++;
+      }
+    }
+  }
+  return follows || (lightPaints > 0 && otherPaints === 0);
 }
 
 function hasLightBorder(styles, parseCssColor, getLuminance) {

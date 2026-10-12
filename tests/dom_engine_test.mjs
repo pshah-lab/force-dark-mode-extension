@@ -1183,6 +1183,182 @@ test("invert-image fix on an img inside a picture (skipped by the scan) survives
   }
 });
 
+// ---- SVG icons: the shapes inside decide, not the <svg> element's own fill ----
+// Real-page evidence (Task 7b): BBC's menu icon is <svg fill="none"> with
+// <path fill="currentColor">; MDN's logo is an <svg> with no fill of its own (computed
+// initial black) whose paths have their own light fills. Judging the <svg> element's
+// own fill marked both as dark logos, so the invert filter darkened them on a dark page.
+
+const LIGHT_TEXT = "rgb(232, 234, 237)";
+
+function svgIcon({ rootFillAttr, rootFill = "rgb(0, 0, 0)", color = "rgb(20, 20, 20)", shapes }) {
+  const svg = mockDoc.createElement("svg");
+  if (rootFillAttr) svg.setAttribute("fill", rootFillAttr);
+  svg.style.fill = rootFill;
+  svg.style.color = color;
+  const made = shapes.map(({ tag = "path", fillAttr, fill, stroke, parentTag }) => {
+    const shape = mockDoc.createElement(tag);
+    if (fillAttr) shape.setAttribute("fill", fillAttr);
+    shape.style.color = color;
+    shape.style.fill = fill === undefined ? color : fill;
+    if (stroke !== undefined) shape.style.stroke = stroke;
+    if (parentTag) {
+      const wrapper = mockDoc.createElement(parentTag);
+      wrapper.appendChild(shape);
+      svg.appendChild(wrapper);
+    } else {
+      svg.appendChild(shape);
+    }
+    return { shape, followsColor: fill === undefined };
+  });
+  return { svg, shapes: made };
+}
+
+// What the browser does once the svg carries the text marker: its colour (and the
+// colour its shapes inherit, and any currentColor fill) becomes the engine's text colour.
+function applyTextOverride({ svg, shapes }) {
+  if (svg.getAttribute("data-force-dark-text") !== "true") return;
+  svg.style.color = LIGHT_TEXT;
+  for (const { shape, followsColor } of shapes) {
+    shape.style.color = LIGHT_TEXT;
+    if (followsColor) shape.style.fill = LIGHT_TEXT;
+  }
+}
+
+function assertStableMarkers(icon, expected, label) {
+  const read = () => [icon.svg.getAttribute("data-force-dark-text"), icon.svg.getAttribute("data-force-dark-image")];
+  assert.deepStrictEqual(read(), expected, `${label}: first scan`);
+  applyTextOverride(icon);
+  for (let i = 1; i <= 3; i++) {
+    rescan();
+    assert.deepStrictEqual(read(), expected, `${label}: rescan ${i} must not flip the markers`);
+  }
+}
+
+test("svg icon whose paths use fill=currentColor (BBC menu icon) is recoloured, not inverted, on every scan", () => {
+  try {
+    const icon = svgIcon({ rootFillAttr: "none", rootFill: "none", shapes: [{ fillAttr: "currentColor" }, { fillAttr: "currentColor" }] });
+    mockDoc.body.appendChild(icon.svg);
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assertStableMarkers(icon, ["true", null], "currentColor paths");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("svg icon whose fill follows the text colour through CSS (no fill attribute) is not inverted", () => {
+  try {
+    const icon = svgIcon({ shapes: [{}, { parentTag: "g" }] }); // computed fill === computed color
+    mockDoc.body.appendChild(icon.svg);
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assertStableMarkers(icon, ["true", null], "CSS currentColor");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("stroke-only svg icon (fill none, stroke follows the text colour) is not inverted", () => {
+  try {
+    const icon = svgIcon({
+      rootFillAttr: "none",
+      rootFill: "none",
+      shapes: [{ fillAttr: "none", fill: "none", stroke: "rgb(20, 20, 20)" }],
+    });
+    // the stroke follows currentColor as well
+    icon.shapes[0].shape.setAttribute("stroke", "currentColor");
+    mockDoc.body.appendChild(icon.svg);
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assert.strictEqual(icon.svg.getAttribute("data-force-dark-image"), null);
+    icon.svg.style.color = LIGHT_TEXT;
+    icon.shapes[0].shape.style.color = LIGHT_TEXT;
+    icon.shapes[0].shape.style.stroke = LIGHT_TEXT;
+    for (let i = 0; i < 3; i++) rescan();
+    assert.strictEqual(icon.svg.getAttribute("data-force-dark-image"), null, "rescans keep it un-inverted");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("svg logo whose paths have their own light fills (MDN logo) is not inverted", () => {
+  try {
+    const icon = svgIcon({ shapes: [{ fill: "rgb(164, 206, 254)" }, { fill: "rgb(255, 255, 255)" }] });
+    mockDoc.body.appendChild(icon.svg);
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assertStableMarkers(icon, ["true", null], "light path fills");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("svg logo with a hard-coded dark fill is still inverted on every scan", () => {
+  try {
+    // fill attribute: explicit, even though it equals the page's text colour
+    const byAttr = svgIcon({ shapes: [{ fillAttr: "#141414", fill: "rgb(20, 20, 20)" }] });
+    // CSS fill that differs from the text colour
+    const byCss = svgIcon({ shapes: [{ fill: "rgb(30, 30, 30)" }] });
+    mockDoc.body.appendChild(byAttr.svg);
+    mockDoc.body.appendChild(byCss.svg);
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assert.strictEqual(byAttr.svg.getAttribute("data-force-dark-image"), "invert", "hard-coded fill attribute");
+    assert.strictEqual(byCss.svg.getAttribute("data-force-dark-image"), "invert", "hard-coded CSS fill");
+    applyTextOverride(byAttr);
+    applyTextOverride(byCss);
+    for (let i = 0; i < 3; i++) rescan();
+    assert.strictEqual(byAttr.svg.getAttribute("data-force-dark-image"), "invert", "attr: rescans keep the invert marker");
+    assert.strictEqual(byCss.svg.getAttribute("data-force-dark-image"), "invert", "css: rescans keep the invert marker");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("svg icon with a saturated brand-colour fill (BBC LIVE dot) keeps the earlier decision: not inverted", () => {
+  try {
+    // The <svg> itself follows the light text colour; its paths are hard-coded red.
+    const icon = svgIcon({ rootFill: LIGHT_TEXT, color: LIGHT_TEXT, shapes: [{ fill: "rgb(224, 0, 0)" }, { fill: "rgb(224, 0, 0)" }] });
+    mockDoc.body.appendChild(icon.svg);
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assertStableMarkers(icon, [null, null], "red paths");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("a currentColor attribute that site CSS overrides with a dark paint keeps the earlier decision (inverted)", () => {
+  try {
+    // Substack lucide icons: <svg stroke="currentColor">, but site CSS sets the path
+    // stroke to a fixed grey, so the paint does not follow the text colour. (The root
+    // keeps the initial black fill so the earlier root-based decision is the same in the
+    // mock, which cannot parse "none" through a canvas, and in the browser.)
+    const icon = svgIcon({ shapes: [{ fill: "none", stroke: "rgb(60, 60, 60)" }] });
+    icon.svg.setAttribute("stroke", "currentColor");
+    mockDoc.body.appendChild(icon.svg);
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assertStableMarkers(icon, ["true", "invert"], "overridden currentColor");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("shapes inside defs, clipPath or mask do not make an svg look like a dark logo", () => {
+  try {
+    const icon = svgIcon({
+      rootFillAttr: "none",
+      rootFill: "none",
+      shapes: [
+        { fillAttr: "currentColor" },
+        { tag: "rect", fill: "rgb(0, 0, 0)", parentTag: "clipPath" },
+        { tag: "rect", fill: "rgb(0, 0, 0)", parentTag: "defs" },
+        { tag: "rect", fill: "rgb(0, 0, 0)", parentTag: "mask" },
+      ],
+    });
+    mockDoc.body.appendChild(icon.svg);
+    enableDarkMode({ backgroundColor: "#0f1115" });
+    assertStableMarkers(icon, ["true", null], "non-painted defs");
+  } finally {
+    resetFixTest();
+  }
+});
+
 console.log("\n=========================================");
 console.log(`🎉 DOM Engine Results: ${passed} passed, ${failed} failed`);
 console.log("=========================================\n");

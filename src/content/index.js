@@ -338,6 +338,15 @@ function analyzePageForEngine() {
   };
 }
 
+// `color-scheme: light dark` only says the page *supports* both schemes. It is
+// dark only when it declares dark alone, or the browser itself prefers dark.
+function colorSchemeResolvesToDark(scheme) {
+  const tokens = String(scheme || "").toLowerCase().split(/\s+/).filter(Boolean);
+  if (!tokens.includes("dark")) return false;
+  if (!tokens.includes("light")) return true;
+  return Boolean(window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+}
+
 function isNativeDarkPage({
   darkSurfaceRatio,
   lightSurfaceRatio,
@@ -374,7 +383,9 @@ function isNativeDarkPage({
     ));
 
   const declaresDarkScheme =
-    rootColorScheme.includes("dark") || bodyColorScheme.includes("dark") || hasDarkAttr;
+    colorSchemeResolvesToDark(rootColorScheme) ||
+    colorSchemeResolvesToDark(bodyColorScheme) ||
+    hasDarkAttr;
 
   const hasDarkRoot =
     (rootBackground &&

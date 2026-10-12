@@ -391,6 +391,38 @@ test("Page analysis correctly detects YouTube native dark mode with heavy media 
   assert.strictEqual(analysis.reason, "site already appears dark");
 });
 
+function buildSchemePage(colorScheme) {
+  mockDoc.body.children = [];
+  mockDoc.documentElement.removeAttribute("dark");
+  mockDoc.documentElement.style.backgroundColor = "rgba(0, 0, 0, 0)"; // site CSS has not painted yet
+  mockDoc.documentElement.style.color = "rgb(0, 0, 0)";
+  mockDoc.documentElement.style.colorScheme = colorScheme;
+  mockDoc.body.style.backgroundColor = "rgba(0, 0, 0, 0)";
+  mockDoc.body.style.colorScheme = colorScheme;
+  for (let i = 0; i < 25; i++) {
+    const item = mockDoc.createElement("span");
+    item.textContent = `Reference article paragraph ${i} with readable content`;
+    item.style.backgroundColor = "rgba(0, 0, 0, 0)";
+    item.style.color = "rgb(20, 20, 20)";
+    mockDoc.body.appendChild(item);
+  }
+}
+
+test("A page that supports both colour schemes but renders light is not treated as natively dark", () => {
+  buildSchemePage("light dark");
+  const analysis = analyzePageForEngine();
+  assert.strictEqual(analysis.nativeDark, false, "'light dark' only declares support, not a dark render");
+});
+
+test("A page that declares only a dark colour scheme is still treated as natively dark", () => {
+  buildSchemePage("dark");
+  const analysis = analyzePageForEngine();
+  assert.strictEqual(analysis.nativeDark, true);
+  mockDoc.documentElement.style.colorScheme = "";
+  mockDoc.body.style.colorScheme = "";
+  mockDoc.body.children = [];
+});
+
 test("applyEngine applies filter CSS variables and gates the filter attribute", () => {
   applyEngine({ enabled: true, engine: "css", brightness: 120, contrast: 90, sepia: 30 });
 

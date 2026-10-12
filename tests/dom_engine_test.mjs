@@ -218,10 +218,12 @@ global.MutationObserver = class {
   observe() {}
   disconnect() {}
 };
+global.__syncGetKeys = [];
+global.__onChangedListeners = [];
 global.chrome = {
   storage: {
     sync: {
-      get: (keys, cb) => cb({}),
+      get: (keys, cb) => { global.__syncGetKeys.push(keys); cb({}); },
       set: (obj, cb) => cb && cb(),
     },
     local: {
@@ -229,7 +231,7 @@ global.chrome = {
       set: (obj, cb) => cb && cb(),
     },
     onChanged: {
-      addListener: () => {},
+      addListener: (fn) => { global.__onChangedListeners.push(fn); },
     },
   },
   runtime: {
@@ -718,8 +720,55 @@ test("imageDim sets the image brightness variable and 0 clears it", () => {
   assert.strictEqual(root.style.getPropertyValue("--force-dark-image-brightness"), "");
   vm.runInThisContext("scanFrame = 0");
   const css = (() => { enableDarkMode({}); const t = mockDoc.getElementById("__force_dark_mode__").textContent; disableDarkMode(); vm.runInThisContext("scanFrame = 0"); return t; })();
-  assert.ok(css.includes("filter: brightness(var(--force-dark-image-brightness, 100%)) !important"));
-  assert.ok(css.includes('[data-force-dark-image="invert"]'));
+  const dimRule = css.split("}").find((block) => block.includes("--force-dark-image-brightness, 100%"));
+  assert.ok(dimRule, "brightness rule exists");
+  const selector = dimRule.split("{")[0];
+  for (const tag of ["img", "picture", "video"]) assert.ok(new RegExp(`\\b${tag}\\b`).test(selector), `${tag} is dimmed`);
+  for (const tag of ["svg", "canvas", "iframe", "embed", "object"]) assert.ok(!new RegExp(`\\b${tag}\\b`).test(selector), `${tag} must not be dimmed`);
+  assert.ok(css.includes("filter: none !important"), "full media list keeps filter: none");
+  assert.ok(css.includes('[data-force-dark-image="invert"]') && css.includes("invert(0.9) hue-rotate(180deg) !important"), "logo invert rule kept");
+  assert.ok(css.indexOf("filter: none !important") < css.indexOf("--force-dark-image-brightness, 100%"), "dimming rule comes after the reset");
+});
+
+test("engine tolerates bad or partial palettes by deriving per key", () => {
+  const root = mockDoc.documentElement;
+  const props = ["bg", "surface", "surface-soft", "elevated", "text", "muted", "border", "link", "input", "selection"].map((p) => "--force-dark-" + p);
+  const expected = PINNED_PALETTES["#000000"];
+  for (const palette of [{}, null, { bg: 5 }, { bg: 5, text: null, link: {} }, "x", []]) {
+    enableDarkMode({ backgroundColor: "#000000", palette });
+    for (const prop of props) assert.strictEqual(root.style.getPropertyValue(prop), expected[prop], `${JSON.stringify(palette)} ${prop}`);
+    disableDarkMode();
+    vm.runInThisContext("scanFrame = 0");
+  }
+  enableDarkMode({ backgroundColor: "#000000", palette: { link: "#ff0000", bg: "#101010" } });
+  assert.strictEqual(root.style.getPropertyValue("--force-dark-link"), "#ff0000");
+  assert.strictEqual(root.style.getPropertyValue("--force-dark-bg"), "#101010");
+  assert.strictEqual(root.style.getPropertyValue("--force-dark-text"), expected["--force-dark-text"]);
+  assert.strictEqual(root.style.getPropertyValue("--force-dark-surface"), expected["--force-dark-surface"]);
+  disableDarkMode();
+  vm.runInThisContext("scanFrame = 0");
+});
+
+test("index.js requests __customThemes and re-applies when it changes", () => {
+  assert.ok(global.__syncGetKeys.some((k) => Array.isArray(k) && k.includes("example.com") && k.includes("__customThemes")), "sync.get asks for __customThemes");
+  const root = mockDoc.documentElement;
+  const fire = (changes) => global.__onChangedListeners.forEach((fn) => fn(changes, "sync"));
+  currentUserThemes = [];
+  currentSiteConfig = { enabled: true, engine: "css", themeId: "user:x" };
+  try {
+    fire({ __customThemes: { newValue: [{ id: "user:x", name: "X", colors: { background: "#112233" } }] } });
+    assert.strictEqual(root.style.getPropertyValue("--force-dark-bg"), "#112233");
+    vm.runInThisContext("scanFrame = 0");
+    fire({ __customThemes: { newValue: [{ id: "user:x", name: "X", colors: { background: "#334455" } }] } });
+    assert.strictEqual(root.style.getPropertyValue("--force-dark-bg"), "#334455");
+    vm.runInThisContext("scanFrame = 0");
+    fire({ __customThemes: { newValue: "x" } });
+    assert.strictEqual(root.style.getPropertyValue("--force-dark-bg"), "#0f1115");
+  } finally {
+    currentSiteConfig = null;
+    applyEngine(null);
+    vm.runInThisContext("scanFrame = 0");
+  }
 });
 
 test("resolveTheme picks user, builtin, default and falls back without throwing", () => {

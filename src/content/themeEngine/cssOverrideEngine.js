@@ -137,8 +137,12 @@ function enableDarkMode(config = {}) {
     }
 
     :root[${ROOT_MODE_ATTR}="css"] :is(img, picture, video, canvas, iframe, embed, object, svg) {
-      filter: brightness(var(--force-dark-image-brightness, 100%)) !important;
+      filter: none !important;
       background-color: transparent !important;
+    }
+
+    :root[${ROOT_MODE_ATTR}="css"] :is(img, picture, video) {
+      filter: brightness(var(--force-dark-image-brightness, 100%)) !important;
     }
 
     :root[${ROOT_MODE_ATTR}="css"] :is(img, svg)[${IMAGE_ATTR}="invert"] {
@@ -387,9 +391,13 @@ function applyCustomPalette(config) {
   const themes = window.ForceDarkThemes;
   if (!themes || !themes.derivePalette) return;
 
-  const palette = config && config.palette && typeof config.palette === "object"
-    ? config.palette
-    : themes.derivePalette(config && config.backgroundColor);
+  // Any missing or non-string entry falls back to the colour derived from backgroundColor.
+  const derived = themes.derivePalette(config && config.backgroundColor);
+  const given = config && config.palette && typeof config.palette === "object" ? config.palette : {};
+  const palette = {};
+  for (const key of Object.keys(derived)) {
+    palette[key] = typeof given[key] === "string" && given[key] ? given[key] : derived[key];
+  }
   const rootStyle = document.documentElement.style;
 
   rootStyle.setProperty("--force-dark-bg", palette.bg);

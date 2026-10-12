@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.8.0-indigo.svg)](manifest.json)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Free-blue.svg?logo=googlechrome)](https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke)
-[![Tests](https://img.shields.io/badge/tests-280%20passed-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-282%20passed-success.svg)](tests/)
 [![Website](https://img.shields.io/badge/website-live-cyan.svg)](https://darkmode.pshah.fun/)
 
 **Force Dark Mode - ThemeSwitcher** is a lightweight, privacy-first Chrome extension that transforms websites, local documents, and PDF files into eye-friendly, customizable dark themes.
@@ -97,14 +97,14 @@ Read our complete [Privacy Policy](https://darkmode.pshah.fun/privacy.html) or [
 4. Click **Load unpacked** and select the repository root directory.
 
 ### Running Automated Tests
-Run the full test suite (280 tests across 16 files):
+Run the full test suite (282 tests across 16 files):
 ```bash
 npm test
 ```
 Or run an individual suite:
 ```bash
 node tests/run_tests.mjs             # File integrity, color math, and security checks (34 tests)
-node tests/dom_engine_test.mjs       # DOM simulation, engine switching, and YouTube detection (17 tests)
+node tests/dom_engine_test.mjs       # DOM simulation, engine switching, and YouTube detection (19 tests)
 node tests/privacy_security_test.mjs # Privacy, security, and versioning compliance (15 tests)
 node tests/zip_reader_test.mjs       # Dependency-free ZIP reader for docx/pptx/xlsx (15 tests)
 node tests/docx_parser_test.mjs      # .docx paragraph/heading/list parser (8 tests)

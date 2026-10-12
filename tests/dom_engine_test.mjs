@@ -379,6 +379,58 @@ test("CSS Override Engine does bounded rescans after load to catch CSS-in-JS rul
   }
 });
 
+test("CSS Override Engine rescans are idempotent: an element already darkened by the engine keeps its markers", () => {
+  const card = mockDoc.createElement("div");
+  card.style.backgroundColor = "rgb(255, 255, 255)";
+  card.style.color = "rgb(20, 20, 20)";
+  card.style.borderTopColor = card.style.borderRightColor = card.style.borderBottomColor = card.style.borderLeftColor = "rgb(230, 230, 230)";
+  mockDoc.body.appendChild(card);
+
+  enableDarkMode({ backgroundColor: "#0f1115" });
+  assert.strictEqual(card.getAttribute("data-force-dark-surface"), "strong");
+  assert.strictEqual(card.getAttribute("data-force-dark-text"), "true");
+  assert.strictEqual(card.getAttribute("data-force-dark-border"), "true");
+
+  // In a real browser the computed colours now reflect the engine's own override.
+  card.style.backgroundColor = "rgb(34, 36, 40)";
+  card.style.color = "rgb(232, 234, 237)";
+  card.style.borderTopColor = card.style.borderRightColor = card.style.borderBottomColor = card.style.borderLeftColor = "rgb(52, 59, 70)";
+
+  for (let i = 0; i < 3; i++) {
+    vm.runInThisContext("scanFrame = 0");
+    scheduleScan(mockDoc.documentElement);
+  }
+
+  assert.strictEqual(card.getAttribute("data-force-dark-surface"), "strong", "surface marker must survive rescans");
+  assert.strictEqual(card.getAttribute("data-force-dark-text"), "true", "text marker must survive rescans");
+  assert.strictEqual(card.getAttribute("data-force-dark-border"), "true", "border marker must survive rescans");
+
+  disableDarkMode();
+  assert.strictEqual(card.getAttribute("data-force-dark-surface"), null, "disable still clears markers");
+  mockDoc.body.children = [];
+});
+
+test("CSS Override Engine drops the logo invert marker when the site later makes the logo light", () => {
+  const logo = mockDoc.createElement("svg");
+  logo.setAttribute("class", "brand-logo");
+  logo.style.fill = "rgb(10, 10, 10)";
+  logo.style.color = "rgb(10, 10, 10)";
+  mockDoc.body.appendChild(logo);
+
+  enableDarkMode({ backgroundColor: "#0f1115" });
+  assert.strictEqual(logo.getAttribute("data-force-dark-image"), "invert");
+
+  // The site's CSS arrives and paints the logo white for its own dark header.
+  logo.style.fill = "rgb(255, 255, 255)";
+  logo.style.color = "rgb(255, 255, 255)";
+  vm.runInThisContext("scanFrame = 0");
+  scheduleScan(mockDoc.documentElement);
+
+  assert.strictEqual(logo.getAttribute("data-force-dark-image"), null, "an already light logo must not stay inverted");
+  disableDarkMode();
+  mockDoc.body.children = [];
+});
+
 test("Invert Engine enables and disables cleanly", () => {
   enableInvert();
   assert.ok(mockDoc.getElementById("__force_dark_invert__"), "Invert style tag should be injected");

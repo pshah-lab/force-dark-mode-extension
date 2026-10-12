@@ -291,6 +291,9 @@ function batchScanTrees(roots) {
     const background = parseCssColor(styles.backgroundColor);
     const text = parseCssColor(styles.color);
 
+    // Computed colours already include this engine's own overrides, so a marker
+    // that is already set is kept: otherwise a rescan would read the darkened
+    // colours, drop the marker, and flip the element back to its light colours.
     let surfaceAttr = null;
     if (background && background.a > 0.35) {
       const bgLum = getLuminance(background);
@@ -300,13 +303,16 @@ function batchScanTrees(roots) {
         surfaceAttr = "soft";
       }
     }
+    if (!surfaceAttr) surfaceAttr = element.getAttribute(SURFACE_ATTR);
 
     let textAttr = false;
     if (text && text.a > 0.45 && getLuminance(text) < 0.48) {
       textAttr = true;
     }
+    if (!textAttr && element.hasAttribute(TEXT_ATTR)) textAttr = true;
 
-    const borderAttr = hasLightBorder(styles, parseCssColor, getLuminance);
+    const borderAttr =
+      hasLightBorder(styles, parseCssColor, getLuminance) || element.hasAttribute(BORDER_ATTR);
 
     // Smart logo / SVG inversion check
     let imageAttr = null;

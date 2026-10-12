@@ -24,6 +24,17 @@
     ["hackernews", "Hacker News", "news.ycombinator.com"],
   ];
 
+  // Evidence-backed fixes per pack id (tools/site-audit, Auto engine, WAIT=9000).
+  // Packs not listed keep fixes: []. Each entry names the defect and its screenshot.
+  const FIXES = {
+    // Wordmark <img class="logoImage"> sits in a <picture>, which the scan skips, so it stays black on the dark header (hindustantimes-auto.png).
+    hindustantimes: [{ selector: ".logoGroup img.logoImage", action: "invert-image" }],
+    // Native mid-grey #main-menu bar keeps its grey while links turn blue: about 3.3:1 contrast (npr-auto-closed.png).
+    npr: [{ selector: "#main-menu", action: "surface:strong" }],
+    // Highlights carousel edge fade is a white linear-gradient background image left white on dark (guardian-auto-declined.png).
+    guardian: [{ selector: 'gu-island[name="ScrollableHighlights"] [aria-roledescription="carousel"] > span > div', action: "invert-image" }],
+  };
+
   const ACTIONS = ["invert-image", "keep-light", "surface:strong"];
   const SELECTOR_PATTERN = /^[A-Za-z0-9_\-#.\[\]="':>*,()~+^$| ]+$/;
   const MAX_SELECTOR = 200;
@@ -37,7 +48,8 @@
 
   function build(row) {
     const [id, name, ...match] = row;
-    return { id, name, match: match.slice(), themeId: THEME, fixes: [] };
+    const fixes = (FIXES[id] || []).map((fix) => ({ selector: fix.selector, action: fix.action }));
+    return { id, name, match: match.slice(), themeId: THEME, fixes };
   }
 
   // Fresh copies on every call so callers can never alter the shared table.

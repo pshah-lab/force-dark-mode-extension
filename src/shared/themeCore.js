@@ -6,6 +6,8 @@
     MAX_IMPORT_BYTES: 16384,
     MAX_CSS_CHARS: 6000,
     MAX_CSS_SITES: 30,
+    // All sites' custom CSS together, so it can never fill the 102,400-byte sync quota.
+    MAX_CSS_TOTAL_CHARS: 40000,
   });
 
   const THEME_ID_PATTERN = /^(?:user|builtin):[a-z0-9-]{1,40}$/;
@@ -350,6 +352,7 @@
   global.ForceDarkThemes = Object.assign(global.ForceDarkThemes || {}, {
     LIMITS,
     hostFromHash,
+    cleanCssHost,
     canSaveCss,
     cssSites,
     duplicateName,

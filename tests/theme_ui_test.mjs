@@ -230,6 +230,13 @@ test("options.js import message mentions sites, themes and custom CSS", () => {
 });
 
 // ---- Editor pure helpers (fix round 1) ----
+test("T3: options.js does not print \"Import failed:\" twice for storage errors", () => {
+  const js = read("src/options/options.js");
+  const start = js.indexOf("importFileInput.addEventListener(\"change\"");
+  const handler = js.slice(start, js.indexOf("finally", start));
+  assert.ok(/startsWith\("Import failed"\)/.test(handler), "messages that already say Import failed are shown as they are");
+});
+
 test("duplicateName always differs, fits 40 chars and ends with ' copy'", () => {
   for (const n of [1, 5, 30, 35, 36, 37, 38, 39, 40]) {
     const name = "a".repeat(n);

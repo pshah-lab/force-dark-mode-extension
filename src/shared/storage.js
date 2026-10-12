@@ -16,6 +16,12 @@ const EXTENSION_VERSION = EXTENSION_VERSION_META.version;
 const THEMES_KEY = "__customThemes";
 const CSS_PREFIX = "__css:";
 const QUOTA_MESSAGE = "Browser storage is full. Delete a theme or some custom CSS and try again.";
+const ITEM_TOO_LARGE_MESSAGE =
+  "This custom CSS is too large for one item in browser sync storage (8,192 bytes). Shorten it and try again.";
+const IMPORT_STORAGE_MESSAGE = "Import failed: the data is too large for browser sync storage. Nothing was imported.";
+const QUOTA_BYTES_PER_ITEM = 8192;
+// Options "Global defaults": stored like a site config and carried by export and import.
+const GLOBAL_DEFAULTS_KEY = "__global_defaults__";
 
 function themes() {
   return globalThis.ForceDarkThemes;
@@ -27,6 +33,29 @@ function maxThemes() {
 
 function maxCssSites() {
   return themes()?.LIMITS?.MAX_CSS_SITES ?? 30;
+}
+
+function maxCssTotal() {
+  return themes()?.LIMITS?.MAX_CSS_TOTAL_CHARS ?? 40000;
+}
+
+function cssTotalMessage() {
+  return `Custom CSS for all sites together is limited to ${maxCssTotal().toLocaleString("en-US")} characters.`;
+}
+
+// Bytes chrome.storage.sync counts for one item: its key plus its JSON value, as UTF-8.
+function itemBytes(key, value) {
+  const encoder = new TextEncoder();
+  return encoder.encode(key).length + encoder.encode(JSON.stringify(value)).length;
+}
+
+// Total length of the stored custom CSS, leaving out the keys in `skip`.
+function storedCssChars(all, skip) {
+  let total = 0;
+  for (const [key, value] of Object.entries(all)) {
+    if (key.startsWith(CSS_PREFIX) && !skip.has(key) && typeof value === "string") total += value.length;
+  }
+  return total;
 }
 
 export function sanitizeThemeId(value) {
@@ -161,7 +190,7 @@ export async function exportSettingsJson() {
       if (isSafeKey(host) && typeof value === "string") customCss[host] = value;
       continue;
     }
-    if (key.startsWith("__")) continue;
+    if (key.startsWith("__") && key !== GLOBAL_DEFAULTS_KEY) continue;
     if (isSafeKey(key) && value && typeof value === "object") {
       sanitized[key] = value;
     }
@@ -204,7 +233,7 @@ export async function importSettingsJson(jsonString) {
 
   for (const [key, val] of Object.entries(payload)) {
     if (!isSafeKey(key) || !val || typeof val !== "object" || Array.isArray(val)) continue;
-    if (key.startsWith("__")) continue;
+    if (key.startsWith("__") && key !== GLOBAL_DEFAULTS_KEY) continue;
     if (!hasSettings && ["version", "exportDate", "generator", "themes", "customCss"].includes(key)) continue;
 
     toSet[key] = {
@@ -241,8 +270,11 @@ export async function importSettingsJson(jsonString) {
   if (cssIn && typeof cssIn === "object" && !Array.isArray(cssIn) && typeof themes()?.validateCss === "function") {
     const existing = await getAllConfigs();
     const used = new Set(Object.keys(existing).filter((k) => k.startsWith(CSS_PREFIX)));
+    const cleanHost = themes()?.cleanCssHost;
     for (const [host, css] of Object.entries(cssIn)) {
       if (!isSafeKey(host) || host.startsWith("__") || typeof css !== "string" || css === "") continue;
+      // Only hosts exactly as location.hostname reports them; anything else would never match a page.
+      if (typeof cleanHost !== "function" || cleanHost(host) !== host) continue;
       const result = themes().validateCss(css);
       if (!result?.ok) continue;
       const key = CSS_PREFIX + host;
@@ -250,6 +282,14 @@ export async function importSettingsJson(jsonString) {
       used.add(key);
       toSet[key] = typeof result.css === "string" ? result.css : css;
       cssCount++;
+    }
+    if (cssCount > 0) {
+      const importedKeys = new Set(Object.keys(toSet).filter((k) => k.startsWith(CSS_PREFIX)));
+      let total = storedCssChars(existing, importedKeys);
+      for (const key of importedKeys) total += toSet[key].length;
+      if (total > maxCssTotal()) {
+        throw new Error(`Import failed: ${cssTotalMessage()} This file would go over it. Nothing was imported.`);
+      }
     }
   }
 
@@ -261,7 +301,8 @@ export async function importSettingsJson(jsonString) {
   return new Promise((resolve, reject) => {
     chrome.storage.sync.set(toSet, () => {
       if (chrome.runtime.lastError) {
-        reject(new Error(chrome.runtime.lastError.message));
+        console.warn("[ForceDark] Import storage error:", chrome.runtime.lastError.message);
+        reject(new Error(IMPORT_STORAGE_MESSAGE));
         return;
       }
       resolve(total);
@@ -331,8 +372,9 @@ export async function saveCustomTheme(theme) {
 export async function deleteCustomTheme(id) {
   const list = await getCustomThemes();
   const next = list.filter((t) => t.id !== id);
-  if (next.length === list.length) return;
-  await writeItems({ [THEMES_KEY]: next });
+  if (next.length === list.length) return { ok: true };
+  if (!(await writeItems({ [THEMES_KEY]: next }))) return { ok: false, error: QUOTA_MESSAGE };
+  return { ok: true };
 }
 
 export function getCustomCss(host) {
@@ -366,6 +408,10 @@ export async function setCustomCss(host, css) {
     return { ok: false, error: `Custom CSS is limited to ${maxCssSites()} sites. Remove one first.` };
   }
   const value = typeof result.css === "string" ? result.css : css;
+  if (storedCssChars(all, new Set([key])) + value.length > maxCssTotal()) {
+    return { ok: false, error: `${cssTotalMessage()} Shorten or remove some first.` };
+  }
+  if (itemBytes(key, value) > QUOTA_BYTES_PER_ITEM) return { ok: false, error: ITEM_TOO_LARGE_MESSAGE };
   if (!(await writeItems({ [key]: value }))) return { ok: false, error: QUOTA_MESSAGE };
   return { ok: true };
 }

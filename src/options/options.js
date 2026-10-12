@@ -191,7 +191,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         await refreshStats();
         showStatus(`✓ Successfully imported ${count} items (sites, themes and custom CSS).`);
       } catch (err) {
-        showStatus(`Import failed: ${err.message}`, "error");
+        const message = String(err?.message || "");
+        showStatus(message.startsWith("Import failed") ? message : `Import failed: ${message}`, "error");
       } finally {
         importFileInput.value = "";
       }

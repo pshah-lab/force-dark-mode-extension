@@ -295,5 +295,126 @@ await test("import with the real validator keeps safe CSS and drops unsafe CSS",
   assert.deepStrictEqual(cssKeys, ["__css:ok.com"]);
 });
 
+// ----- M1: global defaults survive export and import -----
+const GLOBAL = "__global_defaults__";
+const globalDefaults = { enabled: true, engine: "css", backgroundColor: "#000000", brightness: 90, contrast: 110, sepia: 5 };
+
+await test("M1: export includes __global_defaults__ and import restores it", async () => {
+  await S.setSiteConfig(GLOBAL, globalDefaults);
+  await S.setSiteConfig("e.com", { enabled: true });
+  const parsed = JSON.parse(await S.exportSettingsJson());
+  assert.deepStrictEqual(parsed.settings[GLOBAL], globalDefaults);
+  await S.clearAllConfigs();
+  await S.importSettingsJson(JSON.stringify(parsed));
+  assert.deepStrictEqual(await S.getSiteConfig(GLOBAL), globalDefaults);
+  assert.ok(await S.getSiteConfig("e.com"));
+});
+
+await test("M1: an old export containing only __global_defaults__ imports (wrapped and flat)", async () => {
+  const old = { version: "1.8.0", exportDate: "2026-01-01T00:00:00.000Z", generator: "ThemeSwitcher - Force Dark Mode", settings: { [GLOBAL]: { ...globalDefaults, extra: "x", brightness: 999 } } };
+  assert.strictEqual(await S.importSettingsJson(JSON.stringify(old)), 1);
+  assert.deepStrictEqual(await S.getSiteConfig(GLOBAL), { ...globalDefaults, brightness: 150 }, "validated like a site config, unknown keys dropped");
+  store = {};
+  assert.strictEqual(await S.importSettingsJson(JSON.stringify({ [GLOBAL]: globalDefaults })), 1);
+  assert.deepStrictEqual(await S.getSiteConfig(GLOBAL), globalDefaults);
+  // other "__" keys are still never imported as settings
+  store = {};
+  await assert.rejects(() => S.importSettingsJson(JSON.stringify({ settings: { __other__: globalDefaults, [GLOBAL]: "x" } })));
+  assert.deepStrictEqual(Object.keys(store), []);
+});
+
+// ----- M2: total custom CSS cap and per-item size message -----
+await test("M2: LIMITS.MAX_CSS_TOTAL_CHARS is 40000 and fits sync storage", async () => {
+  assert.strictEqual(Themes.LIMITS.MAX_CSS_TOTAL_CHARS, 40000);
+  assert.ok(Themes.LIMITS.MAX_CSS_TOTAL_CHARS < 102400 / 2, "leaves room for site settings and themes");
+});
+
+await test("M2: setCustomCss refuses CSS that would push the total over the cap, in plain language", async () => {
+  stubCss();
+  const chunk = "a{color:red}".padEnd(5000, " ");
+  for (let i = 0; i < 8; i++) assert.deepStrictEqual(await S.setCustomCss(`t${i}.com`, chunk), { ok: true }, `site ${i}`);
+  const over = await S.setCustomCss("t8.com", "b{color:red}");
+  assert.strictEqual(over.ok, false);
+  assert.ok(/40,000 characters/.test(over.error) && !/QUOTA/.test(over.error), over.error);
+  assert.strictEqual(store["__css:t8.com"], undefined, "nothing written");
+  // replacing an existing site's CSS counts only the new text
+  assert.deepStrictEqual(await S.setCustomCss("t0.com", "c{color:red}"), { ok: true });
+  assert.deepStrictEqual(await S.setCustomCss("t8.com", "b{color:red}"), { ok: true });
+});
+
+await test("M2: import refuses custom CSS that would push the total over the cap and stores nothing", async () => {
+  stubCss();
+  const chunk = "a{color:red}".padEnd(5000, " ");
+  for (let i = 0; i < 6; i++) await S.setCustomCss(`u${i}.com`, chunk);
+  const before = JSON.stringify(store);
+  const customCss = { "v1.com": chunk, "v2.com": chunk, "v3.com": chunk };
+  await assert.rejects(
+    () => S.importSettingsJson(JSON.stringify({ settings: { "w.com": { enabled: true } }, customCss })),
+    (e) => /40,000 characters/.test(e.message) && /Nothing was imported/.test(e.message)
+  );
+  assert.strictEqual(JSON.stringify(store), before, "nothing partially stored");
+  // re-importing the same sites replaces them, so it fits
+  const same = {}; for (let i = 0; i < 6; i++) same[`u${i}.com`] = chunk;
+  assert.ok(await S.importSettingsJson(JSON.stringify({ customCss: same })) >= 6);
+});
+
+await test("M2: an item over 8,192 bytes says too large for one item, not storage full", async () => {
+  useRealCss();
+  const css = "/* " + "é".repeat(5000) + " */ a{color:red}"; // under 6000 chars, over 8192 UTF-8 bytes
+  assert.ok(css.length <= Themes.LIMITS.MAX_CSS_CHARS);
+  assert.strictEqual(realValidateCss(css).ok, true);
+  let writes = 0;
+  failSetWhen = () => { writes++; return false; };
+  const r = await S.setCustomCss("x.com", css);
+  assert.strictEqual(r.ok, false);
+  assert.ok(/too large for one item/.test(r.error), r.error);
+  assert.ok(!/storage is full/i.test(r.error));
+  assert.strictEqual(writes, 0, "decided before writing");
+  assert.strictEqual(await S.getCustomCss("x.com"), "");
+  // a quota failure on a small item still says storage is full
+  failSetWhen = () => true;
+  const q = await S.setCustomCss("y.com", "a{color:red}");
+  assert.ok(/storage is full/i.test(q.error), q.error);
+});
+
+// ----- M3: imported custom CSS hosts must be clean hostnames -----
+await test("M3: import skips custom CSS whose host is not a clean hostname", async () => {
+  useRealCss();
+  const customCss = { "Example.COM": "a{color:red}", "a b/c": "a{color:red}", " x.com": "a{color:red}", "y.com.": "a{color:red}", "ok.com": "a{color:red}", "local_files": "a{color:blue}" };
+  await S.importSettingsJson(JSON.stringify({ customCss }));
+  assert.deepStrictEqual(Object.keys(store).filter((k) => k.startsWith("__css:")).sort(), ["__css:local_files", "__css:ok.com"]);
+  store = {};
+  await assert.rejects(() => S.importSettingsJson(JSON.stringify({ customCss: { "Bad Host": "a{color:red}" } })));
+  assert.deepStrictEqual(Object.keys(store), []);
+});
+
+// ----- T8: deleteCustomTheme reports write failures -----
+await test("T8: deleteCustomTheme returns {ok:true} and {ok:false} on quota failure leaving the theme in place", async () => {
+  await S.saveCustomTheme(mkTheme(1));
+  await S.saveCustomTheme(mkTheme(2));
+  failSetWhen = () => true;
+  const r = await S.deleteCustomTheme("user:t-1");
+  assert.strictEqual(r.ok, false);
+  assert.ok(typeof r.error === "string" && r.error.length > 0);
+  failSetWhen = null;
+  assert.deepStrictEqual((await S.getCustomThemes()).map((t) => t.id), ["user:t-1", "user:t-2"]);
+  assert.deepStrictEqual(await S.deleteCustomTheme("user:t-1"), { ok: true });
+  assert.deepStrictEqual((await S.getCustomThemes()).map((t) => t.id), ["user:t-2"]);
+  assert.deepStrictEqual(await S.deleteCustomTheme("user:gone"), { ok: true });
+});
+
+// ----- T3: a storage error during import gets a plain-language message -----
+await test("T3: a storage error during import says nothing was imported, in plain language", async () => {
+  await S.saveCustomTheme(mkTheme(1));
+  const before = JSON.stringify(store);
+  failSetWhen = () => true;
+  await assert.rejects(
+    () => S.importSettingsJson(JSON.stringify({ settings: { "d.com": { enabled: true } }, themes: [mkTheme(2)] })),
+    (e) => e.message === "Import failed: the data is too large for browser sync storage. Nothing was imported."
+  );
+  failSetWhen = null;
+  assert.strictEqual(JSON.stringify(store), before);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);

@@ -141,6 +141,23 @@ await test("import rejects hostile payloads", async () => {
   await assert.rejects(() => S.importSettingsJson("{}"));
 });
 
+await test("builtin: ids are never stored as custom themes", async () => {
+  const builtin = { id: "builtin:midnight", name: "Fake", colors: { background: "#000000" } };
+  await S.importSettingsJson(JSON.stringify({
+    settings: { "z.com": { enabled: true }, "__customThemes": { enabled: true }, "__css:x": { enabled: true } },
+    themes: [builtin, mkTheme(1)],
+  }));
+  assert.deepStrictEqual((await S.getCustomThemes()).map((t) => t.id), ["user:t-1"]);
+  assert.deepStrictEqual(Object.keys(store).filter((k) => !k.startsWith("__")), ["z.com"]);
+  assert.ok(Array.isArray(store.__customThemes));
+  assert.strictEqual(store["__css:x"], undefined);
+  store.__customThemes = [builtin, mkTheme(2)];
+  assert.deepStrictEqual((await S.getCustomThemes()).map((t) => t.id), ["user:t-2"]);
+  store = {};
+  await assert.rejects(() => S.importSettingsJson(JSON.stringify({ themes: [builtin] })));
+  assert.strictEqual(store.__customThemes, undefined);
+});
+
 await test("import with quota failure stores nothing partially", async () => {
   await S.saveCustomTheme(mkTheme(1));
   failSetWhen = () => true;

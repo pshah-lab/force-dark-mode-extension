@@ -225,7 +225,7 @@ export async function importSettingsJson(jsonString) {
     const merged = await getCustomThemes();
     for (const candidate of parsed.themes) {
       const result = themes()?.validateTheme?.(candidate);
-      if (!result?.ok) continue;
+      if (!result?.ok || !result.theme.id.startsWith("user:")) continue;
       const idx = merged.findIndex((t) => t.id === result.theme.id);
       if (idx >= 0) merged[idx] = result.theme;
       else if (merged.length < maxThemes()) merged.push(result.theme);
@@ -297,7 +297,7 @@ export function getCustomThemes() {
       const out = [];
       for (const entry of raw) {
         const result = themes()?.validateTheme?.(entry);
-        if (!result?.ok || seen.has(result.theme.id)) continue;
+        if (!result?.ok || !result.theme.id.startsWith("user:") || seen.has(result.theme.id)) continue;
         seen.add(result.theme.id);
         out.push(result.theme);
         if (out.length >= maxThemes()) break;

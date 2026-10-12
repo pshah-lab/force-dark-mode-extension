@@ -22,7 +22,7 @@
     "test:spreadsheetrenderer": "node tests/spreadsheet_renderer_test.mjs && node tests/spreadsheet_errors_test.mjs",
     "test:feedback": "node tests/feedback_prompt_test.mjs",
     "test:themecore": "node tests/theme_core_test.mjs",
-    "test:builtinthemes": "node tests/builtin_themes_test.mjs && node tests/storage_themes_test.mjs",
+    "test:builtinthemes": "node tests/builtin_themes_test.mjs",
     "test:storagethemes": "node tests/storage_themes_test.mjs",
     "serve": "python3 -m http.server 8080 --directory docs"
   },

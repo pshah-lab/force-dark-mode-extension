@@ -36,6 +36,33 @@ document.addEventListener("DOMContentLoaded", async () => {
     "view-source:",
   ]);
 
+  const feedbackCard = document.getElementById("feedback-prompt");
+  const feedbackStore = {
+    read: () =>
+      new Promise((resolve) =>
+        chrome.storage.local.get(FeedbackPrompt.STATE_KEY, (d) =>
+          resolve(d?.[FeedbackPrompt.STATE_KEY])
+        )
+      ),
+    write: (state) =>
+      new Promise((resolve) =>
+        chrome.storage.local.set({ [FeedbackPrompt.STATE_KEY]: state }, resolve)
+      ),
+  };
+  let feedbackState = FeedbackPrompt.recordOpen(await feedbackStore.read());
+  await feedbackStore.write(feedbackState);
+  feedbackCard.hidden = !FeedbackPrompt.shouldShow(feedbackState);
+
+  const settleFeedback = async (next) => {
+    feedbackState = next(feedbackState);
+    feedbackCard.hidden = true;
+    await feedbackStore.write(feedbackState);
+  };
+  document.getElementById("feedback-later").onclick = () => settleFeedback(FeedbackPrompt.snooze);
+  document.getElementById("feedback-never").onclick = () => settleFeedback(FeedbackPrompt.finish);
+  document.getElementById("feedback-rate").addEventListener("click", () => settleFeedback(FeedbackPrompt.finish));
+  document.getElementById("feedback-report").addEventListener("click", () => settleFeedback(FeedbackPrompt.finish));
+
   const [tab] = await chrome.tabs.query({
     active: true,
     currentWindow: true,

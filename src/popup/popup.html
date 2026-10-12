@@ -69,6 +69,19 @@
         <button id="open-document-viewer" type="button">Open file viewer</button>
       </div>
 
+      <div class="feedback-prompt" id="feedback-prompt" hidden>
+        <p class="feedback-prompt-title">Finding it useful?</p>
+        <p class="feedback-prompt-text">A short review helps others find it. Something look wrong on a site? Tell us. Nothing is sent from your browser; these open web pages.</p>
+        <div class="feedback-prompt-actions">
+          <a id="feedback-rate" href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke/reviews" target="_blank" rel="noopener noreferrer">Leave a review ↗</a>
+          <a id="feedback-report" href="https://darkmode.pshah.fun/support.html#feedback" target="_blank" rel="noopener noreferrer">Report a broken site ↗</a>
+        </div>
+        <div class="feedback-prompt-actions secondary">
+          <button id="feedback-later" type="button">Not now</button>
+          <button id="feedback-never" type="button">Don't ask again</button>
+        </div>
+      </div>
+
       <div class="popup-footer">
         <a href="https://darkmode.pshah.fun/support.html#feedback" target="_blank" rel="noopener noreferrer" class="feedback-link">
           Feedback &amp; Suggestions ↗
@@ -76,6 +89,7 @@
       </div>
     </div>
 
+    <script src="feedbackPrompt.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

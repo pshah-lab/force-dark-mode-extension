@@ -406,8 +406,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
   });
 
+  // Picking a colour means "use this colour": switch to Default colour so a selected
+  // theme or a site pack theme never hides it.
   backgroundColorInput.oninput = () => {
     const backgroundColor = normalizeColor(backgroundColorInput.value);
+    selectTheme("default");
 
     if (colorDebounceTimer) {
       clearTimeout(colorDebounceTimer);
@@ -423,6 +426,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           host,
           engine: getSelectedEngine(),
           backgroundColor,
+          themeId: "default",
           forceEnabled: enabled,
           ...getFilterValues(),
         });

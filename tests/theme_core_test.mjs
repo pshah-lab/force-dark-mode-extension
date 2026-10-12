@@ -119,5 +119,50 @@ test("hostFromHash rejects everything else", () => {
   assert.strictEqual(T.hostFromHash("#css=" + "a".repeat(250) + ".com").length, 0);
 });
 
+// ----- C1: a saved non-default background colour beats the site pack theme -----
+const packCtx = loadUmd(["src/shared/themeCore.js", "src/shared/builtinThemes.js", "src/shared/sitePacks.js"]);
+const P = packCtx.ForceDarkThemes;
+
+test("resolveTheme: pack host + saved non-default colour + no themeId skips the pack theme but keeps the pack", () => {
+  for (const config of [
+    { enabled: true, engine: "css", backgroundColor: "#000000" },
+    { enabled: true, engine: "css", backgroundColor: "#FFFFFF", themeId: "" },
+    { backgroundColor: "#123456" },
+  ]) {
+    const r = P.resolveTheme({ config, host: "github.com", userThemes: [] });
+    assert.strictEqual(r.theme, null, JSON.stringify(config));
+    assert.strictEqual(r.source, "default", JSON.stringify(config));
+    assert.ok(r.pack && r.pack.id === "github", "pack still returned");
+  }
+  const npr = P.resolveTheme({ config: { backgroundColor: "#000000" }, host: "www.npr.org", userThemes: [] });
+  assert.strictEqual(npr.theme, null);
+  assert.strictEqual(npr.pack.id, "npr");
+  assert.ok(npr.pack.fixes.length > 0, "the pack's fixes are still returned");
+});
+
+test("resolveTheme: pack host + default or missing colour + no themeId still gets the pack theme", () => {
+  for (const config of [
+    { enabled: true, engine: "css", backgroundColor: "#0f1115" },
+    { backgroundColor: "#0F1115" },
+    { enabled: true, engine: "css" },
+    { backgroundColor: "not-a-colour" },
+    null,
+  ]) {
+    const r = P.resolveTheme({ config, host: "github.com", userThemes: [] });
+    assert.strictEqual(r.source, "pack", JSON.stringify(config));
+    assert.strictEqual(r.theme.id, "builtin:midnight", JSON.stringify(config));
+  }
+});
+
+test("resolveTheme: an explicit themeId beats a saved colour and the pack", () => {
+  const a = P.resolveTheme({ config: { backgroundColor: "#000000", themeId: "builtin:dracula" }, host: "github.com", userThemes: [] });
+  assert.strictEqual(a.source, "builtin");
+  assert.strictEqual(a.theme.id, "builtin:dracula");
+  const b = P.resolveTheme({ config: { backgroundColor: "#0f1115", themeId: "default" }, host: "github.com", userThemes: [] });
+  assert.deepStrictEqual([b.theme, b.source, b.pack.id], [null, "default", "github"]);
+  const c = P.resolveTheme({ config: { backgroundColor: "#000000" }, host: "example.org", userThemes: [] });
+  assert.deepStrictEqual([c.theme, c.source, c.pack], [null, "default", null]);
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

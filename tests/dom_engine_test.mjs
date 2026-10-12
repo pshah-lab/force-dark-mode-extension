@@ -1056,6 +1056,40 @@ test("fixes are not applied for engine invert (CSS engine only), and applyEngine
   }
 });
 
+test("C1: a pack host with a saved non-default colour renders that colour and keeps the pack fixes", () => {
+  const T = global.ForceDarkThemes;
+  const realFinder = T.findSitePack;
+  T.findSitePack = (h) => (h === "example.com"
+    ? { id: "ex", name: "Ex", match: ["example.com"], themeId: "builtin:dracula", fixes: [{ selector: "[data-fix-logo]", action: "invert-image" }] }
+    : null);
+  const root = mockDoc.documentElement;
+  try {
+    const logo = transparentEl("div", "data-fix-logo");
+    mockDoc.body.appendChild(logo);
+
+    applyEngine({ enabled: true, engine: "css", backgroundColor: "#000000" });
+    assert.strictEqual(root.style.getPropertyValue("--force-dark-bg"), "#000000", "saved colour wins over the pack theme");
+    assert.strictEqual(logo.getAttribute("data-force-dark-image"), "invert", "pack fixes still applied");
+
+    vm.runInThisContext("scanFrame = 0");
+    applyEngine({ enabled: true, engine: "css", backgroundColor: "#0f1115" });
+    assert.strictEqual(root.style.getPropertyValue("--force-dark-bg"), "#282a36", "default colour still gets the pack theme");
+    assert.strictEqual(logo.getAttribute("data-force-dark-image"), "invert");
+
+    vm.runInThisContext("scanFrame = 0");
+    applyEngine({ enabled: true, engine: "css" });
+    assert.strictEqual(root.style.getPropertyValue("--force-dark-bg"), "#282a36", "no colour still gets the pack theme");
+
+    vm.runInThisContext("scanFrame = 0");
+    applyEngine({ enabled: true, engine: "css", backgroundColor: "#000000", themeId: "builtin:nord" });
+    assert.strictEqual(root.style.getPropertyValue("--force-dark-bg"), T.getBuiltinTheme("builtin:nord").colors.background, "explicit theme beats everything");
+  } finally {
+    T.findSitePack = realFinder;
+    applyEngine({ enabled: false });
+    resetFixTest();
+  }
+});
+
 test("fixes stored in the site config never reach the engine (no pack)", () => {
   const stored = [{ selector: "[data-fix-logo]", action: "invert-image" }, { selector: "*", action: "keep-light" }];
   try {

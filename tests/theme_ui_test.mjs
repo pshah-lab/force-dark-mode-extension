@@ -52,6 +52,23 @@ test("popup.js sends themeId in TOGGLE and writes option text with textContent",
   }
 });
 
+test("C1: the popup colour picker sends themeId \"default\" and switches the dropdown to Default colour", () => {
+  const js = read("src/popup/popup.js");
+  const start = js.indexOf("backgroundColorInput.oninput");
+  assert.ok(start > -1, "colour handler exists");
+  const end = js.indexOf("function sendFilterUpdate", start);
+  assert.ok(end > start, "end marker found");
+  const handler = js.slice(start, end);
+  assert.ok(/type: "TOGGLE"/.test(handler), "handler sends TOGGLE");
+  assert.ok(/themeId:\s*"default"/.test(handler), "colour change sends themeId: \"default\"");
+  assert.ok(/selectTheme\("default"\)/.test(handler), "colour change shows Default colour in the dropdown");
+  const opts = plain(T.buildThemeOptions([], { name: "GitHub" }));
+  assert.deepStrictEqual(opts.find((o) => o.value === "default").label, "Default colour");
+  // dropdown changes keep sending the chosen themeId
+  const dd = js.slice(js.indexOf("themeSelect.onchange"), js.indexOf("chrome.storage.onChanged", js.indexOf("themeSelect.onchange")));
+  assert.ok(/\bthemeId,/.test(dd), "dropdown handler sends the chosen themeId");
+});
+
 test("buildThemeOptions: empty user themes gives no My themes group", () => {
   const opts = plain(T.buildThemeOptions([], null));
   assert.deepStrictEqual(opts.slice(0, 2).map((o) => [o.value, o.label, o.group]), [

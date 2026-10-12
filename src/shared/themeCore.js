@@ -150,7 +150,15 @@
     return theme ? { theme, source: "builtin" } : null;
   }
 
-  // Decides which theme a site gets: its own choice, else a site pack's, else none.
+  const DEFAULT_BACKGROUND = "#0f1115";
+
+  function hasCustomBackground(config) {
+    const bg = config && config.backgroundColor;
+    return typeof bg === "string" && HEX_PATTERN.test(bg) && bg.toLowerCase() !== DEFAULT_BACKGROUND;
+  }
+
+  // Decides which theme a site gets: its own choice, else none when a non-default colour is
+  // saved, else a site pack's, else none.
   function resolveTheme(args) {
     const { config, host, userThemes } = args || {};
     const themeId = config && typeof config.themeId === "string" ? config.themeId : "";
@@ -161,6 +169,10 @@
 
     const chosen = themeId ? findTheme(themeId, userThemes) : null;
     if (chosen) return { theme: chosen.theme, source: chosen.source, pack };
+
+    // No theme chosen but a saved background colour other than the default: that colour
+    // wins over the pack theme (the pack's fixes still apply), so 1.x colours keep working.
+    if (!themeId && hasCustomBackground(config)) return { theme: null, source: "default", pack };
 
     const fromPack = pack ? findTheme(pack.themeId, userThemes) : null;
     if (fromPack) return { theme: fromPack.theme, source: "pack", pack };

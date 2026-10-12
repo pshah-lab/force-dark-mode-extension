@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Page colours flipping back to light on rescan**: the CSS engine now keeps its surface, text and border markers across rescans, so already-darkened panels (e.g. on Forbes) no longer revert to white.
 - **Dark text left on dark backgrounds on news sites** (e.g. BBC): sites using CSS-in-JS add colour rules after hydration without any DOM event, so headlines kept their dark text. The CSS engine now runs a few bounded rescans after the page loads.
+- **Auto skipping light pages as "already dark"** (e.g. NYT with the OS in dark mode): declaring support for a dark scheme, plus transparent elements, was enough to skip a page that actually paints a white canvas. The painted page background now decides.
 - **Invert engine double-inverting already dark pages**: the Invert engine is now skipped on pages detected as natively dark (e.g. Medium or YouTube in dark mode), as Auto already did, instead of turning them light again.
 
 ### Changed

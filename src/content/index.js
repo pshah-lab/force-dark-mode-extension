@@ -413,6 +413,18 @@ function isNativeDarkPage({
   // If too many light surfaces exist, it's not a dark page
   if (lightSurfaceRatio > 0.25) return false;
 
+  // What the browser actually paints behind the page decides it. Declaring
+  // support for a dark scheme (or the OS preferring dark) means nothing when
+  // the site paints an opaque light canvas, as many sites do. The html
+  // background wins; the body's only counts when html is transparent.
+  const canvasBackground =
+    rootBackground && rootBackground.a > 0.35
+      ? rootBackground
+      : bodyBackground && bodyBackground.a > 0.35
+        ? bodyBackground
+        : null;
+  if (canvasBackground && getLuminance(canvasBackground) > 0.55) return false;
+
   // If site declares dark mode or has dark root/app container, and dark surfaces dominate
   if (declaresDarkScheme && (darkSurfaceRatio >= 0.55 || hasDarkRoot || hasDarkAppContainer)) {
     return true;

@@ -560,6 +560,41 @@ test("Invert engine still applies on a light page", () => {
   mockDoc.documentElement.removeAttribute("dark");
 });
 
+test("A light page is not treated as natively dark just because it declares 'light dark' and the OS prefers dark", () => {
+  const realMatchMedia = global.window.matchMedia;
+  global.window.matchMedia = () => ({ matches: true });
+  try {
+    buildSchemePage("light dark");
+    // The site never implemented a dark theme: html is transparent, body paints white.
+    mockDoc.body.style.backgroundColor = "rgb(255, 255, 255)";
+    const analysis = analyzePageForEngine();
+    assert.strictEqual(analysis.nativeDark, false, "an opaque white page must not be skipped as already dark");
+  } finally {
+    global.window.matchMedia = realMatchMedia;
+    mockDoc.documentElement.style.colorScheme = "";
+    mockDoc.body.style.colorScheme = "";
+    mockDoc.body.children = [];
+  }
+});
+
+test("A page that really renders dark under a dark OS is still treated as natively dark", () => {
+  const realMatchMedia = global.window.matchMedia;
+  global.window.matchMedia = () => ({ matches: true });
+  try {
+    buildSchemePage("light dark");
+    mockDoc.documentElement.style.backgroundColor = "rgb(18, 18, 18)";
+    mockDoc.body.style.backgroundColor = "rgb(23, 23, 23)";
+    const analysis = analyzePageForEngine();
+    assert.strictEqual(analysis.nativeDark, true);
+  } finally {
+    global.window.matchMedia = realMatchMedia;
+    mockDoc.documentElement.style.colorScheme = "";
+    mockDoc.documentElement.style.backgroundColor = "rgb(255, 255, 255)";
+    mockDoc.body.style.colorScheme = "";
+    mockDoc.body.children = [];
+  }
+});
+
 test("applyEngine applies filter CSS variables and gates the filter attribute", () => {
   applyEngine({ enabled: true, engine: "css", brightness: 120, contrast: 90, sepia: 30 });
 

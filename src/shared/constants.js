@@ -21,3 +21,5 @@ export const VALID_SCHEDULE_MODES = new Set(["off", "time", "system"]);
 export const DEFAULT_SCHEDULE_START = "20:00";
 export const DEFAULT_SCHEDULE_END = "07:00";
 export const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+export const THEME_ID_PATTERN = /^(builtin|user):[a-z0-9-]{1,40}$/;

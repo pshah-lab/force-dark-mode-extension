@@ -5,6 +5,7 @@ import {
   DEFAULT_BACKGROUND_COLOR,
   HEX_COLOR_PATTERN,
   clampFilterValue,
+  THEME_ID_PATTERN,
 } from "../shared/constants.js";
 
 function getHostFromUrl(url) {
@@ -157,12 +158,21 @@ async function handleToggleMessage(msg, tabUrl) {
   );
   const sepia = clampFilterValue("sepia", msg.sepia ?? currentConfig?.sepia);
 
-  await setSiteConfig(host, {
+  const themeId =
+    typeof msg.themeId === "string" &&
+    (msg.themeId === "" || msg.themeId === "default" || THEME_ID_PATTERN.test(msg.themeId))
+      ? msg.themeId
+      : currentConfig?.themeId;
+
+  const nextConfig = {
     enabled: newEnabled,
     engine,
     backgroundColor,
     brightness,
     contrast,
     sepia,
-  });
+  };
+  if (typeof themeId === "string") nextConfig.themeId = themeId;
+
+  await setSiteConfig(host, nextConfig);
 }

@@ -39,7 +39,8 @@ test("popup.js sends themeId in TOGGLE and writes option text with textContent",
   const start = js.indexOf("themeSelect.onchange");
   assert.ok(start > -1, "themeSelect change handler exists");
   const end = js.indexOf("chrome.storage.onChanged", start);
-  const handler = js.slice(start, end > -1 ? end : undefined);
+  assert.ok(end > start, "end marker chrome.storage.onChanged found after the handler");
+  const handler = js.slice(start, end);
   assert.ok(/type: "TOGGLE"/.test(handler), "handler sends TOGGLE");
   assert.ok(/\bthemeId\b/.test(handler), "handler sends themeId");
   assert.ok(/\bforceEnabled\b/.test(handler), "handler sends forceEnabled");

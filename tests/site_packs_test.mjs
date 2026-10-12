@@ -32,7 +32,7 @@ test("matches exact hosts, subdomains, uppercase and a trailing dot", () => {
 });
 
 test("look-alike and invalid hosts do not match", () => {
-  for (const h of ["evilbbc.com", "bbc.com.evil.io", "notbbc.co.uk", "bbc.co.uk.attacker.net", "", undefined, null, 5, {}, "bbc", ".", "..", "bbc.com..", "mozilla.org", "ycombinator.com", "example.com"]) {
+  for (const h of ["evilbbc.com", "bbc.com.evil.io", "notbbc.co.uk", "bbc.co.uk.attacker.net", "", undefined, null, 5, {}, "bbc", ".", "..", "bbc.com..", ".bbc.com", "..bbc.com", "a..bbc.com", "evil..bbc.com", "mozilla.org", "ycombinator.com", "example.com"]) {
     assert.strictEqual(T.findSitePack(h), null, `${String(h)} must not match`);
   }
 });

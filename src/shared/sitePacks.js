@@ -50,7 +50,7 @@
     if (typeof host !== "string") return null;
     let h = host.toLowerCase();
     if (h.endsWith(".")) h = h.slice(0, -1);
-    if (!h) return null;
+    if (!h || h.startsWith(".") || h.includes("..")) return null;
     for (const row of TABLE) {
       for (let i = 2; i < row.length; i++) {
         const m = row[i];

@@ -4,6 +4,7 @@ import { parseDocxDocument } from "./parsers/docxParser.js";
 import { parsePptxPresentation } from "./parsers/pptxParser.js";
 import { parseXlsx } from "./spreadsheet/xlsxParser.js";
 import { parseCsv } from "./spreadsheet/csvParser.js";
+import { isMemoryError } from "./spreadsheet/errors.js";
 import { renderSpreadsheet } from "./spreadsheet/spreadsheetRenderer.js";
 import { MAX_CSV_BYTES } from "./spreadsheet/spreadsheetLimits.js";
 
@@ -357,7 +358,7 @@ async function openSpreadsheetFile(file) {
       workbook = { sheets: [sheet], sheetsCapped: false, tabs: false };
     } catch (error) {
       if (generation !== renderGeneration) return;
-      if (isOutOfMemoryError(error)) {
+      if (isMemoryError(error)) {
         showEmptyState(`Not enough available memory to open ${file.name}.`);
       } else {
         showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);
@@ -376,7 +377,7 @@ async function openSpreadsheetFile(file) {
       if (generation !== renderGeneration) return;
       if (error.code === "ENCRYPTED") {
         showEmptyState(`${file.name} is password-protected and can't be previewed.`);
-      } else if (isOutOfMemoryError(error)) {
+      } else if (isMemoryError(error)) {
         showEmptyState(`Not enough available memory to open ${file.name}.`);
       } else {
         showEmptyState(`Could not read ${file.name} — the file may be corrupted.`);

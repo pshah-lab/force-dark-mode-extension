@@ -88,5 +88,16 @@ test("contrastIssues classifies ok / warn / block", () => {
   assert.strictEqual(link.level, "block");
 });
 
+test("derivePalette output is pinned to the exact values the engine produced before the refactor", () => {
+  const pinned = {
+    "#0f1115": { bg: "#0f1115", surface: "#222428", surfaceSoft: "#313236", elevated: "#444548", text: "#e8eaed", muted: "#b8bec7", border: "#3f4144", link: "#8ab4f8", input: "#1b1d21", selection: "#3a4a64" },
+    "#ffffff": { bg: "#ffffff", surface: "#f0f0f0", surfaceSoft: "#e6e6e6", elevated: "#dbdbdb", text: "#14171c", muted: "#4d5663", border: "#bfbfbf", link: "#174ea6", input: "#f5f5f5", selection: "#aec1e0" },
+    "#000000": { bg: "#000000", surface: "#141414", surfaceSoft: "#242424", elevated: "#383838", text: "#e8eaed", muted: "#b8bec7", border: "#333333", link: "#8ab4f8", input: "#0d0d0d", selection: "#303f57" },
+  };
+  for (const [bg, expected] of Object.entries(pinned)) {
+    assert.deepStrictEqual({ ...T.derivePalette(bg) }, expected, bg);
+  }
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

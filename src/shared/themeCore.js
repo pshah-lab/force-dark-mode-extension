@@ -133,6 +133,41 @@
     return { level, messages };
   }
 
+  // Looks a theme id up among the user's themes, then the built-ins. Never throws.
+  function findTheme(id, userThemes) {
+    if (typeof id !== "string" || !THEME_ID_PATTERN.test(id)) return null;
+    if (id.startsWith("user:")) {
+      if (!Array.isArray(userThemes)) return null;
+      for (const candidate of userThemes) {
+        if (!isPlainObject(candidate) || candidate.id !== id) continue;
+        const checked = validateTheme(candidate);
+        return checked.ok ? { theme: checked.theme, source: "user" } : null;
+      }
+      return null;
+    }
+    const lookup = global.ForceDarkThemes && global.ForceDarkThemes.getBuiltinTheme;
+    const theme = typeof lookup === "function" ? lookup(id) : null;
+    return theme ? { theme, source: "builtin" } : null;
+  }
+
+  // Decides which theme a site gets: its own choice, else a site pack's, else none.
+  function resolveTheme(args) {
+    const { config, host, userThemes } = args || {};
+    const themeId = config && typeof config.themeId === "string" ? config.themeId : "";
+    const finder = global.ForceDarkThemes && global.ForceDarkThemes.findSitePack;
+    const pack = (typeof finder === "function" ? finder(host) : null) || null;
+
+    if (themeId === "default") return { theme: null, source: "default", pack };
+
+    const chosen = themeId ? findTheme(themeId, userThemes) : null;
+    if (chosen) return { theme: chosen.theme, source: chosen.source, pack };
+
+    const fromPack = pack ? findTheme(pack.themeId, userThemes) : null;
+    if (fromPack) return { theme: fromPack.theme, source: "pack", pack };
+
+    return { theme: null, source: "default", pack };
+  }
+
   global.ForceDarkThemes = Object.assign(global.ForceDarkThemes || {}, {
     LIMITS,
     THEME_ID_PATTERN,
@@ -140,5 +175,6 @@
     derivePalette,
     paletteFromTheme,
     contrastIssues,
+    resolveTheme,
   });
 })(typeof globalThis !== "undefined" ? globalThis : self);

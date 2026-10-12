@@ -42,8 +42,27 @@ function applyEngine(config) {
   if (engine === "invert") {
     enableInvert();
   } else {
-    enableDarkMode(config);
+    enableDarkMode(withThemePalette(config));
   }
+}
+
+// Adds the resolved theme's palette and image dimming to the site config. With no
+// theme the config is passed through untouched, so backgroundColor-only sites behave as before.
+function withThemePalette(config) {
+  const themes = window.ForceDarkThemes;
+  if (!themes || typeof themes.resolveTheme !== "function") return config;
+
+  let resolved = null;
+  try {
+    resolved = themes.resolveTheme({ config, host, userThemes: currentUserThemes });
+  } catch (error) {
+    resolved = null;
+  }
+  const theme = resolved && resolved.theme;
+  if (!theme) return config;
+
+  const imageDim = Number.isFinite(config.imageDim) ? config.imageDim : theme.imageDim;
+  return { ...config, palette: themes.paletteFromTheme(theme), imageDim };
 }
 
 function applyFilterVars(config) {
@@ -85,9 +104,11 @@ function resolveEngine(config) {
   return engine === "invert" ? "invert" : analysis.engine;
 }
 
+const CUSTOM_THEMES_KEY = "__customThemes";
 const SCHEDULE_STORAGE_KEY = "scheduleConfig";
 const SCHEDULE_RECHECK_INTERVAL_MS = 60000;
 let currentSiteConfig = null;
+let currentUserThemes = [];
 let currentSchedule = null;
 let scheduleIntervalId = null;
 
@@ -152,8 +173,9 @@ function refreshScheduleTimer() {
 }
 
 function loadSiteConfigAndApply() {
-  chrome.storage.sync.get(host, (data) => {
+  chrome.storage.sync.get([host, CUSTOM_THEMES_KEY], (data) => {
     currentSiteConfig = data[host] || null;
+    currentUserThemes = Array.isArray(data[CUSTOM_THEMES_KEY]) ? data[CUSTOM_THEMES_KEY] : [];
     applyEffectiveEngine();
   });
 }
@@ -171,8 +193,12 @@ if (document.readyState === "loading") {
 }
 
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === "sync" && changes[host]) {
-    currentSiteConfig = changes[host].newValue || null;
+  if (area === "sync" && (changes[host] || changes[CUSTOM_THEMES_KEY])) {
+    if (changes[host]) currentSiteConfig = changes[host].newValue || null;
+    if (changes[CUSTOM_THEMES_KEY]) {
+      const next = changes[CUSTOM_THEMES_KEY].newValue;
+      currentUserThemes = Array.isArray(next) ? next : [];
+    }
     applyEffectiveEngine();
   }
 

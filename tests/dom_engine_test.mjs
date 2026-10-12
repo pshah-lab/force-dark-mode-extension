@@ -249,6 +249,11 @@ const contentIndexCode = fs.readFileSync(path.join(rootDir, "src/content/index.j
 vm.runInThisContext(colorUtilsCode);
 global.window.ForceDarkColorUtils = global.ForceDarkColorUtils;
 
+// Same order as manifest.json: colorUtils, themeCore, builtinThemes, engines, index.
+vm.runInThisContext(fs.readFileSync(path.join(rootDir, "src/shared/themeCore.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(rootDir, "src/shared/builtinThemes.js"), "utf8"));
+global.window.ForceDarkThemes = global.ForceDarkThemes;
+
 vm.runInThisContext(cssEngineCode);
 vm.runInThisContext(invertEngineCode);
 vm.runInThisContext(contentIndexCode);
@@ -654,6 +659,130 @@ test("applyEngine clears filter variables and attribute when disabled", () => {
 
   assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-brightness"), "");
   assert.strictEqual(mockDoc.documentElement.getAttribute("data-force-dark-filter"), null);
+});
+
+const PINNED_PALETTES = {
+  "#0f1115": { "--force-dark-bg": "#0f1115", "--force-dark-surface": "#222428", "--force-dark-surface-soft": "#313236", "--force-dark-elevated": "#444548", "--force-dark-text": "#e8eaed", "--force-dark-muted": "#b8bec7", "--force-dark-border": "#3f4144", "--force-dark-link": "#8ab4f8", "--force-dark-input": "#1b1d21", "--force-dark-selection": "#3a4a64" },
+  "#ffffff": { "--force-dark-bg": "#ffffff", "--force-dark-surface": "#f0f0f0", "--force-dark-surface-soft": "#e6e6e6", "--force-dark-elevated": "#dbdbdb", "--force-dark-text": "#14171c", "--force-dark-muted": "#4d5663", "--force-dark-border": "#bfbfbf", "--force-dark-link": "#174ea6", "--force-dark-input": "#f5f5f5", "--force-dark-selection": "#aec1e0" },
+  "#000000": { "--force-dark-bg": "#000000", "--force-dark-surface": "#141414", "--force-dark-surface-soft": "#242424", "--force-dark-elevated": "#383838", "--force-dark-text": "#e8eaed", "--force-dark-muted": "#b8bec7", "--force-dark-border": "#333333", "--force-dark-link": "#8ab4f8", "--force-dark-input": "#0d0d0d", "--force-dark-selection": "#303f57" },
+};
+
+test("engine output for a backgroundColor is pinned to exact values (refactor guard)", () => {
+  for (const [bg, expected] of Object.entries(PINNED_PALETTES)) {
+    enableDarkMode({ backgroundColor: bg });
+    for (const [prop, value] of Object.entries(expected)) {
+      assert.strictEqual(mockDoc.documentElement.style.getPropertyValue(prop), value, `${bg} ${prop}`);
+    }
+    disableDarkMode();
+    vm.runInThisContext("scanFrame = 0");
+  }
+});
+
+test("engine applies a theme palette", () => {
+  const T = global.ForceDarkThemes;
+  const dracula = T.getBuiltinTheme("builtin:dracula");
+  enableDarkMode({ palette: T.paletteFromTheme(dracula) });
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-bg"), "#282a36");
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-link"), "#8be9fd");
+  disableDarkMode();
+  vm.runInThisContext("scanFrame = 0");
+});
+
+test("engine without palette still derives from backgroundColor", () => {
+  enableDarkMode({ backgroundColor: "#000000" });
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-bg"), "#000000");
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-text"), "#e8eaed");
+  disableDarkMode();
+  vm.runInThisContext("scanFrame = 0");
+});
+
+test("a config with only backgroundColor yields the derived palette (back-compat)", () => {
+  const T = global.ForceDarkThemes;
+  assert.strictEqual(T.derivePalette("#000000").bg, "#000000");
+  enableDarkMode({ backgroundColor: "#ffffff" });
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-surface"), T.derivePalette("#ffffff").surface);
+  disableDarkMode();
+  vm.runInThisContext("scanFrame = 0");
+});
+
+test("imageDim sets the image brightness variable and 0 clears it", () => {
+  const root = mockDoc.documentElement;
+  enableDarkMode({ backgroundColor: "#0f1115", imageDim: 25 });
+  assert.strictEqual(root.style.getPropertyValue("--force-dark-image-brightness"), "75%");
+  vm.runInThisContext("scanFrame = 0");
+  enableDarkMode({ backgroundColor: "#0f1115", imageDim: 0 });
+  assert.strictEqual(root.style.getPropertyValue("--force-dark-image-brightness"), "");
+  vm.runInThisContext("scanFrame = 0");
+  enableDarkMode({ backgroundColor: "#0f1115", imageDim: 25 });
+  disableDarkMode();
+  assert.strictEqual(root.style.getPropertyValue("--force-dark-image-brightness"), "");
+  vm.runInThisContext("scanFrame = 0");
+  const css = (() => { enableDarkMode({}); const t = mockDoc.getElementById("__force_dark_mode__").textContent; disableDarkMode(); vm.runInThisContext("scanFrame = 0"); return t; })();
+  assert.ok(css.includes("filter: brightness(var(--force-dark-image-brightness, 100%)) !important"));
+  assert.ok(css.includes('[data-force-dark-image="invert"]'));
+});
+
+test("resolveTheme picks user, builtin, default and falls back without throwing", () => {
+  const T = global.ForceDarkThemes;
+  const user = { id: "user:mine", name: "Mine", colors: { background: "#101820" }, imageDim: 0 };
+  const r1 = T.resolveTheme({ config: { themeId: "user:mine" }, host: "a.com", userThemes: [user] });
+  assert.strictEqual(r1.source, "user");
+  assert.strictEqual(r1.theme.id, "user:mine");
+  const r2 = T.resolveTheme({ config: { themeId: "builtin:nord" }, host: "a.com", userThemes: [] });
+  assert.strictEqual(r2.source, "builtin");
+  assert.strictEqual(r2.theme.id, "builtin:nord");
+  const r3 = T.resolveTheme({ config: { themeId: "default" }, host: "a.com", userThemes: [user] });
+  assert.deepStrictEqual([r3.theme, r3.source], [null, "default"]);
+  const r4 = T.resolveTheme({ config: { themeId: "user:gone" }, host: "a.com", userThemes: [user] });
+  assert.deepStrictEqual([r4.theme, r4.source], [null, "default"]);
+  const r5 = T.resolveTheme({ config: { themeId: "user:mine" }, host: "a.com", userThemes: "x" });
+  assert.deepStrictEqual([r5.theme, r5.source], [null, "default"]);
+  const r6 = T.resolveTheme({ config: { backgroundColor: "#000000" }, host: "a.com", userThemes: [user] });
+  assert.deepStrictEqual([r6.theme, r6.source, r6.pack], [null, "default", null]);
+  const r7 = T.resolveTheme({ config: null, host: "a.com", userThemes: null });
+  assert.deepStrictEqual([r7.theme, r7.source], [null, "default"]);
+  const r8 = T.resolveTheme({ config: { themeId: "user:mine" }, host: "a.com", userThemes: [null, 5, { id: "user:mine" }] });
+  assert.strictEqual(r8.source, "default");
+});
+
+test("resolveTheme uses a site pack theme when no theme is chosen", () => {
+  const T = global.ForceDarkThemes;
+  T.findSitePack = (h) => (h === "p.com" ? { id: "p", themeId: "builtin:dracula" } : null);
+  try {
+    const a = T.resolveTheme({ config: null, host: "p.com", userThemes: [] });
+    assert.strictEqual(a.source, "pack");
+    assert.strictEqual(a.theme.id, "builtin:dracula");
+    assert.strictEqual(a.pack.id, "p");
+    const b = T.resolveTheme({ config: { themeId: "builtin:nord" }, host: "p.com", userThemes: [] });
+    assert.strictEqual(b.source, "builtin");
+    const c = T.resolveTheme({ config: { themeId: "default" }, host: "p.com", userThemes: [] });
+    assert.strictEqual(c.source, "default");
+    assert.strictEqual(c.pack.id, "p");
+    const d = T.resolveTheme({ config: { themeId: "user:gone" }, host: "p.com", userThemes: [] });
+    assert.strictEqual(d.source, "pack");
+  } finally {
+    delete T.findSitePack;
+  }
+});
+
+test("applyEngine passes a resolved theme palette and imageDim to the engine", () => {
+  const T = global.ForceDarkThemes;
+  currentUserThemes = [{ id: "user:mine", name: "Mine", colors: { background: "#101820", link: "#ffcc00" }, imageDim: 20 }];
+  applyEngine({ enabled: true, engine: "css", themeId: "user:mine" });
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-bg"), "#101820");
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-link"), "#ffcc00");
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-image-brightness"), "80%");
+  // site imageDim overrides the theme's
+  vm.runInThisContext("scanFrame = 0");
+  applyEngine({ enabled: true, engine: "css", themeId: "user:mine", imageDim: 40 });
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-image-brightness"), "60%");
+  // a deleted theme falls back to backgroundColor without throwing
+  vm.runInThisContext("scanFrame = 0");
+  applyEngine({ enabled: true, engine: "css", themeId: "user:gone", backgroundColor: "#000000" });
+  assert.strictEqual(mockDoc.documentElement.style.getPropertyValue("--force-dark-bg"), "#000000");
+  currentUserThemes = [];
+  applyEngine({ enabled: false });
+  vm.runInThisContext("scanFrame = 0");
 });
 
 console.log("\n=========================================");

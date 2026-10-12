@@ -4,7 +4,7 @@ const SURFACE_ATTR = "data-force-dark-surface";
 const TEXT_ATTR = "data-force-dark-text";
 const BORDER_ATTR = "data-force-dark-border";
 const IMAGE_ATTR = "data-force-dark-image";
-const DEFAULT_BACKGROUND_COLOR = "#0f1115";
+const IMAGE_BRIGHTNESS_PROPERTY = "--force-dark-image-brightness";
 const CUSTOM_PROPERTIES = [
   "--force-dark-bg",
   "--force-dark-surface",
@@ -16,6 +16,7 @@ const CUSTOM_PROPERTIES = [
   "--force-dark-link",
   "--force-dark-input",
   "--force-dark-selection",
+  IMAGE_BRIGHTNESS_PROPERTY,
 ];
 const EXCLUDED_SELECTOR = [
   "area",
@@ -54,7 +55,7 @@ function getColorUtils() {
 }
 
 function enableDarkMode(config = {}) {
-  applyCustomPalette(config.backgroundColor);
+  applyCustomPalette(config);
 
   if (document.getElementById(STYLE_ID)) {
     scheduleScan(document.documentElement);
@@ -136,7 +137,7 @@ function enableDarkMode(config = {}) {
     }
 
     :root[${ROOT_MODE_ATTR}="css"] :is(img, picture, video, canvas, iframe, embed, object, svg) {
-      filter: none !important;
+      filter: brightness(var(--force-dark-image-brightness, 100%)) !important;
       background-color: transparent !important;
     }
 
@@ -382,35 +383,32 @@ function batchScanTrees(roots) {
   });
 }
 
-function applyCustomPalette(backgroundColor) {
-  const { normalizeHexColor, hexToRgb, getLuminance, mixColors } = getColorUtils();
-  if (!normalizeHexColor || !hexToRgb) return;
+function applyCustomPalette(config) {
+  const themes = window.ForceDarkThemes;
+  if (!themes || !themes.derivePalette) return;
 
-  const base = normalizeHexColor(backgroundColor) || DEFAULT_BACKGROUND_COLOR;
-  const baseRgb = hexToRgb(base);
-  const baseLuminance = getLuminance(baseRgb);
-  const isLight = baseLuminance > 0.5;
-  const textColor = isLight ? "#14171c" : "#e8eaed";
-  const mutedColor = isLight ? "#4d5663" : "#b8bec7";
-  const linkColor = isLight ? "#174ea6" : "#8ab4f8";
-  const surfaceColor = mixColors(baseRgb, isLight ? "#000000" : "#ffffff", isLight ? 0.06 : 0.08);
-  const surfaceSoftColor = mixColors(baseRgb, isLight ? "#000000" : "#ffffff", isLight ? 0.1 : 0.14);
-  const elevatedColor = mixColors(baseRgb, isLight ? "#000000" : "#ffffff", isLight ? 0.14 : 0.22);
-  const borderColor = mixColors(baseRgb, isLight ? "#000000" : "#ffffff", isLight ? 0.25 : 0.2);
-  const inputColor = mixColors(baseRgb, isLight ? "#000000" : "#ffffff", isLight ? 0.04 : 0.05);
-  const selectionColor = mixColors(baseRgb, isLight ? "#174ea6" : "#8ab4f8", 0.35);
+  const palette = config && config.palette && typeof config.palette === "object"
+    ? config.palette
+    : themes.derivePalette(config && config.backgroundColor);
   const rootStyle = document.documentElement.style;
 
-  rootStyle.setProperty("--force-dark-bg", base);
-  rootStyle.setProperty("--force-dark-surface", surfaceColor);
-  rootStyle.setProperty("--force-dark-surface-soft", surfaceSoftColor);
-  rootStyle.setProperty("--force-dark-elevated", elevatedColor);
-  rootStyle.setProperty("--force-dark-text", textColor);
-  rootStyle.setProperty("--force-dark-muted", mutedColor);
-  rootStyle.setProperty("--force-dark-border", borderColor);
-  rootStyle.setProperty("--force-dark-link", linkColor);
-  rootStyle.setProperty("--force-dark-input", inputColor);
-  rootStyle.setProperty("--force-dark-selection", selectionColor);
+  rootStyle.setProperty("--force-dark-bg", palette.bg);
+  rootStyle.setProperty("--force-dark-surface", palette.surface);
+  rootStyle.setProperty("--force-dark-surface-soft", palette.surfaceSoft);
+  rootStyle.setProperty("--force-dark-elevated", palette.elevated);
+  rootStyle.setProperty("--force-dark-text", palette.text);
+  rootStyle.setProperty("--force-dark-muted", palette.muted);
+  rootStyle.setProperty("--force-dark-border", palette.border);
+  rootStyle.setProperty("--force-dark-link", palette.link);
+  rootStyle.setProperty("--force-dark-input", palette.input);
+  rootStyle.setProperty("--force-dark-selection", palette.selection);
+
+  const dim = config && Number.isFinite(config.imageDim) ? Math.min(60, Math.max(0, config.imageDim)) : 0;
+  if (dim > 0) {
+    rootStyle.setProperty(IMAGE_BRIGHTNESS_PROPERTY, `${100 - dim}%`);
+  } else {
+    rootStyle.removeProperty(IMAGE_BRIGHTNESS_PROPERTY);
+  }
 }
 
 function clearCustomPalette() {

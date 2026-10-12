@@ -46,8 +46,9 @@ function applyEngine(config) {
   }
 }
 
-// Adds the resolved theme's palette and image dimming to the site config. With no
-// theme the config is passed through untouched, so backgroundColor-only sites behave as before.
+// Adds the resolved theme's palette and image dimming, and the site pack's fixes, to
+// the site config (CSS engine only). With no theme and no pack fixes the config is
+// passed through untouched, so backgroundColor-only sites behave as before.
 function withThemePalette(config) {
   const themes = window.ForceDarkThemes;
   if (!themes || typeof themes.resolveTheme !== "function") return config;
@@ -58,11 +59,15 @@ function withThemePalette(config) {
   } catch (error) {
     resolved = null;
   }
+  const pack = resolved && resolved.pack;
+  const fixes = pack && Array.isArray(pack.fixes) && pack.fixes.length ? pack.fixes : null;
   const theme = resolved && resolved.theme;
-  if (!theme) return config;
+  if (!theme) return fixes ? { ...config, fixes } : config;
 
   const imageDim = Number.isFinite(config.imageDim) ? config.imageDim : theme.imageDim;
-  return { ...config, palette: themes.paletteFromTheme(theme), imageDim };
+  const withPalette = { ...config, palette: themes.paletteFromTheme(theme), imageDim };
+  if (fixes) withPalette.fixes = fixes;
+  return withPalette;
 }
 
 function applyFilterVars(config) {

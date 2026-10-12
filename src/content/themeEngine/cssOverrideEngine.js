@@ -4,6 +4,8 @@ const SURFACE_ATTR = "data-force-dark-surface";
 const TEXT_ATTR = "data-force-dark-text";
 const BORDER_ATTR = "data-force-dark-border";
 const IMAGE_ATTR = "data-force-dark-image";
+const KEEP_ATTR = "data-force-dark-keep";
+const MAX_PACK_FIXES = 50;
 const IMAGE_BRIGHTNESS_PROPERTY = "--force-dark-image-brightness";
 const CUSTOM_PROPERTIES = [
   "--force-dark-bg",
@@ -49,6 +51,9 @@ let styleRescanTimer = 0;
 let lateRescanTimers = [];
 let scanFrame = 0;
 let pendingScanRoots = new Set();
+// Site pack fixes: validated {selector, action} entries, re-applied on every scan.
+let packFixes = [];
+let packFixMarks = { invert: new Set(), surface: new Set(), keep: new Set() };
 
 function getColorUtils() {
   return window.ForceDarkColorUtils || {};
@@ -56,6 +61,7 @@ function getColorUtils() {
 
 function enableDarkMode(config = {}) {
   applyCustomPalette(config);
+  applyPackFixes(config && config.fixes);
 
   if (document.getElementById(STYLE_ID)) {
     scheduleScan(document.documentElement);
@@ -145,8 +151,17 @@ function enableDarkMode(config = {}) {
       filter: brightness(var(--force-dark-image-brightness, 100%)) !important;
     }
 
-    :root[${ROOT_MODE_ATTR}="css"] :is(img, svg)[${IMAGE_ATTR}="invert"] {
+    :root[${ROOT_MODE_ATTR}="css"] [${IMAGE_ATTR}="invert"] {
       filter: invert(0.9) hue-rotate(180deg) !important;
+    }
+
+    :root[${ROOT_MODE_ATTR}="css"] [${KEEP_ATTR}] {
+      background-color: #ffffff !important;
+      color: #111111 !important;
+    }
+
+    :root[${ROOT_MODE_ATTR}="css"] [${KEEP_ATTR}] * {
+      color: inherit !important;
     }
 
     :root[${ROOT_MODE_ATTR}="css"][data-force-dark-filter="true"] {
@@ -222,6 +237,7 @@ function disableDarkMode() {
   }
 
   pendingScanRoots.clear();
+  clearPackFixes();
   clearDarkAttributes(document.documentElement);
 }
 
@@ -286,10 +302,19 @@ function batchScanTrees(roots) {
   const { parseCssColor, getLuminance } = getColorUtils();
   if (!parseCssColor || !getLuminance) return;
 
+  // Pack fixes are re-applied on every scan so late-added matches are caught.
+  const marks = markPackFixes();
+
   // READ PASS: Gather styles without mutating DOM to prevent forced reflows
   const updates = [];
   elementsToScan.forEach((element) => {
     if (!(element instanceof Element) || shouldSkipElement(element)) return;
+
+    // keep-light subtrees are never darkened; markers from an earlier scan are dropped.
+    if (marks.keep.has(element)) {
+      updates.push({ element, surfaceAttr: null, textAttr: false, borderAttr: false, imageAttr: null });
+      return;
+    }
 
     const tag = element.tagName.toLowerCase();
     const styles = getComputedStyle(element);
@@ -356,6 +381,9 @@ function batchScanTrees(roots) {
       }
     }
 
+    if (marks.invert.has(element)) imageAttr = "invert";
+    if (marks.surface.has(element)) surfaceAttr = "strong";
+
     updates.push({ element, surfaceAttr, textAttr, borderAttr, imageAttr });
   });
 
@@ -385,6 +413,77 @@ function batchScanTrees(roots) {
       element.removeAttribute(IMAGE_ATTR);
     }
   });
+}
+
+// Site pack fixes. Each fix is re-validated here (the pack data is trusted, but the
+// engine never relies on that) and its selector is run inside try/catch so a selector
+// the browser rejects is skipped. Fixes only ever run under the CSS engine.
+function applyPackFixes(fixes) {
+  const themes = window.ForceDarkThemes;
+  const validate = themes && typeof themes.validateFix === "function" ? themes.validateFix : null;
+  const valid = [];
+  if (validate && Array.isArray(fixes)) {
+    for (const fix of fixes) {
+      if (valid.length >= MAX_PACK_FIXES) break;
+      let ok = false;
+      try {
+        ok = validate(fix) === true;
+      } catch (error) {
+        ok = false;
+      }
+      if (ok) valid.push({ selector: fix.selector, action: fix.action });
+    }
+  }
+
+  removePackFixMarkers();
+  packFixes = valid;
+  markPackFixes();
+}
+
+function clearPackFixes() {
+  const hadFixes = packFixes.length > 0;
+  removePackFixMarkers();
+  packFixes = [];
+  // While dark mode is on, let the regular scan re-evaluate the formerly fixed elements.
+  if (hadFixes && document.getElementById(STYLE_ID)) scheduleScan(document.documentElement);
+}
+
+function queryFixTargets(selector) {
+  try {
+    return Array.from(document.querySelectorAll(selector));
+  } catch (error) {
+    return [];
+  }
+}
+
+// Sets the fix markers and returns the marked elements. keep-light covers the
+// matched element and all its descendants.
+function markPackFixes() {
+  const marks = { invert: new Set(), surface: new Set(), keep: new Set() };
+  packFixes.forEach(({ selector, action }) => {
+    queryFixTargets(selector).forEach((element) => {
+      if (action === "invert-image") {
+        element.setAttribute(IMAGE_ATTR, "invert");
+        marks.invert.add(element);
+      } else if (action === "surface:strong") {
+        element.setAttribute(SURFACE_ATTR, "strong");
+        marks.surface.add(element);
+      } else if (action === "keep-light") {
+        element.setAttribute(KEEP_ATTR, "");
+        marks.keep.add(element);
+        element.querySelectorAll("*").forEach((child) => marks.keep.add(child));
+      }
+    });
+  });
+  packFixMarks = marks;
+  return marks;
+}
+
+function removePackFixMarkers() {
+  packFixMarks.invert.forEach((element) => element.removeAttribute(IMAGE_ATTR));
+  packFixMarks.surface.forEach((element) => element.removeAttribute(SURFACE_ATTR));
+  document.querySelectorAll(`[${KEEP_ATTR}]`).forEach((element) => element.removeAttribute(KEEP_ATTR));
+  packFixMarks = { invert: new Set(), surface: new Set(), keep: new Set() };
 }
 
 function applyCustomPalette(config) {

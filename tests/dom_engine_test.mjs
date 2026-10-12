@@ -97,6 +97,10 @@ class MockElement {
   }
 
   querySelectorAll(selector) {
+    // Like a real browser, an unbalanced attribute selector is a SyntaxError.
+    if ((selector.match(/\[/g) || []).length !== (selector.match(/\]/g) || []).length) {
+      throw new SyntaxError(`'${selector}' is not a valid selector`);
+    }
     const results = [];
     const walk = (el) => {
       for (const child of el.children) {
@@ -857,6 +861,196 @@ test("applyEngine passes a resolved theme palette and imageDim to the engine", (
   currentUserThemes = [];
   applyEngine({ enabled: false });
   vm.runInThisContext("scanFrame = 0");
+});
+
+// ---- Site pack fixes (CSS engine only) ----
+
+function transparentEl(tag, attr) {
+  const el = mockDoc.createElement(tag);
+  el.style.backgroundColor = "rgba(0, 0, 0, 0)";
+  el.style.color = "rgb(232, 234, 237)";
+  el.style.borderTopColor = el.style.borderRightColor = el.style.borderBottomColor = el.style.borderLeftColor = "rgba(0, 0, 0, 0)";
+  el.style.outlineColor = "rgba(0, 0, 0, 0)";
+  if (attr) el.setAttribute(attr, "");
+  return el;
+}
+
+function rescan() {
+  vm.runInThisContext("scanFrame = 0");
+  scheduleScan(mockDoc.documentElement);
+}
+
+function resetFixTest() {
+  disableDarkMode();
+  vm.runInThisContext("scanFrame = 0");
+  mockDoc.body.children = [];
+}
+
+test("invert-image fix marks matches", () => {
+  try {
+    const wordmark = transparentEl("div", "data-fix-logo"); // a CSS background-image wordmark
+    const other = transparentEl("div");
+    mockDoc.body.appendChild(wordmark);
+    mockDoc.body.appendChild(other);
+    enableDarkMode({ backgroundColor: "#0f1115", fixes: [{ selector: "[data-fix-logo]", action: "invert-image" }] });
+    assert.strictEqual(wordmark.getAttribute("data-force-dark-image"), "invert");
+    assert.strictEqual(other.getAttribute("data-force-dark-image"), null);
+    rescan();
+    assert.strictEqual(wordmark.getAttribute("data-force-dark-image"), "invert", "a rescan keeps the fix marker");
+    const css = mockDoc.getElementById("__force_dark_mode__").textContent;
+    const rule = css.split("}").find((b) => b.includes("invert(0.9) hue-rotate(180deg)"));
+    assert.ok(rule && !rule.split("{")[0].includes(":is(img, svg)"), "invert rule also covers non-img elements (CSS background images)");
+    // Late-added matches are caught by the existing rescans.
+    const late = transparentEl("span", "data-fix-logo");
+    mockDoc.body.appendChild(late);
+    rescan();
+    assert.strictEqual(late.getAttribute("data-force-dark-image"), "invert");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("surface:strong fix marks matches", () => {
+  try {
+    const bar = transparentEl("nav", "data-fix-bar");
+    mockDoc.body.appendChild(bar);
+    enableDarkMode({ backgroundColor: "#0f1115", fixes: [{ selector: "[data-fix-bar]", action: "surface:strong" }] });
+    assert.strictEqual(bar.getAttribute("data-force-dark-surface"), "strong");
+    rescan();
+    assert.strictEqual(bar.getAttribute("data-force-dark-surface"), "strong", "a rescan keeps the fix marker");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("keep-light skips scanning of the subtree", () => {
+  try {
+    const panel = mockDoc.createElement("section");
+    panel.setAttribute("data-fix-keep", "");
+    const child = mockDoc.createElement("p");
+    const logo = mockDoc.createElement("svg");
+    logo.setAttribute("class", "brand-logo");
+    logo.style.fill = "rgb(10, 10, 10)";
+    panel.appendChild(child);
+    panel.appendChild(logo);
+    mockDoc.body.appendChild(panel);
+    const outside = mockDoc.createElement("div"); // white + dark text: normally darkened
+    mockDoc.body.appendChild(outside);
+
+    enableDarkMode({ backgroundColor: "#0f1115", fixes: [{ selector: "[data-fix-keep]", action: "keep-light" }] });
+    const markers = ["data-force-dark-surface", "data-force-dark-text", "data-force-dark-border", "data-force-dark-image"];
+    const assertUntouched = (label) => {
+      assert.ok(panel.hasAttribute("data-force-dark-keep"), `${label}: keep marker set`);
+      for (const el of [panel, child, logo]) {
+        for (const m of markers) assert.strictEqual(el.getAttribute(m), null, `${label}: ${el.tagName} has no ${m}`);
+      }
+    };
+    assertUntouched("first scan");
+    assert.strictEqual(outside.getAttribute("data-force-dark-surface"), "strong", "elements outside are still scanned");
+
+    for (let i = 0; i < 3; i++) rescan();
+    assertUntouched("after rescans");
+
+    const lateChild = mockDoc.createElement("div");
+    panel.appendChild(lateChild);
+    rescan();
+    for (const m of markers) assert.strictEqual(lateChild.getAttribute(m), null, `late child has no ${m}`);
+
+    const css = mockDoc.getElementById("__force_dark_mode__").textContent;
+    assert.ok(/\[data-force-dark-mode="css"\] \[data-force-dark-keep\] \{\s*background-color: #ffffff !important;\s*color: #111111 !important;/.test(css), "keep-light colour rule");
+    assert.ok(/\[data-force-dark-keep\] \* \{\s*color: inherit !important;/.test(css), "keep-light descendant rule");
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("an invalid selector in a fix is skipped without throwing", () => {
+  try {
+    const target = transparentEl("div", "data-fix-ok");
+    mockDoc.body.appendChild(target);
+    assert.ok(global.ForceDarkThemes.validateFix({ selector: "div[", action: "invert-image" }), "precondition: passes the character check");
+    assert.doesNotThrow(() => enableDarkMode({
+      backgroundColor: "#0f1115",
+      fixes: [
+        { selector: "div[", action: "invert-image" },
+        { selector: "[data-fix-ok]", action: "evil" },
+        { selector: "[data-fix-ok]{}", action: "invert-image" },
+        null,
+        "x",
+        { selector: "[data-fix-ok]", action: "surface:strong" },
+      ],
+    }));
+    assert.doesNotThrow(() => rescan());
+    assert.strictEqual(target.getAttribute("data-force-dark-surface"), "strong", "the valid fix still applies");
+    assert.strictEqual(target.getAttribute("data-force-dark-image"), null, "invalid fixes are ignored");
+    assert.doesNotThrow(() => applyPackFixes("not an array"));
+    assert.doesNotThrow(() => applyPackFixes(null));
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("clearPackFixes removes markers, and disableDarkMode clears them", () => {
+  const fixes = [
+    { selector: "[data-fix-logo]", action: "invert-image" },
+    { selector: "[data-fix-bar]", action: "surface:strong" },
+    { selector: "[data-fix-keep]", action: "keep-light" },
+  ];
+  try {
+    const logo = transparentEl("div", "data-fix-logo");
+    const bar = transparentEl("nav", "data-fix-bar");
+    const keep = transparentEl("aside", "data-fix-keep");
+    mockDoc.body.appendChild(logo);
+    mockDoc.body.appendChild(bar);
+    mockDoc.body.appendChild(keep);
+
+    enableDarkMode({ backgroundColor: "#0f1115", fixes });
+    assert.strictEqual(logo.getAttribute("data-force-dark-image"), "invert");
+    clearPackFixes();
+    assert.strictEqual(logo.getAttribute("data-force-dark-image"), null);
+    assert.strictEqual(bar.getAttribute("data-force-dark-surface"), null);
+    assert.strictEqual(keep.hasAttribute("data-force-dark-keep"), false);
+    rescan();
+    assert.strictEqual(logo.getAttribute("data-force-dark-image"), null, "cleared fixes are not re-applied by rescans");
+
+    vm.runInThisContext("scanFrame = 0");
+    enableDarkMode({ backgroundColor: "#0f1115", fixes });
+    assert.strictEqual(keep.hasAttribute("data-force-dark-keep"), true);
+    disableDarkMode();
+    assert.strictEqual(logo.getAttribute("data-force-dark-image"), null);
+    assert.strictEqual(bar.getAttribute("data-force-dark-surface"), null);
+    assert.strictEqual(keep.hasAttribute("data-force-dark-keep"), false);
+  } finally {
+    resetFixTest();
+  }
+});
+
+test("fixes are not applied for engine invert (CSS engine only), and applyEngine passes pack fixes", () => {
+  const T = global.ForceDarkThemes;
+  const realFinder = T.findSitePack;
+  T.findSitePack = (h) => (h === "example.com"
+    ? { id: "ex", name: "Ex", match: ["example.com"], themeId: "builtin:midnight", fixes: [{ selector: "[data-fix-logo]", action: "invert-image" }] }
+    : null);
+  try {
+    const logo = transparentEl("div", "data-fix-logo");
+    mockDoc.body.appendChild(logo);
+
+    applyEngine({ enabled: true, engine: "invert" });
+    assert.ok(mockDoc.getElementById("__force_dark_invert__"), "precondition: invert engine is active");
+    assert.strictEqual(logo.getAttribute("data-force-dark-image"), null, "no fix markers under the Invert engine");
+
+    vm.runInThisContext("scanFrame = 0");
+    applyEngine({ enabled: true, engine: "css" });
+    assert.strictEqual(logo.getAttribute("data-force-dark-image"), "invert", "CSS engine receives resolveTheme(...).pack.fixes");
+
+    vm.runInThisContext("scanFrame = 0");
+    applyEngine({ enabled: true, engine: "invert" });
+    assert.strictEqual(logo.getAttribute("data-force-dark-image"), null, "switching to Invert clears the fixes");
+  } finally {
+    T.findSitePack = realFinder;
+    applyEngine({ enabled: false });
+    resetFixTest();
+  }
 });
 
 console.log("\n=========================================");

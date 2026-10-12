@@ -257,10 +257,11 @@ const contentIndexCode = fs.readFileSync(path.join(rootDir, "src/content/index.j
 vm.runInThisContext(colorUtilsCode);
 global.window.ForceDarkColorUtils = global.ForceDarkColorUtils;
 
-// Same order as manifest.json: colorUtils, themeCore, builtinThemes, sitePacks, engines, index.
+// Same order as manifest.json: colorUtils, themeCore, builtinThemes, sitePacks, customCss, engines, index.
 vm.runInThisContext(fs.readFileSync(path.join(rootDir, "src/shared/themeCore.js"), "utf8"));
 vm.runInThisContext(fs.readFileSync(path.join(rootDir, "src/shared/builtinThemes.js"), "utf8"));
 vm.runInThisContext(fs.readFileSync(path.join(rootDir, "src/shared/sitePacks.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(rootDir, "src/shared/customCss.js"), "utf8"));
 global.window.ForceDarkThemes = global.ForceDarkThemes;
 
 vm.runInThisContext(cssEngineCode);
@@ -1495,6 +1496,246 @@ test("svg shape walk stops as soon as a paint follows the text colour, and is bo
     assert.ok(counter2.calls <= 2 * 200, `at most ~200 nodes examined (getAttribute calls: ${counter2.calls})`);
   } finally {
     resetFixTest();
+  }
+});
+
+// ---- Per-site custom CSS (Task 9) ----
+const CUSTOM_ID = "__force_dark_custom_css__";
+const CSS_KEY = "__css:example.com";
+const customEl = () => mockDoc.getElementById(CUSTOM_ID);
+const countCustom = () => {
+  let n = 0;
+  const walk = (el) => { for (const c of el.children) { if (c.id === CUSTOM_ID) n++; walk(c); } };
+  walk(mockDoc.documentElement);
+  return n;
+};
+const fireSync = (changes) => global.__onChangedListeners.forEach((fn) => fn(changes, "sync"));
+
+// Runs fn with chrome.storage.sync.get answering from `stored`, and every created element
+// recording whether anything assigned innerHTML. Always tears the page back down.
+function withCustomCssPage(stored, fn) {
+  const realGet = global.chrome.storage.sync.get;
+  const realCreate = mockDoc.createElement;
+  const htmlWrites = [];
+  global.chrome.storage.sync.get = (keys, cb) => {
+    global.__syncGetKeys.push(keys);
+    const out = {};
+    for (const k of Array.isArray(keys) ? keys : [keys]) if (k in stored) out[k] = stored[k];
+    cb(JSON.parse(JSON.stringify(out)));
+  };
+  mockDoc.createElement = function (tag) {
+    const el = realCreate.call(this, tag);
+    Object.defineProperty(el, "innerHTML", { set(v) { htmlWrites.push(v); }, get() { return ""; } });
+    return el;
+  };
+  try {
+    fn(htmlWrites);
+  } finally {
+    global.chrome.storage.sync.get = realGet;
+    mockDoc.createElement = realCreate;
+    currentSiteConfig = null;
+    currentSchedule = null;
+    applyEngine(null);
+    currentCustomCss = "";
+    vm.runInThisContext("scanFrame = 0");
+    mockDoc.body.children = [];
+  }
+}
+
+test("index.js reads __css:<host> in the same sync.get as the site config and __customThemes", () => {
+  assert.ok(
+    global.__syncGetKeys.some((k) => Array.isArray(k) && k.includes("example.com") && k.includes("__customThemes") && k.includes(CSS_KEY)),
+    "one sync.get asks for host, __customThemes and __css:<host>"
+  );
+});
+
+test("custom CSS is injected after the CSS engine style, via textContent, when enabled with valid CSS", () => {
+  const css = "/* mine */ a{color:#ff00ff !important}";
+  withCustomCssPage({ "example.com": { enabled: true, engine: "css" }, [CSS_KEY]: css }, (htmlWrites) => {
+    loadSiteConfigAndApply();
+    const engine = mockDoc.getElementById("__force_dark_mode__");
+    const custom = customEl();
+    assert.ok(engine, "engine style present");
+    assert.ok(custom, "custom CSS style present");
+    assert.strictEqual(custom.tagName, "STYLE");
+    assert.strictEqual(custom.textContent, css, "exact original text, comments kept");
+    assert.strictEqual(custom.parentElement, engine.parentElement, "same parent as the engine style");
+    const kids = custom.parentElement.children;
+    assert.ok(kids.indexOf(custom) > kids.indexOf(engine), "custom CSS comes after the engine style");
+    assert.deepStrictEqual(htmlWrites, [], "innerHTML is never used");
+    assert.strictEqual(countCustom(), 1);
+  });
+});
+
+test("custom CSS is injected for the Invert engine too, after the invert style", () => {
+  const css = "pre{border-radius:12px}";
+  withCustomCssPage({ "example.com": { enabled: true, engine: "invert" }, [CSS_KEY]: css }, (htmlWrites) => {
+    mockDoc.body.children = [];
+    loadSiteConfigAndApply();
+    const engine = mockDoc.getElementById("__force_dark_invert__");
+    assert.ok(engine, "precondition: invert engine active");
+    const custom = customEl();
+    assert.ok(custom, "custom CSS present under Invert");
+    assert.strictEqual(custom.textContent, css);
+    const kids = custom.parentElement.children;
+    assert.ok(custom.parentElement === engine.parentElement && kids.indexOf(custom) > kids.indexOf(engine), "after the invert style");
+    assert.deepStrictEqual(htmlWrites, []);
+  });
+});
+
+test("custom CSS tampered into storage is re-validated at apply time and never injected", () => {
+  for (const bad of ["a{background:url(x)}", "@import 'x';", "a{background:u\\72l(x)}", "</style><script>", "x".repeat(6001), 42, { css: "a{}" }, ["a{}"]]) {
+    withCustomCssPage({ "example.com": { enabled: true, engine: "css" }, [CSS_KEY]: bad }, () => {
+      loadSiteConfigAndApply();
+      assert.ok(mockDoc.getElementById("__force_dark_mode__"), "engine still runs");
+      assert.strictEqual(customEl(), null, `not injected: ${String(bad).slice(0, 30)}`);
+    });
+  }
+});
+
+test("custom CSS is absent when the site is disabled, missing, or outside the schedule", () => {
+  withCustomCssPage({ "example.com": { enabled: false, engine: "css" }, [CSS_KEY]: "a{color:red}" }, () => {
+    loadSiteConfigAndApply();
+    assert.strictEqual(customEl(), null);
+  });
+  withCustomCssPage({ [CSS_KEY]: "a{color:red}" }, () => {
+    loadSiteConfigAndApply();
+    assert.strictEqual(customEl(), null, "no site config means not enabled");
+  });
+  withCustomCssPage({ "example.com": { enabled: true, engine: "css" }, [CSS_KEY]: "a{color:red}" }, () => {
+    currentSchedule = { mode: "system" }; // matchMedia is false in the mock: outside the schedule
+    loadSiteConfigAndApply();
+    assert.strictEqual(mockDoc.getElementById("__force_dark_mode__"), null);
+    assert.strictEqual(customEl(), null);
+  });
+});
+
+test("custom CSS is absent on a natively dark page where no engine runs", () => {
+  withCustomCssPage({ "example.com": { enabled: true, engine: "auto" }, [CSS_KEY]: "a{color:red}" }, () => {
+    buildNativeDarkPage();
+    loadSiteConfigAndApply();
+    assert.strictEqual(mockDoc.getElementById("__force_dark_mode__"), null);
+    assert.strictEqual(customEl(), null, "auto on a dark page");
+    currentSiteConfig = { enabled: true, engine: "invert" };
+    applyEffectiveEngine();
+    assert.strictEqual(mockDoc.getElementById("__force_dark_invert__"), null);
+    assert.strictEqual(customEl(), null, "invert on a dark page");
+  });
+  mockDoc.documentElement.removeAttribute("dark");
+  mockDoc.documentElement.style.colorScheme = "";
+  mockDoc.documentElement.style.backgroundColor = "rgb(255, 255, 255)";
+  mockDoc.body.style.colorScheme = "";
+});
+
+test("disableDarkMode, disableInvert and disabling the site remove the custom CSS", () => {
+  withCustomCssPage({ "example.com": { enabled: true, engine: "css" }, [CSS_KEY]: "a{color:red}" }, () => {
+    loadSiteConfigAndApply();
+    assert.ok(customEl());
+    disableDarkMode();
+    assert.strictEqual(customEl(), null, "disableDarkMode removes it");
+    vm.runInThisContext("scanFrame = 0");
+
+    loadSiteConfigAndApply();
+    assert.ok(customEl());
+    fireSync({ "example.com": { newValue: { enabled: false, engine: "css" } } });
+    assert.strictEqual(customEl(), null, "disabling the site removes it");
+
+    currentSiteConfig = { enabled: true, engine: "invert" };
+    applyEffectiveEngine();
+    assert.ok(customEl());
+    disableInvert();
+    assert.strictEqual(customEl(), null, "disableInvert removes it");
+  });
+});
+
+test("re-applying never duplicates the custom CSS element", () => {
+  withCustomCssPage({ "example.com": { enabled: true, engine: "css" }, [CSS_KEY]: "a{color:red}" }, () => {
+    loadSiteConfigAndApply();
+    vm.runInThisContext("scanFrame = 0");
+    loadSiteConfigAndApply();
+    vm.runInThisContext("scanFrame = 0");
+    applyEffectiveEngine();
+    assert.strictEqual(countCustom(), 1);
+  });
+});
+
+test("storage.onChanged for __css:<host> replaces, re-validates and removes the custom CSS", () => {
+  withCustomCssPage({ "example.com": { enabled: true, engine: "css" }, [CSS_KEY]: "a{color:red}" }, (htmlWrites) => {
+    loadSiteConfigAndApply();
+    const engineBefore = mockDoc.getElementById("__force_dark_mode__");
+    fireSync({ [CSS_KEY]: { oldValue: "a{color:red}", newValue: "b{color:blue}" } });
+    assert.strictEqual(customEl().textContent, "b{color:blue}");
+    assert.strictEqual(countCustom(), 1);
+    assert.strictEqual(mockDoc.getElementById("__force_dark_mode__"), engineBefore, "a CSS-only change does not rebuild the engine");
+
+    fireSync({ [CSS_KEY]: { newValue: "b{background:url(x)}" } });
+    assert.strictEqual(customEl(), null, "invalid new value removes it");
+
+    fireSync({ [CSS_KEY]: { newValue: "c{color:green}" } });
+    assert.strictEqual(customEl().textContent, "c{color:green}");
+
+    fireSync({ [CSS_KEY]: { newValue: "" } });
+    assert.strictEqual(customEl(), null, "empty value removes it");
+
+    fireSync({ [CSS_KEY]: { newValue: "c{color:green}" } });
+    fireSync({ [CSS_KEY]: { oldValue: "c{color:green}" } });
+    assert.strictEqual(customEl(), null, "a removed key removes it");
+
+    fireSync({ "__css:other.com": { newValue: "d{color:red}" } });
+    assert.strictEqual(customEl(), null, "other hosts are ignored");
+
+    fireSync({ [CSS_KEY]: { newValue: "e{color:red}" }, "example.com": { newValue: { enabled: false } } });
+    assert.strictEqual(customEl(), null, "disabled in the same change: not injected");
+    fireSync({ "example.com": { newValue: { enabled: true, engine: "css" } } });
+    assert.strictEqual(customEl().textContent, "e{color:red}", "the remembered CSS applies when re-enabled");
+    assert.deepStrictEqual(htmlWrites, []);
+  });
+});
+
+test("storage.onChanged does not inject custom CSS while no engine is active", () => {
+  withCustomCssPage({ "example.com": { enabled: false } }, () => {
+    loadSiteConfigAndApply();
+    fireSync({ [CSS_KEY]: { newValue: "a{color:red}" } });
+    assert.strictEqual(customEl(), null);
+  });
+});
+
+test("custom CSS fails closed and never throws when the validator is missing or throws", () => {
+  const T = global.ForceDarkThemes;
+  const real = T.validateCss;
+  try {
+    withCustomCssPage({ "example.com": { enabled: true, engine: "css" }, [CSS_KEY]: "a{color:red}" }, () => {
+      delete T.validateCss;
+      loadSiteConfigAndApply();
+      assert.ok(mockDoc.getElementById("__force_dark_mode__"));
+      assert.strictEqual(customEl(), null, "no validator, no injection");
+      T.validateCss = () => { throw new Error("boom"); };
+      assert.doesNotThrow(() => loadSiteConfigAndApply());
+      assert.strictEqual(customEl(), null);
+      assert.doesNotThrow(() => fireSync({ [CSS_KEY]: { newValue: "b{color:red}" } }));
+      assert.strictEqual(customEl(), null);
+      T.validateCss = () => ({ ok: true, css: 5 });
+      loadSiteConfigAndApply();
+      assert.strictEqual(customEl(), null, "a non-string result is not injected");
+    });
+  } finally {
+    T.validateCss = real;
+  }
+});
+
+test("APPLY_CONFIG keeps the stored custom CSS", () => {
+  withCustomCssPage({ "example.com": { enabled: false }, [CSS_KEY]: "a{color:red}" }, () => {
+    loadSiteConfigAndApply();
+    assert.strictEqual(customEl(), null);
+    global.__onMessageListeners.forEach((fn) => fn({ type: "APPLY_CONFIG", config: { enabled: true, engine: "css" } }, { id: "test-extension" }, () => {}));
+    assert.strictEqual(customEl().textContent, "a{color:red}");
+  });
+});
+
+test("content scripts never use innerHTML for custom CSS", () => {
+  for (const rel of ["src/content/index.js", "src/content/themeEngine/cssOverrideEngine.js", "src/content/themeEngine/invertEngine.js", "src/shared/customCss.js"]) {
+    const src = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    assert.ok(!/innerHTML|insertAdjacentHTML|outerHTML/.test(src), rel);
   }
 });
 

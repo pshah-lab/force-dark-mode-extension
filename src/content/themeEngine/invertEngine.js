@@ -47,5 +47,6 @@ function enableInvert() {
 }
 
 function disableInvert() {
+  if (typeof removeCustomCss === "function") removeCustomCss();
   document.getElementById(INVERT_STYLE_ID)?.remove();
 }

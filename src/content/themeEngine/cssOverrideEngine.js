@@ -1,4 +1,6 @@
 const STYLE_ID = "__force_dark_mode__";
+const CUSTOM_CSS_STYLE_ID = "__force_dark_custom_css__";
+const ENGINE_STYLE_IDS = [STYLE_ID, "__force_dark_invert__"];
 const ROOT_MODE_ATTR = "data-force-dark-mode";
 const SURFACE_ATTR = "data-force-dark-surface";
 const TEXT_ATTR = "data-force-dark-text";
@@ -218,7 +220,40 @@ function onResourceLoad(event) {
   if (isSiteStylesheet(event.target)) scheduleFullRescan();
 }
 
+// The user's per-site CSS. It is validated again here, right before it reaches the page,
+// so CSS tampered into storage is never injected; no validator or a failed check means
+// nothing is injected. It goes after the active engine's style element (same parent) so
+// it wins on equal specificity, and is written with textContent only. Never throws.
+function applyCustomCss(css) {
+  try {
+    removeCustomCss();
+    if (typeof css !== "string" || css === "") return;
+    const validate = window.ForceDarkThemes && window.ForceDarkThemes.validateCss;
+    if (typeof validate !== "function") return;
+    const result = validate(css);
+    if (!result || result.ok !== true || typeof result.css !== "string" || result.css === "") return;
+
+    const style = document.createElement("style");
+    style.id = CUSTOM_CSS_STYLE_ID;
+    style.textContent = result.css;
+    const anchor = ENGINE_STYLE_IDS.map((id) => document.getElementById(id)).find(Boolean);
+    const parent = (anchor && (anchor.parentElement || anchor.parentNode)) || document.head || document.documentElement;
+    parent.appendChild(style);
+  } catch (error) {
+    try { removeCustomCss(); } catch (ignored) { /* never throw into the page */ }
+  }
+}
+
+function removeCustomCss() {
+  document.getElementById(CUSTOM_CSS_STYLE_ID)?.remove();
+}
+
+function hasActiveEngineStyle() {
+  return ENGINE_STYLE_IDS.some((id) => document.getElementById(id));
+}
+
 function disableDarkMode() {
+  removeCustomCss();
   document.getElementById(STYLE_ID)?.remove();
   document.documentElement.removeAttribute(ROOT_MODE_ATTR);
   clearCustomPalette();

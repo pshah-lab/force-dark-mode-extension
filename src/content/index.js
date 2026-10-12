@@ -44,6 +44,9 @@ function applyEngine(config) {
   } else {
     enableDarkMode(withThemePalette(config));
   }
+
+  // Only when an engine actually applied dark mode (not on natively dark pages).
+  applyCustomCss(currentCustomCss);
 }
 
 // Adds the resolved theme's palette and image dimming, and the site pack's fixes, to
@@ -114,10 +117,12 @@ function resolveEngine(config) {
 }
 
 const CUSTOM_THEMES_KEY = "__customThemes";
+const CUSTOM_CSS_KEY = "__css:" + host;
 const SCHEDULE_STORAGE_KEY = "scheduleConfig";
 const SCHEDULE_RECHECK_INTERVAL_MS = 60000;
 let currentSiteConfig = null;
 let currentUserThemes = [];
+let currentCustomCss = "";
 let currentSchedule = null;
 let scheduleIntervalId = null;
 
@@ -182,9 +187,10 @@ function refreshScheduleTimer() {
 }
 
 function loadSiteConfigAndApply() {
-  chrome.storage.sync.get([host, CUSTOM_THEMES_KEY], (data) => {
+  chrome.storage.sync.get([host, CUSTOM_THEMES_KEY, CUSTOM_CSS_KEY], (data) => {
     currentSiteConfig = data[host] || null;
     currentUserThemes = Array.isArray(data[CUSTOM_THEMES_KEY]) ? data[CUSTOM_THEMES_KEY] : [];
+    currentCustomCss = toCustomCss(data[CUSTOM_CSS_KEY]);
     applyEffectiveEngine();
   });
 }
@@ -201,7 +207,14 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", loadSiteConfigAndApply, { once: true });
 }
 
+function toCustomCss(value) {
+  return typeof value === "string" ? value : "";
+}
+
 chrome.storage.onChanged.addListener((changes, area) => {
+  const cssChanged = area === "sync" && Boolean(changes[CUSTOM_CSS_KEY]);
+  if (cssChanged) currentCustomCss = toCustomCss(changes[CUSTOM_CSS_KEY].newValue);
+
   if (area === "sync" && (changes[host] || changes[CUSTOM_THEMES_KEY])) {
     if (changes[host]) currentSiteConfig = changes[host].newValue || null;
     if (changes[CUSTOM_THEMES_KEY]) {
@@ -209,6 +222,10 @@ chrome.storage.onChanged.addListener((changes, area) => {
       currentUserThemes = Array.isArray(next) ? next : [];
     }
     applyEffectiveEngine();
+  } else if (cssChanged) {
+    // A CSS-only change swaps the style element without rebuilding the engine.
+    if (hasActiveEngineStyle()) applyCustomCss(currentCustomCss);
+    else removeCustomCss();
   }
 
   if (area === "local" && changes[SCHEDULE_STORAGE_KEY]) {

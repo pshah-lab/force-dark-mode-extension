@@ -7,7 +7,7 @@
 - Current version: 1.8.0 (12 October 2026)
 - Platform: Google Chrome, Manifest V3
 - License: MIT
-- Users: 1,270+ weekly users (Chrome Web Store developer dashboard, September 2026)
+- Users: 1,380+ weekly users (Chrome Web Store developer dashboard, 10 October 2026)
 - Website: https://darkmode.pshah.fun/
 - Chrome Web Store: https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke
 - Source code: https://github.com/pshah-lab/force-dark-mode-extension

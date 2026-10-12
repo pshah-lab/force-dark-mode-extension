@@ -63,6 +63,18 @@ const EGRESS_SCANNED_FILES = [
   "src/shared/customCss.js",
   "src/shared/constants.js",
   "src/viewer/viewer.js",
+  "src/viewer/parsers/docxParser.js",
+  "src/viewer/parsers/pptxParser.js",
+  "src/viewer/spreadsheet/cellColors.js",
+  "src/viewer/spreadsheet/csvParser.js",
+  "src/viewer/spreadsheet/errors.js",
+  "src/viewer/spreadsheet/numberFormat.js",
+  "src/viewer/spreadsheet/pixelMath.js",
+  "src/viewer/spreadsheet/spreadsheetLimits.js",
+  "src/viewer/spreadsheet/spreadsheetRenderer.js",
+  "src/viewer/spreadsheet/spreadsheetView.js",
+  "src/viewer/spreadsheet/xlsxParser.js",
+  "src/viewer/spreadsheet/xlsxStyles.js",
 ];
 
 test("zero outbound network calls in extension core code", () => {
@@ -482,18 +494,18 @@ function walkFiles(dir, ext, out = []) {
 }
 const relToRoot = (full) => path.relative(rootDir, full).split(path.sep).join("/");
 
-// Exhaustive-walk rules: every .js file under src/ must appear in EGRESS_SCANNED_FILES,
-// except src/viewer/** (the document viewer, its parsers and spreadsheet modules have their own
-// parser/renderer suites plus the viewer-specific scans in section 5; viewer.js itself stays in the
-// egress list). Vendored pdf.js lives under assets/ and is outside src/, so it is never walked.
+// Exhaustive-walk rules: every .js file under src/ must appear in EGRESS_SCANNED_FILES, except
+// src/viewer/vendor/** (vendored, minified pdf.js; never scanned). The viewer, its parsers and the
+// spreadsheet modules are walked like everything else. Any .mjs/.cjs under src/ outside vendor fails
+// outright so a different extension cannot sidestep the .js filter.
 // ALLOW_UNSCANNED holds any other file deliberately left out, with the reason. It must stay empty
 // unless a file genuinely cannot be scanned.
-const WALK_EXCLUDED_PREFIXES = ["src/viewer/"];
+const WALK_EXCLUDED_PREFIXES = ["src/viewer/vendor/"];
 const ALLOW_UNSCANNED = {};
 
 test("every src/ .js file is covered by the egress scan or an explicit allow-list", () => {
   const found = walkFiles(path.join(rootDir, "src"), ".js").map(relToRoot);
-  assert.ok(found.length >= 18, "expected to find the extension source files");
+  assert.ok(found.length >= 30, "expected to find the extension source files");
   const uncovered = found.filter(
     (rel) =>
       !WALK_EXCLUDED_PREFIXES.some((prefix) => rel.startsWith(prefix)) &&
@@ -507,6 +519,13 @@ test("every src/ .js file is covered by the egress scan or an explicit allow-lis
   for (const rel of Object.keys(ALLOW_UNSCANNED)) {
     assert.ok(ALLOW_UNSCANNED[rel], `allow-list entry ${rel} needs a documented reason`);
   }
+});
+
+test("no .mjs or .cjs source files under src/ outside the vendored viewer directory", () => {
+  const odd = [...walkFiles(path.join(rootDir, "src"), ".mjs"), ...walkFiles(path.join(rootDir, "src"), ".cjs")]
+    .map(relToRoot)
+    .filter((rel) => !WALK_EXCLUDED_PREFIXES.some((prefix) => rel.startsWith(prefix)));
+  assert.deepStrictEqual(odd, [], `Unscanned module files under src/: ${odd.join(", ")}`);
 });
 
 test("manifest permissions unchanged: storage, activeTab, contextMenus only", () => {
@@ -561,12 +580,46 @@ test("extension pages and shared code never use HTML-string DOM writes, eval or 
   }
 });
 
+test("no HTML-string DOM writes, eval or string timers anywhere in src/ (background and viewer included)", () => {
+  const files = walkFiles(path.join(rootDir, "src"), ".js").filter(
+    (full) => !WALK_EXCLUDED_PREFIXES.some((prefix) => relToRoot(full).startsWith(prefix))
+  );
+  assert.ok(files.some((f) => relToRoot(f).startsWith("src/background/")), "background must be scanned");
+  assert.ok(files.some((f) => relToRoot(f).startsWith("src/viewer/parsers/")), "viewer parsers must be scanned");
+  for (const full of files) {
+    const code = fs.readFileSync(full, "utf8");
+    for (const [pattern, label] of DOM_AND_CODE_EXEC_PATTERNS) {
+      assert.strictEqual(pattern.test(code), false, `Prohibited pattern (${label}) detected in ${relToRoot(full)}`);
+    }
+  }
+});
+
 // Origins an <a href> may point to. Scripts, stylesheets and images may never be remote.
 const ALLOWED_ANCHOR_ORIGINS = [
   "https://chromewebstore.google.com/detail/force-dark-mode/",
   "https://darkmode.pshah.fun/",
   "https://github.com/pshah-lab/force-dark-mode-extension",
 ];
+
+// Quoted, unquoted and protocol-relative remote values.
+const REMOTE_ATTR_PATTERN = /\s(src|href|srcset|action|formaction|data)\s*=\s*(?:["']\s*)?(?:https?:)?\/\/[^\s"'>]*/i;
+
+test("remote-attribute pattern catches quoted, unquoted and protocol-relative values", () => {
+  const bad = [
+    '<script src="https://cdn.example/a.js">',
+    "<script src='//cdn.example/a.js'>",
+    "<script src=https://cdn.example/a.js>",
+    "<script src=//cdn.example/a.js>",
+    '<link rel="stylesheet" href=//cdn.example/a.css>',
+    '<link rel=stylesheet href="http://cdn.example/a.css">',
+    "<img src=https://x.example/p.png>",
+    '<iframe src="//x.example/">',
+  ];
+  for (const tag of bad) assert.ok(REMOTE_ATTR_PATTERN.test(tag), `should catch: ${tag}`);
+  for (const tag of ['<script src="../shared/a.js">', '<link rel="stylesheet" href="viewer.css">', '<img src="icon.png">']) {
+    assert.ok(!REMOTE_ATTR_PATTERN.test(tag), `should allow: ${tag}`);
+  }
+});
 
 test("extension HTML pages have no inline handlers, inline scripts or remote resources", () => {
   const htmlFiles = walkFiles(path.join(rootDir, "src"), ".html");
@@ -581,10 +634,10 @@ test("extension HTML pages have no inline handlers, inline scripts or remote res
       if (/^<script\b/i.test(tag)) {
         assert.ok(/\ssrc\s*=/i.test(tag), `Inline <script> block (forbidden by MV3 CSP) in ${rel}`);
       }
-      const remoteAttr = tag.match(/\s(src|href|srcset|action|formaction|data)\s*=\s*["']\s*(https?:)?\/\/[^"']*/i);
+      const remoteAttr = tag.match(REMOTE_ATTR_PATTERN);
       if (remoteAttr) {
         const isAnchor = /^<a\b/i.test(tag) && /\shref\s*=/i.test(remoteAttr[0]);
-        const url = remoteAttr[0].replace(/^[^=]*=\s*["']\s*/, "");
+        const url = remoteAttr[0].replace(/^[^=]*=\s*["']?\s*/, "");
         assert.ok(
           isAnchor && ALLOWED_ANCHOR_ORIGINS.some((origin) => url.startsWith(origin)),
           `Remote reference in ${rel} is not an allowed anchor: ${tag.slice(0, 120)}`

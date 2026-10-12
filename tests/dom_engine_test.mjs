@@ -251,9 +251,10 @@ const contentIndexCode = fs.readFileSync(path.join(rootDir, "src/content/index.j
 vm.runInThisContext(colorUtilsCode);
 global.window.ForceDarkColorUtils = global.ForceDarkColorUtils;
 
-// Same order as manifest.json: colorUtils, themeCore, builtinThemes, engines, index.
+// Same order as manifest.json: colorUtils, themeCore, builtinThemes, sitePacks, engines, index.
 vm.runInThisContext(fs.readFileSync(path.join(rootDir, "src/shared/themeCore.js"), "utf8"));
 vm.runInThisContext(fs.readFileSync(path.join(rootDir, "src/shared/builtinThemes.js"), "utf8"));
+vm.runInThisContext(fs.readFileSync(path.join(rootDir, "src/shared/sitePacks.js"), "utf8"));
 global.window.ForceDarkThemes = global.ForceDarkThemes;
 
 vm.runInThisContext(cssEngineCode);
@@ -796,6 +797,7 @@ test("resolveTheme picks user, builtin, default and falls back without throwing"
 
 test("resolveTheme uses a site pack theme when no theme is chosen", () => {
   const T = global.ForceDarkThemes;
+  const realFinder = T.findSitePack;
   T.findSitePack = (h) => (h === "p.com" ? { id: "p", themeId: "builtin:dracula" } : null);
   try {
     const a = T.resolveTheme({ config: null, host: "p.com", userThemes: [] });
@@ -810,8 +812,31 @@ test("resolveTheme uses a site pack theme when no theme is chosen", () => {
     const d = T.resolveTheme({ config: { themeId: "user:gone" }, host: "p.com", userThemes: [] });
     assert.strictEqual(d.source, "pack");
   } finally {
-    delete T.findSitePack;
+    T.findSitePack = realFinder;
   }
+});
+
+test("resolveTheme resolves real site packs from the shipped data", () => {
+  const T = global.ForceDarkThemes;
+  const a = T.resolveTheme({ config: null, host: "www.bbc.com", userThemes: [] });
+  assert.strictEqual(a.source, "pack");
+  assert.strictEqual(a.pack.id, "bbc");
+  assert.strictEqual(a.theme.id, "builtin:midnight");
+  const b = T.resolveTheme({ config: { themeId: "default" }, host: "www.bbc.com", userThemes: [] });
+  assert.strictEqual(b.source, "default");
+  assert.strictEqual(b.theme, null);
+  const c = T.resolveTheme({ config: { themeId: "builtin:nord" }, host: "www.bbc.com", userThemes: [] });
+  assert.strictEqual(c.source, "builtin");
+  assert.strictEqual(c.theme.id, "builtin:nord");
+  const d = T.resolveTheme({ config: null, host: "example.com", userThemes: [] });
+  assert.strictEqual(d.source, "default");
+  assert.strictEqual(d.pack, null);
+});
+
+test("buildThemeOptions labels Automatic with the pack name for a real pack", () => {
+  const T = global.ForceDarkThemes;
+  const opts = T.buildThemeOptions([], T.findSitePack("www.bbc.com"));
+  assert.strictEqual(opts[0].label, "Automatic (BBC theme)");
 });
 
 test("applyEngine passes a resolved theme palette and imageDim to the engine", () => {

@@ -36,7 +36,13 @@ test("popup.html declares #theme-select and loads the theme scripts before popup
 test("popup.js sends themeId in TOGGLE and writes option text with textContent", () => {
   const js = read("src/popup/popup.js");
   assert.ok(/theme-select/.test(js));
-  assert.ok(/themeId/.test(js) && /type: "TOGGLE"/.test(js));
+  const start = js.indexOf("themeSelect.onchange");
+  assert.ok(start > -1, "themeSelect change handler exists");
+  const end = js.indexOf("chrome.storage.onChanged", start);
+  const handler = js.slice(start, end > -1 ? end : undefined);
+  assert.ok(/type: "TOGGLE"/.test(handler), "handler sends TOGGLE");
+  assert.ok(/\bthemeId\b/.test(handler), "handler sends themeId");
+  assert.ok(/\bforceEnabled\b/.test(handler), "handler sends forceEnabled");
   assert.ok(/buildThemeOptions/.test(js));
   assert.ok(/\.textContent\s*=/.test(js));
   assert.ok(/__customThemes/.test(js));

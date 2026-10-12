@@ -38,6 +38,7 @@
         "src/shared/colorUtils.js",
         "src/shared/themeCore.js",
         "src/shared/builtinThemes.js",
+        "src/shared/sitePacks.js",
         "src/content/themeEngine/cssOverrideEngine.js",
         "src/content/themeEngine/invertEngine.js",
         "src/content/index.js"

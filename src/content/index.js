@@ -47,11 +47,15 @@ function applyEngine(config) {
 }
 
 // Adds the resolved theme's palette and image dimming, and the site pack's fixes, to
-// the site config (CSS engine only). With no theme and no pack fixes the config is
-// passed through untouched, so backgroundColor-only sites behave as before.
+// the site config (CSS engine only). Fixes come only from the resolved pack: a
+// `fixes` key in the stored or messaged config is always dropped. Without a theme
+// the colour settings pass through untouched, so backgroundColor-only sites behave as before.
 function withThemePalette(config) {
+  const out = config && typeof config === "object" ? { ...config } : {};
+  delete out.fixes;
+
   const themes = window.ForceDarkThemes;
-  if (!themes || typeof themes.resolveTheme !== "function") return config;
+  if (!themes || typeof themes.resolveTheme !== "function") return out;
 
   let resolved = null;
   try {
@@ -60,14 +64,14 @@ function withThemePalette(config) {
     resolved = null;
   }
   const pack = resolved && resolved.pack;
-  const fixes = pack && Array.isArray(pack.fixes) && pack.fixes.length ? pack.fixes : null;
-  const theme = resolved && resolved.theme;
-  if (!theme) return fixes ? { ...config, fixes } : config;
+  if (pack && Array.isArray(pack.fixes) && pack.fixes.length) out.fixes = pack.fixes;
 
-  const imageDim = Number.isFinite(config.imageDim) ? config.imageDim : theme.imageDim;
-  const withPalette = { ...config, palette: themes.paletteFromTheme(theme), imageDim };
-  if (fixes) withPalette.fixes = fixes;
-  return withPalette;
+  const theme = resolved && resolved.theme;
+  if (!theme) return out;
+
+  out.palette = themes.paletteFromTheme(theme);
+  out.imageDim = Number.isFinite(out.imageDim) ? out.imageDim : theme.imageDim;
+  return out;
 }
 
 function applyFilterVars(config) {

@@ -109,8 +109,8 @@ function enableDarkMode(config = {}) {
       color: var(--force-dark-text) !important;
     }
 
-    :root[${ROOT_MODE_ATTR}="css"] :is(p, li, td, th, span, dt, dd) > :is(a, [role="link"]),
-    :root[${ROOT_MODE_ATTR}="css"] :is(a, [role="link"]):not(:has(div, p, span, h1, h2, h3, h4, h5, h6)) {
+    :root[${ROOT_MODE_ATTR}="css"] :is(p, li, td, th, span, dt, dd) > :is(a, [role="link"]):not([${KEEP_ATTR}], [${KEEP_ATTR}] *),
+    :root[${ROOT_MODE_ATTR}="css"] :is(a, [role="link"]):not(:has(div, p, span, h1, h2, h3, h4, h5, h6)):not([${KEEP_ATTR}], [${KEEP_ATTR}] *) {
       color: var(--force-dark-link) !important;
     }
 
@@ -120,7 +120,7 @@ function enableDarkMode(config = {}) {
       outline-color: var(--force-dark-border) !important;
     }
 
-    :root[${ROOT_MODE_ATTR}="css"] :is(button, input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]), textarea, select, option, optgroup) {
+    :root[${ROOT_MODE_ATTR}="css"] :is(button, input:not([type="checkbox"]):not([type="radio"]):not([type="color"]):not([type="range"]):not([type="file"]), textarea, select, option, optgroup):not([${KEEP_ATTR}], [${KEEP_ATTR}] *) {
       background-color: var(--force-dark-input) !important;
       color: var(--force-dark-text) !important;
       border-color: var(--force-dark-border) !important;
@@ -132,7 +132,7 @@ function enableDarkMode(config = {}) {
       opacity: 1 !important;
     }
 
-    :root[${ROOT_MODE_ATTR}="css"] :is(code, pre, kbd, samp) {
+    :root[${ROOT_MODE_ATTR}="css"] :is(code, pre, kbd, samp):not([${KEEP_ATTR}], [${KEEP_ATTR}] *) {
       background-color: var(--force-dark-elevated) !important;
       color: var(--force-dark-text) !important;
     }
@@ -162,6 +162,12 @@ function enableDarkMode(config = {}) {
 
     :root[${ROOT_MODE_ATTR}="css"] [${KEEP_ATTR}] * {
       color: inherit !important;
+    }
+
+    /* keep-light subtrees are exempt from the link, control and code rules above
+       (their :not guards); links get a readable colour for the white panel. */
+    :root[${ROOT_MODE_ATTR}="css"] [${KEEP_ATTR}] :is(a, [role="link"]) {
+      color: #0b57d0 !important;
     }
 
     :root[${ROOT_MODE_ATTR}="css"][data-force-dark-filter="true"] {

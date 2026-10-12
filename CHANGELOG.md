@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Tests**: 9 new suites covering the CSV parser, number formats, styles, workbook parser, colour mapping, view model, DOM renderer and error classification (see README for current totals).
 - **Optional feedback prompt**: after 15 popup opens, a one-time dismissible card offers links to leave a review or report a broken site. The open counter is stored locally only and nothing is sent; "Not now" asks once more, "Don't ask again" ends it. Options also gets a feedback link.
 
+- **Rate link**: the popup footer now always shows a "Rate ★" link to the store reviews page next to the feedback link.
+
 ### Fixed
 - **CSS engine on sites that load styles late** (e.g. Wikipedia, GitHub): light panels stayed white while text was lightened, making pages unreadable. The page is now rescanned (debounced) when stylesheets load.
 - **Auto engine skipping pages that support both colour schemes** (e.g. MDN): `color-scheme: light dark` was mistaken for "already dark". Only a dark-only declaration or a dark system preference now counts.

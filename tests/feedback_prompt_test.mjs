@@ -77,5 +77,13 @@ test("popup declares a hidden prompt card with links; module has no network APIs
   }
 });
 
+test("popup footer always offers a rate link and a feedback link", () => {
+  const html = fs.readFileSync(path.join(rootDir, "src/popup/popup.html"), "utf8");
+  const footer = html.slice(html.indexOf('class="popup-footer"'));
+  assert.ok(/id="rate-link"[^>]*href="https:\/\/chromewebstore\.google\.com\/detail\/[^"]*\/reviews"/.test(footer), "footer needs a rate link to the store reviews tab");
+  assert.ok(/rel="noopener noreferrer"/.test(footer.slice(footer.indexOf('id="rate-link"'))), "rate link must use rel=noopener noreferrer");
+  assert.ok(/feedback-link/.test(footer), "feedback link stays in the footer");
+});
+
 console.log(`\n🎉 Results: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

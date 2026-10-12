@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.8.0-indigo.svg)](manifest.json)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Free-blue.svg?logo=googlechrome)](https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke)
-[![Tests](https://img.shields.io/badge/tests-284%20passed-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-285%20passed-success.svg)](tests/)
 [![Website](https://img.shields.io/badge/website-live-cyan.svg)](https://darkmode.pshah.fun/)
 
 **Force Dark Mode - ThemeSwitcher** is a lightweight, privacy-first Chrome extension that transforms websites, local documents, and PDF files into eye-friendly, customizable dark themes.
@@ -97,7 +97,7 @@ Read our complete [Privacy Policy](https://darkmode.pshah.fun/privacy.html) or [
 4. Click **Load unpacked** and select the repository root directory.
 
 ### Running Automated Tests
-Run the full test suite (284 tests across 16 files):
+Run the full test suite (285 tests across 16 files):
 ```bash
 npm test
 ```
@@ -108,8 +108,8 @@ node tests/dom_engine_test.mjs       # DOM simulation, engine switching, and You
 node tests/privacy_security_test.mjs # Privacy, security, and versioning compliance (15 tests)
 node tests/zip_reader_test.mjs       # Dependency-free ZIP reader for docx/pptx/xlsx (15 tests)
 node tests/docx_parser_test.mjs      # .docx paragraph/heading/list parser (8 tests)
-node tests/pptx_parser_test.mjs      # .pptx slide/run parser (6 tests)
-node tests/seo_test.mjs              # SEO metadata and structured-data checks (6 tests)
+node tests/pptx_parser_test.mjs      # .pptx slide/run parser (7 tests)
+node tests/seo_test.mjs              # SEO metadata and structured-data checks (7 tests)
 node tests/csv_parser_test.mjs       # .csv parser (15 tests)
 node tests/number_format_test.mjs    # Spreadsheet number-format engine (30 tests)
 node tests/xlsx_styles_test.mjs      # .xlsx style/theme resolution (22 tests)
@@ -117,8 +117,8 @@ node tests/xlsx_parser_test.mjs      # .xlsx workbook parser (38 tests)
 node tests/cell_colors_test.mjs      # Dark-mode cell colour mapping (28 tests)
 node tests/spreadsheet_view_test.mjs # Spreadsheet view model (13 tests)
 node tests/spreadsheet_renderer_test.mjs # Spreadsheet DOM renderer, fake DOM (21 tests)
-node tests/spreadsheet_errors_test.mjs # Spreadsheet error classification (6 tests)
-node tests/feedback_prompt_test.mjs   # Popup feedback prompt state machine (6 tests)
+node tests/spreadsheet_errors_test.mjs # Spreadsheet error classification (7 tests)
+node tests/feedback_prompt_test.mjs   # Popup feedback prompt state machine (7 tests)
 ```
 
 ### Packaging for Release

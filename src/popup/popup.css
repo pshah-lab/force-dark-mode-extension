@@ -307,3 +307,9 @@ body {
 .feedback-prompt-actions.secondary button {
   color: #9aa0a6;
 }
+
+.footer-sep {
+  margin: 0 6px;
+  color: #5f6368;
+  font-size: 11px;
+}

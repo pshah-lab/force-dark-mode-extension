@@ -4,7 +4,12 @@ export const MAX_BODY_BYTES = 2048;
 
 // Returns { ok: true, value } or { ok: false, status }.
 export async function readJsonBody(req) {
-  let raw = req.body;
+  let raw;
+  try {
+    raw = req.body;
+  } catch (e) {
+    return { ok: false, status: 400 };
+  }
   if (raw === undefined || raw === null) return { ok: false, status: 400 };
   if (Buffer.isBuffer(raw)) raw = raw.toString("utf8");
   let text;

@@ -15,5 +15,6 @@ scratch*
 !/.github/**/*.md
 !/test-fixtures/**/*.md
 !/tools/**/*.md
+!/backend/**/*.md
 /Role FDEx.docx
 /MASTER PROMPT_ PRIVACY, SECURITY & NATIONAL_INTERNATIONAL COMPLIANCE.docx

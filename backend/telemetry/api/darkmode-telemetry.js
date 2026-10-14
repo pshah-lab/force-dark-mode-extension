@@ -59,6 +59,6 @@ export function createHandler({ store, now = () => new Date() } = {}) {
   };
 }
 
-export default async function handler(req, res) {
-  return createHandler()(req, res);
-}
+// Created once per module so the lazily built Supabase client is reused across warm invocations.
+const handler = createHandler();
+export default (req, res) => handler(req, res);

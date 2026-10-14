@@ -110,10 +110,24 @@ test("ingest rejects bodies over 2 KB", async () => {
   const h = createIngest({ store, now: () => NOW });
   const big = JSON.stringify(hb()) + " ".repeat(2100);
   const res = await call(h, { body: big });
-  assert.ok(res.statusCode === 413 || res.statusCode === 400);
+  assert.strictEqual(res.statusCode, 413);
   assert.strictEqual(store.upserts, 0);
   const res2 = await call(h, { body: { ...hb(), pad: "x".repeat(3000) } });
-  assert.ok(res2.statusCode === 413 || res2.statusCode === 400);
+  assert.strictEqual(res2.statusCode, 413);
+  assert.strictEqual(store.upserts, 0);
+});
+
+test("a throwing req.body getter yields a clean 400 on both handlers", async () => {
+  const store = fakeStore();
+  const mkRes = () => ({ statusCode: null, status(c) { this.statusCode = c; return this; }, end() { return this; }, setHeader() { return this; } });
+  const req = { method: "POST", get body() { throw new Error("boom"); } };
+  for (const h of [createIngest({ store, now: () => NOW }), createDelete({ store })]) {
+    const res = mkRes();
+    await h(req, res);
+    assert.strictEqual(res.statusCode, 400);
+  }
+  assert.strictEqual(store.upserts, 0);
+  assert.deepStrictEqual(store.deleted, []);
 });
 
 test("ingest rejects impossible and out-of-window days", async () => {
@@ -197,6 +211,14 @@ test("supabase-js is only imported lazily, never at top level", () => {
     }
   }
   assert.strictEqual(lazy, 1);
+});
+
+test("default exports reuse one module-level handler", () => {
+  for (const f of ["darkmode-telemetry.js", "darkmode-telemetry-delete.js"]) {
+    const text = fs.readFileSync(path.join(ROOT, "backend/telemetry/api", f), "utf8");
+    assert.ok(/^const handler = createHandler\(\);/m.test(text), f);
+    assert.ok(!/export default async function handler[\s\S]*createHandler\(\)\(/.test(text), f);
+  }
 });
 
 test("SQL files contain the required objects", () => {

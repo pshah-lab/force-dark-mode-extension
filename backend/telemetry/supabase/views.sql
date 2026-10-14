@@ -36,6 +36,9 @@ join first_seen f using (install_id)
 group by h.day
 order by h.day;
 
+-- Cohorts too young for a given N yield NULL, not 0.
+-- Note: first_day is min(day) of the rows that still exist, so after purge.sql long-lived installs
+-- look new at the oldest surviving date.
 -- Per first-day cohort: share of installs seen exactly N days after their first day.
 create or replace view retention as
 with first_seen as (
@@ -46,9 +49,9 @@ cohort as (
 )
 select c.first_day as cohort_day,
        c.installs,
-       round(count(distinct h1.install_id)::numeric  / c.installs, 4) as d1,
-       round(count(distinct h7.install_id)::numeric  / c.installs, 4) as d7,
-       round(count(distinct h30.install_id)::numeric / c.installs, 4) as d30
+       case when c.first_day + 1 <= current_date then round(count(distinct h1.install_id)::numeric  / c.installs, 4) end as d1,
+       case when c.first_day + 7 <= current_date then round(count(distinct h7.install_id)::numeric  / c.installs, 4) end as d7,
+       case when c.first_day + 30 <= current_date then round(count(distinct h30.install_id)::numeric / c.installs, 4) end as d30
 from cohort c
 join first_seen f on f.first_day = c.first_day
 left join heartbeats h1  on h1.install_id  = f.install_id and h1.day  = f.first_day + 1

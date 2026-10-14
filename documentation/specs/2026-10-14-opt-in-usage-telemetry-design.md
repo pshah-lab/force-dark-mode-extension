@@ -23,12 +23,12 @@ Give the owner simple, anonymous usage numbers across all installs: active users
 
 ## Data sent
 
-One heartbeat per UTC day, only on a day the extension was used, only if opted in.
+One heartbeat per UTC day, sent at the first use of the extension that day (so a user who never returns is still counted for that day), only if opted in. Engines and features are booleans for what had been used at that moment; there is no `alarms` permission, so no end-of-day tally.
 
 ```
 { id, day, version, env: { chrome, os, lang },
-  engines: { auto, css, invert },     // apply counts
-  theme: "<builtin id>" | "custom",
+  engines: { auto, css, invert },     // booleans: used so far today
+  theme: "<builtin id>" | "custom",   // last seen today
   features: { viewer, editor, customCss, sitePack } }  // booleans
 ```
 
@@ -38,16 +38,16 @@ One heartbeat per UTC day, only on a day the extension was used, only if opted i
 ## Components
 
 1. `src/shared/telemetry.js`: pure module. Allow-lists, `buildHeartbeat`, `validateHeartbeat`. No `chrome.*` calls.
-2. `src/background/serviceWorker.js`: tallies counters into `chrome.storage.local`; once per UTC day, if opted in and active, POSTs the heartbeat. A failed send is retried on the next tick; at most one day is held.
+2. `src/background/telemetrySender.js`, wired from `serviceWorker.js`: on the first usage event of a UTC day, if opted in, POSTs the heartbeat. A failed send is retried on the next usage event the same day; nothing is queued across days.
 3. `src/popup/` consent card; `src/options/` toggle, payload preview, Delete my data.
 4. Backend (Vercel + Supabase), in its own directory:
-   - `POST /api/ingest`: re-validates against the allow-lists, rejects unknown keys or values, rate-limits per ID, upserts on `(id, day)`.
+   - `POST /api/ingest`: re-validates against the allow-lists, rejects unknown keys or values, upserts on `(id, day)` (so one row per ID per day) and rejects days more than one day from the server date.
    - `POST /api/delete`: removes all rows for an ID.
    - SQL views for DAU/WAU/MAU, new versus returning, D1/D7/D30 retention. No dashboard UI in this release.
 
 ## Privacy and policy changes
 
-- `manifest.json`: `host_permissions` for the ingest origin only.
+- `manifest.json`: `host_permissions` for the two telemetry endpoint paths only (`https://pshah.fun/api/darkmode-telemetry*`, an existing first-party origin; change at deploy if you prefer another).
 - `PRIVACY.md` §1 changes from "zero telemetry" to "off by default, opt-in, anonymous", with the exact field list. CWS data disclosures, `CHANGELOG.md` and the privacy documentation under `documentation/privacy/` are updated to match.
 - `tests/privacy_security_test.mjs`: from "no network calls anywhere" to: exactly one egress file; only to the one origin; only after consent; payload keys must be in the allow-list. The strictness stays; the single exception is explicit.
 

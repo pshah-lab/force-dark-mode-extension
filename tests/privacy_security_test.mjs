@@ -536,13 +536,16 @@ test("no .mjs or .cjs source files under src/ outside the vendored viewer direct
   assert.deepStrictEqual(odd, [], `Unscanned module files under src/: ${odd.join(", ")}`);
 });
 
-test("manifest permissions: storage, activeTab, contextMenus only, plus the single telemetry host", () => {
+test("manifest permissions: storage, activeTab, contextMenus only; no host permissions of any kind", () => {
   const manifest = readManifest();
   assert.deepStrictEqual(manifest.permissions, ["storage", "activeTab", "contextMenus"]);
-  assert.deepStrictEqual(manifest.host_permissions, ["https://pshah.fun/api/darkmode-telemetry*"]);
-  for (const key of ["optional_permissions", "optional_host_permissions", "externally_connectable"]) {
+  // The telemetry backend answers CORS for the extension origin instead (Ruling 13), so the update
+  // never triggers a new permission warning or disables the extension for existing users.
+  for (const key of ["host_permissions", "optional_permissions", "optional_host_permissions", "externally_connectable"]) {
     assert.strictEqual(Object.prototype.hasOwnProperty.call(manifest, key), false, `manifest must not declare ${key}`);
   }
+  const raw = fs.readFileSync(path.join(rootDir, "manifest.json"), "utf8");
+  assert.ok(!raw.includes("pshah.fun"), "manifest must not name the telemetry host");
 });
 
 test("no new web_accessible_resources", () => {
@@ -861,15 +864,26 @@ test("every http(s) URL in src/ is one of the two sender endpoints, and only in 
   }
 });
 
-test("sender endpoints are https and covered by the manifest host_permissions pattern", () => {
-  const [pattern] = readManifest().host_permissions;
-  assert.ok(pattern.endsWith("*"));
-  const prefix = pattern.slice(0, -1);
+test("sender endpoints are exactly the two https constants, with no query or fragment", () => {
+  assert.strictEqual(senderModule.INGEST_URL, "https://pshah.fun/api/darkmode-telemetry");
+  assert.strictEqual(senderModule.DELETE_URL, "https://pshah.fun/api/darkmode-telemetry-delete");
   for (const url of [senderModule.INGEST_URL, senderModule.DELETE_URL]) {
-    assert.ok(url.startsWith("https://"), `${url} must be https`);
-    assert.ok(url.startsWith(prefix), `${url} is not covered by host permission ${pattern}`);
-    assert.ok(!url.includes("?") && !url.includes("#"), `${url} must carry no query or fragment`);
+    const u = new URL(url);
+    assert.strictEqual(u.protocol, "https:", `${url} must be https`);
+    assert.strictEqual(u.host, "pshah.fun", `${url} must be the first-party host`);
+    assert.strictEqual(u.search + u.hash, "", `${url} must carry no query or fragment`);
   }
+});
+
+test("the sender omits credentials and referrer on every request (no host permission needed)", () => {
+  const code = stripComments(fs.readFileSync(path.join(rootDir, SENDER_PATH), "utf8"));
+  const fetchCalls = code.match(/fetchFn\(/g) || [];
+  const omits = code.match(/credentials:\s*"omit"/g) || [];
+  const noRef = code.match(/referrerPolicy:\s*"no-referrer"/g) || [];
+  assert.ok(fetchCalls.length >= 2, "expected the ingest and delete requests");
+  assert.strictEqual(omits.length, fetchCalls.length, "every fetch must set credentials: omit");
+  assert.strictEqual(noRef.length, fetchCalls.length, "every fetch must set referrerPolicy: no-referrer");
+  assert.ok(!/mode:\s*"no-cors"/.test(code), "no-cors would hide failures; the default cors mode is required");
 });
 
 test("the sender never reads tabs, location or document", () => {
@@ -978,6 +992,34 @@ test("PRIVACY.md lists every heartbeat field name, and exactly those", () => {
   assert.ok(section, "PRIVACY.md must delimit the field list with fields:start / fields:end markers");
   const documented = [...section[1].matchAll(/`([A-Za-z.]+)`/g)].map((m) => m[1]);
   assert.deepStrictEqual([...documented].sort(), [...keys].sort(), "documented fields must equal the heartbeat keys");
+});
+
+test("no document claims a telemetry host permission; the CORS design is described instead", () => {
+  const files = [
+    "PRIVACY.md", "CHROMEWEBSTORE.md", "README.md", "CHANGELOG.md",
+    "documentation/ThemeSwitcher_Privacy_Compliance_Report.md",
+    "documentation/specs/2026-10-14-opt-in-usage-telemetry-design.md",
+    "documentation/plans/2026-10-14-opt-in-usage-telemetry.md",
+    "backend/telemetry/README.md",
+    ...fs.readdirSync(path.join(rootDir, "documentation/privacy")).map((f) => `documentation/privacy/${f}`),
+  ];
+  for (const rel of files) {
+    const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    assert.ok(!text.includes("darkmode-telemetry*"), `${rel} still names the host-permission pattern`);
+    text.split("\n").forEach((line, i) => {
+      if (!/pshah\.fun/.test(line)) return;
+      // A line naming the telemetry host may mention host permissions only to say there are none.
+      const claims = line.replace(/\bno host[ _]permissions?\b/gi, "").replace(/\bwithout (any )?host[ _]permissions?\b/gi, "");
+      assert.ok(!/host[ _]permissions?/i.test(claims), `${rel}:${i + 1} ties a host permission to pshah.fun`);
+    });
+  }
+  for (const rel of ["PRIVACY.md", "CHROMEWEBSTORE.md", "README.md", "documentation/ThemeSwitcher_Privacy_Compliance_Report.md", "backend/telemetry/README.md"]) {
+    const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    assert.ok(/no host permissions?/i.test(text), `${rel} must say the extension needs no host permission`);
+    assert.ok(/CORS/.test(text), `${rel} must say the endpoint answers CORS`);
+  }
+  const be = fs.readFileSync(path.join(rootDir, "backend/telemetry/README.md"), "utf8");
+  assert.ok(be.includes("kmhhphbakbhohiohagkhhgdgfbplkfke") && /EXTENSION_ID/.test(be), "backend README must name the extension ID constant");
 });
 
 // Final summary

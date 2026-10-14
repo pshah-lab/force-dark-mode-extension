@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Anonymous, opt-in usage statistics**, off by default. A one-time card in the popup asks; the same switch lives in Options > Usage stats, with a live preview of exactly what would be sent and a **Delete my data** button. When on, one small report per day (random ID, UTC day, extension version, Chrome major version, OS family, UI language, and yes/no flags for the engine, built-in theme and features used) is sent from the service worker to the developer's own endpoint.
 
 ### Privacy
-- New host permission `https://pshah.fun/api/darkmode-telemetry*`, used only by the usage-statistics sender. `permissions` are unchanged and the CSP is unchanged.
+- No new permissions and no host permissions: the usage-statistics endpoint answers CORS for the extension's own origin instead, so updating does not show a new permission prompt. `permissions` are unchanged and the CSP is unchanged.
 - Nothing about sites, URLs, page content, documents or typed text is collected, and our server function does not store IP addresses. Delete my data (Options > Usage stats) also turns usage stats off, so use it before unticking or uninstalling; other records are purged after 13 months.
 - `PRIVACY.md` and the privacy documents were rewritten: "Zero Telemetry" is replaced by a section describing the opt-in statistics. Automated tests now confine `fetch` to one file and check the policy's field list against the real report.
 

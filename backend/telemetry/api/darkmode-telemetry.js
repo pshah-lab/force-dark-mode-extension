@@ -1,7 +1,7 @@
-// POST /api/darkmode-telemetry : validates and upserts one anonymous heartbeat.
+// POST /api/darkmode-telemetry : validates and upserts one anonymous heartbeat (OPTIONS: CORS preflight).
 // Only req.method and req.body are used. No header or network address is read or stored.
 import { validateHeartbeat } from "../lib/schema.js";
-import { readJsonBody, reply, createSupabaseClient } from "../lib/http.js";
+import { readJsonBody, reply, isPreflight, createSupabaseClient } from "../lib/http.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -32,6 +32,7 @@ async function defaultStore() {
 export function createHandler({ store, now = () => new Date() } = {}) {
   let lazyStore = store;
   return async function handler(req, res) {
+    if (isPreflight(req)) return reply(res, 204);
     if (req.method !== "POST") return reply(res, 405);
     const body = await readJsonBody(req);
     if (!body.ok) return reply(res, body.status);

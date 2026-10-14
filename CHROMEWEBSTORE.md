@@ -113,8 +113,9 @@ English
 | :------------- | :-------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `storage`    | permissions     | Required to store user settings (selected engine, custom background color, viewer preferences) per domain and sync them across the user's signed-in devices using Chrome Sync with no developer servers involved. |
 | `activeTab`  | permissions     | Required only when the user opens the extension popup to inspect page colors/luminance and apply theme changes without requesting broad, persistent tab access.                                           |
-| `https://pshah.fun/api/darkmode-telemetry*` | host_permissions | Required only so the background service worker can send the optional, opt-in anonymous usage report (off by default) and the "Delete my data" request (used before turning usage stats off or uninstalling) to the developer's own first-party endpoint. It gives no access to any website the user visits. |
 | `<all_urls>` | content_scripts | Required to inject styling rules and evaluate surface luminance on websites at`document_start` so pages render dark immediately without bright white flashes.                                           |
+
+No host permissions are requested. The optional, opt-in usage report (off by default) and the "Delete my data" request (used before turning usage stats off or uninstalling) go to the developer's own first-party endpoint, which answers CORS only for this extension's origin, so no host permission is needed.
 
 ---
 

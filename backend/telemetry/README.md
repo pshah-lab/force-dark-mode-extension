@@ -1,18 +1,37 @@
 # Opt-in usage metrics backend
 
-Two Vercel functions plus Supabase SQL. Deploy this directory under `pshah.fun/api/`
-(or change the two URLs in `src/background/telemetrySender.js` and the manifest host pattern).
+Two Vercel functions plus Supabase SQL. The `api/` and `lib/` folders must be deployed inside the
+existing Vercel project that serves `pshah.fun`: copy them into that project's `api/` and `lib/` folders
+and add `@supabase/supabase-js` to that project's dependencies. A separate Vercel project cannot also
+claim the `pshah.fun` domain. (If you host the endpoints elsewhere, change the two URLs in
+`src/background/telemetrySender.js`, which `tests/privacy_security_test.mjs` pins.)
+
+## CORS and the extension ID
+
+The extension declares no host permissions (so updating never disables it pending re-approval). Instead
+both functions answer CORS themselves, from `lib/cors.js`: every response, including errors, carries a
+STATIC `Access-Control-Allow-Origin: chrome-extension://kmhhphbakbhohiohagkhhgdgfbplkfke`, plus
+`Access-Control-Allow-Methods: POST, OPTIONS`, `Access-Control-Allow-Headers: Content-Type`,
+`Access-Control-Max-Age` and `Vary: Origin`, and an `OPTIONS` preflight gets 204 without touching the
+store. No request header (not even `Origin`) is read.
+
+The ID is defined once, as `EXTENSION_ID` in `lib/cors.js`. If the Chrome Web Store ID of the published
+extension differs from `kmhhphbakbhohiohagkhhgdgfbplkfke`, or you test an unpacked development build
+(which gets a different ID), every telemetry request fails CORS (nothing is sent, nothing breaks for the
+user) until `EXTENSION_ID` is changed and redeployed. Confirm the ID on the store dashboard before release.
 
 ## Setup (owner)
 
 1. Create a Supabase project. In the SQL editor run `supabase/schema.sql`, then `supabase/views.sql`.
-2. Deploy `backend/telemetry/` to Vercel with env vars `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`.
+2. Copy `api/` and `lib/` into the `pshah.fun` Vercel project (see above) and set env vars `SUPABASE_URL` and
+   `SUPABASE_SERVICE_ROLE_KEY` in that project.
    The table has RLS enabled and no policies, so only the service key (used by the functions) can touch it.
 3. Schedule `supabase/purge.sql` (pg_cron or a Supabase scheduled function). It deletes heartbeats older
    than 400 days (13 months); change the interval if you want a different retention. Not scheduled automatically.
 
 ## Endpoints
 
+- `OPTIONS` on either path: CORS preflight, 204, no body read and no store access.
 - `POST /api/darkmode-telemetry`: JSON heartbeat, at most 2 KB. 405 for other methods, 413/400 for oversize
   or unparsable bodies, 400 if it fails `lib/schema.js` validation or `day` is not a real date within one day
   of the server's UTC date. Upserts on `(install_id, day)`, so repeats are idempotent. Responds 204.

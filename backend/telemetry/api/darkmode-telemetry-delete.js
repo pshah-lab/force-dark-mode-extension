@@ -1,6 +1,6 @@
-// POST /api/darkmode-telemetry-delete : body {id}; removes every row for that install ID.
+// POST /api/darkmode-telemetry-delete : body {id}; removes every row for that install ID (OPTIONS: CORS preflight).
 import { isUuid } from "../lib/schema.js";
-import { readJsonBody, reply, createSupabaseClient } from "../lib/http.js";
+import { readJsonBody, reply, isPreflight, createSupabaseClient } from "../lib/http.js";
 
 async function defaultStore() {
   const client = await createSupabaseClient();
@@ -15,6 +15,7 @@ async function defaultStore() {
 export function createHandler({ store } = {}) {
   let lazyStore = store;
   return async function handler(req, res) {
+    if (isPreflight(req)) return reply(res, 204);
     if (req.method !== "POST") return reply(res, 405);
     const body = await readJsonBody(req);
     if (!body.ok) return reply(res, body.status);

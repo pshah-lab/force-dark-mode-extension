@@ -47,7 +47,7 @@ One heartbeat per UTC day, sent at the first use of the extension that day (so a
 
 ## Privacy and policy changes
 
-- `manifest.json`: `host_permissions` for the two telemetry endpoint paths only (`https://pshah.fun/api/darkmode-telemetry*`, an existing first-party origin; change at deploy if you prefer another).
+- `manifest.json`: unchanged, with no host permissions (superseded by Ruling 13: a host permission would disable the extension for existing users until they re-approve); the backend instead answers CORS with a static `Access-Control-Allow-Origin: chrome-extension://kmhhphbakbhohiohagkhhgdgfbplkfke` and handles the OPTIONS preflight.
 - `PRIVACY.md` §1 changes from "zero telemetry" to "off by default, opt-in, anonymous", with the exact field list. CWS data disclosures, `CHANGELOG.md` and the privacy documentation under `documentation/privacy/` are updated to match.
 - `tests/privacy_security_test.mjs`: from "no network calls anywhere" to: exactly one egress file; only to the one origin; only after consent; payload keys must be in the allow-list. The strictness stays; the single exception is explicit.
 

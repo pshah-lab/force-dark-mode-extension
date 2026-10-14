@@ -80,7 +80,7 @@ ThemeSwitcher is built with privacy by design:
 - **Minimal Manifest V3 Permissions**:
   - `storage`: Storing domain preferences locally in Chrome Sync.
   - `activeTab`: Inspecting luminance and applying styles when the user opens the popup.
-  - `https://pshah.fun/api/darkmode-telemetry*` (host permission): Sending the opt-in anonymous usage report and the Delete my data request (use it before turning usage stats off or uninstalling); nothing else.
+  - No host permissions: the opt-in usage report and the Delete my data request (use it before turning usage stats off or uninstalling) reach the developer's endpoint because it answers CORS only for this extension's own origin.
   - `<all_urls>` (content_scripts): Applying dark mode at `document_start` to prevent white flashes.
 
 Read our complete [Privacy Policy](https://darkmode.pshah.fun/privacy.html) or [PRIVACY.md](PRIVACY.md).

@@ -1,5 +1,7 @@
 // Shared request helpers. Reads only the method and body; nothing else about the request
 // (no headers, no address) is ever accessed, logged or stored.
+import { setCorsHeaders } from "./cors.js";
+
 export const MAX_BODY_BYTES = 2048;
 
 // Returns { ok: true, value } or { ok: false, status }.
@@ -25,10 +27,17 @@ export async function readJsonBody(req) {
   }
 }
 
+// Every response, success or error, carries the static CORS headers.
 export function reply(res, status) {
+  setCorsHeaders(res);
   res.status(status);
-  if (status === 405 && typeof res.setHeader === "function") res.setHeader("Allow", "POST");
+  if (status === 405 && typeof res.setHeader === "function") res.setHeader("Allow", "POST, OPTIONS");
   res.end();
+}
+
+// CORS preflight: answered with 204 before any body read or store access.
+export function isPreflight(req) {
+  return req.method === "OPTIONS";
 }
 
 // Lazily built so tests (and cold starts that never run a handler) never load supabase-js.

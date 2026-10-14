@@ -58,7 +58,7 @@ ThemeSwitcher operates across three distinct operational boundaries:
                                                             (Encrypted User Google Sync)
 ```
 
-1. **No Page Data Leaves the Client:** No URLs, page contents, form fields, passwords, or cookies ever leave the client. The only outbound request is the opt-in anonymous usage report (and the request made by Delete my data, used before turning stats off or uninstalling), sent by the service worker alone to `https://pshah.fun/api/darkmode-telemetry*`; automated tests confine `fetch` to that one file.
+1. **No Page Data Leaves the Client:** No URLs, page contents, form fields, passwords, or cookies ever leave the client. The only outbound request is the opt-in anonymous usage report (and the request made by Delete my data, used before turning stats off or uninstalling), sent by the service worker alone to `https://pshah.fun/api/darkmode-telemetry` (or `-delete`); automated tests confine `fetch` to that one file. No host permission is involved: the endpoint answers CORS only for the extension's own origin.
 2. **Local Sync:** `chrome.storage.sync` synchronizes directly through the user's signed-in Google account without passing through any intermediate proxy.
 
 ---
@@ -69,8 +69,9 @@ ThemeSwitcher operates across three distinct operational boundaries:
 | ---------- | ----- | -------------------- | --------------- | ---------- |
 | `storage` | Extension permissions | Persists per-site rules across sessions. Essential for core utility. | Low | Key sanitization (`isSafeKey`) prevents prototype pollution. |
 | `activeTab` | Extension permissions | Inspects active tab on popup click to calculate luminance and toggle theme. | Low | Only granted upon explicit user click; terminates on navigation. |
-| `https://pshah.fun/api/darkmode-telemetry*` | `host_permissions` | Lets the service worker send the opt-in anonymous usage report and the Delete my data request (used before turning stats off or uninstalling) to the developer's first-party endpoint. No access to visited sites. | Low | Single path-scoped pattern; only `telemetrySender.js` uses the network; off by default. |
 | `<all_urls>` | `content_scripts.matches` | Injects CSS rules at `document_start` to eliminate blinding white screen flashes. | Medium | Script runs in isolated world; zero network calls; zero text reading. |
+
+No host permissions are declared. The opt-in usage report and the Delete my data request (used before turning stats off or uninstalling) reach the developer's endpoint because it answers CORS only for the extension's own origin; only `telemetrySender.js` uses the network, and it is off by default.
 
 ---
 
@@ -258,7 +259,7 @@ Comprehensive STRIDE and Privacy threat model completed in `docs/security/threat
 
 ## 24. Release Checklist
 
-- [x] No unnecessary permissions requested (`storage`, `activeTab`, `<all_urls>` content script, plus the single host permission `https://pshah.fun/api/darkmode-telemetry*` for opt-in usage statistics).
+- [x] No unnecessary permissions requested (`storage`, `activeTab`, `contextMenus`, `<all_urls>` content script; no host permissions, since the usage-statistics endpoint answers CORS for the extension origin).
 - [x] No server secrets or API keys in client code.
 - [x] Outbound network requests confined to the single opt-in usage-statistics sender (`src/background/telemetrySender.js`); zero elsewhere in extension code.
 - [x] Zero third-party telemetry or trackers on companion website.

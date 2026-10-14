@@ -17,7 +17,7 @@
 - Heartbeat shape (exact): `{ id, day, version, env: { chrome, os, lang }, engines: { auto, css, invert }, theme, features: { viewer, editor, customCss, sitePack } }`. `engines` and `features` values are booleans; `theme` is a built-in ID (`builtin:<slug>`) or `"custom"`.
 - One heartbeat per UTC day, sent at the first usage event of that day.
 - ID: random UUID in `chrome.storage.local` only (never `sync`); deleted on opt-out.
-- Manifest: `permissions` stay `["storage","activeTab","contextMenus"]` (no `alarms`); add `host_permissions: ["https://pshah.fun/api/darkmode-telemetry*"]` only.
+- Manifest: `permissions` stay `["storage","activeTab","contextMenus"]` (no `alarms`) and no host permissions are added (Ruling 13); the backend answers CORS for the extension origin instead.
 - Endpoints: `https://pshah.fun/api/darkmode-telemetry` (ingest) and `https://pshah.fun/api/darkmode-telemetry-delete`.
 - Do not bump the version (owner releases); changelog entry goes under "Unreleased".
 - The owner deploys the backend, edits CWS disclosures, pushes, tags and uploads. Do not push.
@@ -120,12 +120,12 @@
 ### Task 5: Manifest, privacy tests and policy documents
 
 **Files:**
-- Modify: `manifest.json` (add `host_permissions`), `tests/privacy_security_test.mjs`, `PRIVACY.md` §1 and §2, `documentation/privacy/*.md` (data-inventory, data-flow, subprocessors), `documentation/ThemeSwitcher_Privacy_Compliance_Report.md`, `CHROMEWEBSTORE.md` (data disclosure wording), `CHANGELOG.md` ("Unreleased")
+- Modify: `manifest.json` (no change after Ruling 13), `tests/privacy_security_test.mjs`, `PRIVACY.md` §1 and §2, `documentation/privacy/*.md` (data-inventory, data-flow, subprocessors), `documentation/ThemeSwitcher_Privacy_Compliance_Report.md`, `CHROMEWEBSTORE.md` (data disclosure wording), `CHANGELOG.md` ("Unreleased")
 
 **Interfaces:**
 - Consumes: Tasks 1-4 files. `EGRESS_SCANNED_FILES` gains `src/shared/telemetry.js` and `src/popup/telemetryPrompt.js` (both must contain no network patterns). `src/background/telemetrySender.js` moves to a new `EGRESS_ALLOWED = { "src/background/telemetrySender.js": [INGEST_URL, DELETE_URL] }` list.
 
-- [ ] **Step 1: Update tests first** in `tests/privacy_security_test.mjs`: (a) remove the sender from the zero-egress scan and add: `fetch` appears in exactly one file under `src/` (the sender), `XMLHttpRequest`, `WebSocket`, `sendBeacon` appear nowhere; (b) every `https://` URL in the sender is one of the two constants; (c) `manifest.host_permissions` equals exactly `["https://pshah.fun/api/darkmode-telemetry*"]` and `permissions` is still `["storage","activeTab","contextMenus"]` (replace the "must not declare host_permissions" assertion); (d) the sender never reads `chrome.tabs`, `location` or `document`; (e) `chrome.storage.sync` is not used with the `telemetryState` key; (f) `PRIVACY.md` no longer contains "Zero Telemetry" and does contain "off by default" and every field name from the heartbeat; (g) the policy's field list equals the keys of a built heartbeat.
+- [ ] **Step 1: Update tests first** in `tests/privacy_security_test.mjs`: (a) remove the sender from the zero-egress scan and add: `fetch` appears in exactly one file under `src/` (the sender), `XMLHttpRequest`, `WebSocket`, `sendBeacon` appear nowhere; (b) every `https://` URL in the sender is one of the two constants; (c) `permissions` is still `["storage","activeTab","contextMenus"]` and the manifest declares no host permissions (Ruling 13; the backend answers CORS instead); (d) the sender never reads `chrome.tabs`, `location` or `document`; (e) `chrome.storage.sync` is not used with the `telemetryState` key; (f) `PRIVACY.md` no longer contains "Zero Telemetry" and does contain "off by default" and every field name from the heartbeat; (g) the policy's field list equals the keys of a built heartbeat.
 - [ ] **Step 2: Run** `npm run test:privacy`. Expected: FAIL.
 - [ ] **Step 3: Implement** the manifest change and rewrite the documents. `PRIVACY.md` §1 becomes "Anonymous, opt-in usage statistics" and states what is counted, that it is off by default, that no sites/content/IP are stored, how to turn off and delete. The other documents are updated to match, and `CHROMEWEBSTORE.md` gets the data-disclosure answers (collects "user activity", not sold, not used for unrelated purposes).
 - [ ] **Step 4: Run** `npm test`. Expected: all green, test count increased.
@@ -152,4 +152,4 @@
 
 ## Owner actions after merge
 
-Create the Supabase project and run `schema.sql` and `views.sql`; deploy `backend/telemetry/` to Vercel under `pshah.fun/api/` (or change the two URLs and the manifest pattern, which the privacy test then re-checks); complete the CWS data disclosures; bump the version, push, tag, upload.
+Create the Supabase project and run `schema.sql` and `views.sql`; deploy `backend/telemetry/` to Vercel under `pshah.fun/api/` (or change the two URLs, which the privacy test pins, and `EXTENSION_ID` in `backend/telemetry/lib/cors.js` if the store ID differs); complete the CWS data disclosures; bump the version, push, tag, upload.

@@ -1,7 +1,7 @@
 # ThemeSwitcher Privacy Policy
 
 **Effective Date:** September 23, 2026  
-**Last Updated:** September 23, 2026  
+**Last Updated:** October 14, 2026  
 **Policy Version:** 2.0.0  
 
 ---
@@ -11,7 +11,7 @@
 ThemeSwitcher (Force Dark Mode) is an open-source, client-side browser extension and companion website developed with an uncompromising commitment to **privacy by design**, **local-first processing**, and **data minimization**.
 
 Our guiding principle is simple:
-> **ThemeSwitcher does not collect, track, sell, or transmit your personal data, browsing history, or website content. All theme processing and document rendering happen 100% locally on your device. The only data that can ever leave your device is an optional, anonymous daily usage report that is OFF by default and only starts if you opt in.**
+> **Unless you opt in to anonymous usage statistics, ThemeSwitcher does not collect, track, sell, or transmit your personal data, browsing history, or website content. All theme processing and document rendering happen 100% locally on your device. The only data that can ever leave your device is an optional, anonymous daily usage report that is OFF by default and only starts if you opt in.**
 
 This Privacy Policy explains transparently how ThemeSwitcher operates, what local configurations are stored, and how your privacy is protected under applicable laws, including the **Digital Personal Data Protection Act, 2023 (India)**, the **General Data Protection Regulation (EU GDPR)**, the **UK GDPR**, and the **California Consumer Privacy Act (CCPA/CPRA)**.
 
@@ -32,7 +32,7 @@ To prevent any ambiguity, ThemeSwitcher explicitly confirms that it **does NOT**
 - **No Browsing History:** We do not log, monitor, or transmit the websites, pages, or URLs you visit.
 - **No Page Content or DOM Data:** While the extension inspects DOM color styles in memory to calculate contrast, the content of web pages (articles, emails, messages, documents) is never extracted or transmitted.
 - **No Keystrokes or Form Input:** We do not access, log, or record form fields, passwords, search queries, payment card information, or credentials.
-- **No Personal Identifiers:** We do not collect names, email addresses, phone numbers, IP addresses, or hardware MAC addresses through the extension. The opt-in usage report carries only a random ID, and the server never stores your IP address.
+- **No Personal Identifiers:** We do not collect names, email addresses, phone numbers, IP addresses, or hardware MAC addresses through the extension. The opt-in usage report carries only a random ID, which we treat as pseudonymous personal data (lawful basis: consent, GDPR Art. 6(1)(a)); our server function does not store IP addresses (the hosting platform's own request logs may transiently contain them).
 - **No Behavioral Profiling or Third-Party Analytics:** There are zero third-party telemetry libraries, crash reporting SDKs, advertising trackers, or tracking pixels in the extension. The only first-party exception is the opt-in anonymous usage report described in the Anonymous, opt-in usage statistics section of the main `PRIVACY.md` (off by default; random ID, day, extension and Chrome version, OS family, UI language, and yes/no flags for engine, built-in theme and feature used; no sites, content or documents).
 - **No User Cookies:** The extension does not read, set, or transmit browser cookies.
 
@@ -100,13 +100,13 @@ You have complete agency over your data:
 1. **Right to Access & Transparency:** You can view all stored domain rules directly in the extension Options page (`chrome://extensions` -> ThemeSwitcher -> Options).
 2. **Right to Data Portability (GDPR Art. 20):** You can export all your saved configurations as a standard JSON file at any time using the "Export Settings (JSON)" button.
 3. **Right to Erasure / Deletion (DPDP Sec. 12 / GDPR Art. 17):** You can permanently delete all stored preferences with a single click using the "Erase All Stored Data" button in the Options page. Uninstalling the extension also removes all local extension storage.
-4. **Right to Opt-Out (CCPA/CPRA):** We do not sell or share personal information. Usage statistics are opt-in and can be switched off at any time in Options > Usage stats; **Delete my data** removes the reports stored for your random ID.
+4. **Right to Opt-Out (CCPA/CPRA):** We do not sell or share personal information. Usage statistics are opt-in and can be switched off at any time in Options > Usage stats; To delete the reports stored for your random ID, click **Delete my data** in Options > Usage stats (this deletes the server records and also turns usage stats off). Do this BEFORE unticking the box or uninstalling, because turning usage stats off discards the random ID needed to find the records. Records that are not deleted this way are purged automatically after 13 months.
 
 ---
 
 ## 10. Children’s Privacy
 
-ThemeSwitcher is a general utility tool that does not target, market to, or knowingly collect data from children under the age of 18 (India) or 16 (EU/US). Because the extension collects no personal data (the optional usage report is anonymous and off by default), no children’s personal information is processed.
+ThemeSwitcher is a general utility tool that does not target, market to, or knowingly collect data from children under the age of 18 (India) or 16 (EU/US). Without usage statistics enabled, the extension collects no personal data; usage statistics are off by default and carry only a pseudonymous random ID with no information about who the user is.
 
 ---
 

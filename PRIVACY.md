@@ -26,11 +26,11 @@ When you opt in, the extension sends one small anonymous report per day, from th
 
 Nothing about the sites you visit, what you read or watch, the documents you open or any text you type is ever collected or sent. No hostnames, URLs, page content, custom CSS text, theme colours or file names are included.
 
-The server stores the random ID, the day and the fields above. It **never stores your IP address**. The statistics are used only to understand how many people use the extension and which features matter; they are never sold, never shared with advertisers and never used for anything unrelated. The endpoint is operated by the developer (first-party), hosted on Vercel with a Supabase database; no analytics company is involved.
+The server stores the random ID, the day and the fields above. Our server function **does not store IP addresses** (the hosting platform's own request logs may transiently contain them). The random ID is treated as pseudonymous personal data, and the lawful basis is your consent, which you can withdraw at any time. The statistics are used only to understand how many people use the extension and which features matter; they are never sold, never shared with advertisers and never used for anything unrelated, and are processed only by our hosting providers (Vercel, Supabase) on our behalf. The endpoint is operated by the developer (first-party), hosted on Vercel with a Supabase database; no analytics company is involved.
 
-**Turning it off and deleting your data:** open the Options page and go to **Usage stats**. Untick the box to stop sending. Click **Delete my data** to remove every report stored for your random ID on the server.
+**Turning it off and deleting your data:** open the Options page and go to **Usage stats**. To delete the data already sent, click **Delete my data** in Options > Usage stats (this deletes the server records and also turns usage stats off). Do this BEFORE unticking the box or uninstalling, because turning usage stats off discards the random ID needed to find the records. Records that are not deleted this way are purged automatically after 13 months. Untick the box only afterwards if you want to stop sending without deleting (unticking alone stops sending but does not delete anything).
 
-- **Zero Third-Party Sharing:** No user data is ever sold, transferred, or shared with third parties.
+- **No Sale or Sharing:** Usage statistics are never sold or shared with anyone else; they are processed only by our hosting providers (Vercel, Supabase) on our behalf. Your settings and documents are never sent to anyone.
 - **Zero Page Content Extraction:** Web page text, form entries, credentials, and cookies are never accessed or transmitted.
 
 ---
@@ -62,7 +62,7 @@ The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF docu
 ## 5. User Rights & Data Control
 Under GDPR (EU), DPDP Act 2023 (India), and CCPA/CPRA (US):
 - **Right to Portability:** You can export all your saved configurations as a JSON file via the Options page.
-- **Right to Erasure:** You can erase all stored site preferences with one click in the Options page ("Erase All Stored Data") or by uninstalling the extension. You can delete the usage statistics stored for your random ID with **Delete my data** in Options > Usage stats.
+- **Right to Erasure:** You can erase all stored site preferences with one click in the Options page ("Erase All Stored Data") or by uninstalling the extension. To delete the usage statistics stored for your random ID, click **Delete my data** in Options > Usage stats (this deletes the server records and also turns usage stats off). Do this BEFORE unticking the box or uninstalling, because turning usage stats off discards the random ID needed to find the records. Records that are not deleted this way are purged automatically after 13 months.
 
 ---
 

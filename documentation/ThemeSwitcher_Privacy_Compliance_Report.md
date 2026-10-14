@@ -108,9 +108,9 @@ ThemeSwitcher operates across three distinct operational boundaries:
 
 - **Territorial Scope (Art. 3):** Applicable via availability on CWS in the EEA.
 - **Lawful Basis (Art. 6):** Art. 6(1)(b) (Performance of contract/request) and Art. 6(1)(f) (Legitimate interest) for local settings; Art. 6(1)(a) (Consent) for the opt-in usage statistics.
-- **Data Minimization (Art. 5(1)(c)):** Strictly minimized to site hostname keys.
+- **Data Minimization (Art. 5(1)(c)):** Local settings are minimized to site hostname keys; the opt-in usage report is limited to a random ID, day, versions, OS family, UI language and yes/no flags.
 - **Data Subject Rights (Arts. 15–21):** Access (Options view), Erasure (Options wipe button), Portability (JSON export button).
-- **International Transfers (Chapter V):** None for local data. Opt-in usage statistics are processed on Vercel and Supabase infrastructure (see section 14).
+- **International Transfers (Chapter V):** None for local data. Opt-in usage statistics are processed on Vercel and Supabase infrastructure in regions selected by the developer and not fixed in this document (see section 14). The random ID is treated as pseudonymous personal data under consent (Art. 6(1)(a)).
 
 ---
 
@@ -147,14 +147,14 @@ ThemeSwitcher operates across three distinct operational boundaries:
 
 ## 14. Third-Party Vendor Assessment
 
-- **Processors:** No analytics or marketing processors. The first-party opt-in usage endpoint is hosted on Vercel Inc. with a Supabase database, acting as infrastructure only.
+- **Processors:** No analytics or marketing processors. The first-party opt-in usage endpoint is hosted on Vercel Inc. with a Supabase database, acting as infrastructure only. Processing locations: Vercel and Supabase regions selected by the developer; not fixed in this document.
 - Platform providers: Google LLC (Chrome Sync) and GitHub Inc. (Static hosting).
 
 ---
 
 ## 15. Data Retention
 
-- **Server-Side Retention:** 0 days (no server exists).
+- **Server-Side Retention:** 0 days when the user never opts in. For users who opt in to usage statistics, records are purged automatically after 13 months, or earlier through Delete my data (to be used before turning usage stats off or uninstalling, since that discards the random ID).
 - **Client-Side Retention:** Retained locally until user erases data or uninstalls the extension.
 
 ---
@@ -258,7 +258,7 @@ Comprehensive STRIDE and Privacy threat model completed in `docs/security/threat
 
 ## 24. Release Checklist
 
-- [x] No unnecessary permissions requested (`storage`, `activeTab`, `<all_urls>`).
+- [x] No unnecessary permissions requested (`storage`, `activeTab`, `<all_urls>` content script, plus the single host permission `https://pshah.fun/api/darkmode-telemetry*` for opt-in usage statistics).
 - [x] No server secrets or API keys in client code.
 - [x] Outbound network requests confined to the single opt-in usage-statistics sender (`src/background/telemetrySender.js`); zero elsewhere in extension code.
 - [x] Zero third-party telemetry or trackers on companion website.

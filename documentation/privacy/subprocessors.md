@@ -1,6 +1,6 @@
 # ThemeSwitcher Subprocessor Register
 
-**Last Reviewed:** September 23, 2026  
+**Last Reviewed:** October 14, 2026  
 
 ---
 
@@ -20,8 +20,8 @@ For technical accuracy, the underlying browser and hosting platforms operated by
 | Entity | Role / Service | Processing Scope | Data Location | Legal Safeguards & Terms |
 | ------ | -------------- | ---------------- | ------------- | ------------------------ |
 | **Google LLC / Alphabet Inc.** | Browser Platform & Chrome Sync Infrastructure | If the user enables Google Chrome Sync, Google synchronizes `chrome.storage.sync` data across user's signed-in devices. ThemeSwitcher has no access to this infrastructure. | Google Global Data Centers | [Google Privacy Policy](https://policies.google.com/privacy) & Google Chrome Enterprise terms |
-| **Vercel Inc.** | Hosting of the first-party usage-statistics endpoint (`https://pshah.fun/api/darkmode-telemetry*`) | Only if the user opts in: runs the developer's ingest and delete functions that receive the anonymous report (random ID, day, versions, OS family, UI language, yes/no usage flags). The endpoint never stores IP addresses. | Vercel regions | [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) |
-| **Supabase, Inc.** | Managed Postgres database for the usage statistics | Only if the user opts in: stores the anonymous report rows. Rows are removed on the user's Delete my data request. | Supabase region chosen by the developer | [Supabase Privacy Policy](https://supabase.com/privacy) |
+| **Vercel Inc.** | Hosting of the first-party usage-statistics endpoint (`https://pshah.fun/api/darkmode-telemetry*`) | Only if the user opts in: runs the developer's ingest and delete functions that receive the anonymous report (random ID, day, versions, OS family, UI language, yes/no usage flags). The server function does not store IP addresses (platform request logs may transiently contain them). | Region selected by the developer; not fixed in this document | [Vercel Privacy Policy](https://vercel.com/legal/privacy-policy) |
+| **Supabase, Inc.** | Managed Postgres database for the usage statistics | Only if the user opts in: stores the anonymous report rows. Rows are removed on the user's Delete my data request, otherwise purged automatically after 13 months. | Region selected by the developer; not fixed in this document | [Supabase Privacy Policy](https://supabase.com/privacy) |
 | **GitHub, Inc. / Microsoft Corp.** | Static Content Hosting (GitHub Pages) | Serves static HTML, CSS, and client-side JavaScript for the companion website and documentation repository. | Global Edge CDN | [GitHub Privacy Statement](https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement) |
 
 ---

@@ -788,14 +788,49 @@ const srcJsFiles = () =>
   walkFiles(path.join(rootDir, "src"), ".js")
     .map(relToRoot)
     .filter((rel) => !WALK_EXCLUDED_PREFIXES.some((prefix) => rel.startsWith(prefix)));
-// Strips comments so prose in comments cannot trip or hide a code-level check.
-const stripComments = (code) => code.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+// String-aware comment stripper: walks the source and drops // and /* */ comments but keeps
+// everything inside '...', "..." and `...` literals (so "//" inside a string is not a comment).
+function stripComments(code) {
+  let out = "";
+  let i = 0;
+  while (i < code.length) {
+    const c = code[i];
+    const n = code[i + 1];
+    if (c === "'" || c === '"' || c === "`") {
+      let j = i + 1;
+      while (j < code.length && code[j] !== c) j += code[j] === "\\" ? 2 : 1;
+      out += code.slice(i, j + 1);
+      i = j + 1;
+    } else if (c === "/" && n === "/") {
+      while (i < code.length && code[i] !== "\n") i++;
+    } else if (c === "/" && n === "*") {
+      const end = code.indexOf("*/", i + 2);
+      i = end === -1 ? code.length : end + 2;
+    } else {
+      out += c;
+      i++;
+    }
+  }
+  return out;
+}
+
+test("stripComments keeps string contents and drops real comments", () => {
+  const sample = 'const u = "https://a//b"; document.x(); // document.y\n/* location */ let z = 1;';
+  const out = stripComments(sample);
+  assert.ok(out.includes('"https://a//b"'), "string with // must survive");
+  assert.ok(out.includes("document.x()"), "code after a string containing // must survive");
+  assert.ok(!out.includes("document.y") && !out.includes("location"), "comments must be removed");
+});
+
+test("EGRESS_ALLOWED exempts exactly one file", () => {
+  assert.deepStrictEqual(Object.keys(EGRESS_ALLOWED), [SENDER_PATH]);
+});
 
 test("fetch is called in exactly one src file: the telemetry sender", () => {
   const withFetch = srcJsFiles().filter((rel) => /\bfetch\s*\(/.test(stripComments(fs.readFileSync(path.join(rootDir, rel), "utf8"))));
   assert.ok(withFetch.length <= 1, `fetch( found in several files: ${withFetch.join(", ")}`);
-  const senderCode = fs.readFileSync(path.join(rootDir, SENDER_PATH), "utf8");
-  assert.ok(/\bfetch\b/.test(senderCode), "the sender must be where fetch lives");
+  const senderCode = stripComments(fs.readFileSync(path.join(rootDir, SENDER_PATH), "utf8"));
+  assert.ok(/\bfetch\b/.test(senderCode), "the sender must be where fetch lives (in code, not comments)");
   for (const rel of srcJsFiles()) {
     if (rel === SENDER_PATH) continue;
     assert.ok(!/\bfetch\b/.test(stripComments(fs.readFileSync(path.join(rootDir, rel), "utf8"))), `fetch referenced outside the sender: ${rel}`);
@@ -848,13 +883,20 @@ test("the sender never reads tabs, location or document", () => {
   ]) {
     assert.strictEqual(pattern.test(code), false, `sender must not use ${label}`);
   }
+  // Raw source too (comments included): the sender should not even mention tabs, location or document access.
+  const raw = fs.readFileSync(path.join(rootDir, SENDER_PATH), "utf8");
+  for (const [pattern, label] of [[/\bchrome\.tabs\b/, "chrome.tabs"], [/\bwindow\.location\b|\bdocument\./, "window.location/document."]]) {
+    assert.strictEqual(pattern.test(raw), false, `sender source must not contain ${label}`);
+  }
 });
 
 test("the telemetryState key is never stored in chrome.storage.sync", () => {
   for (const rel of srcJsFiles()) {
-    const code = stripComments(fs.readFileSync(path.join(rootDir, rel), "utf8"));
-    assert.ok(!/storage\.sync[\s\S]{0,200}telemetryState/.test(code), `telemetryState used with storage.sync near in ${rel}`);
-    assert.ok(!/telemetryState[\s\S]{0,200}storage\.sync/.test(code), `telemetryState used with storage.sync near in ${rel}`);
+    const raw = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    for (const code of [raw, stripComments(raw)]) {
+      assert.ok(!/storage\.sync[\s\S]{0,200}telemetryState/.test(code), `telemetryState used with storage.sync near in ${rel}`);
+      assert.ok(!/telemetryState[\s\S]{0,200}storage\.sync/.test(code), `telemetryState used with storage.sync near in ${rel}`);
+    }
   }
   assert.ok(srcJsFiles().some((rel) => fs.readFileSync(path.join(rootDir, rel), "utf8").includes("telemetryState")), "telemetryState must be in use");
 });
@@ -879,7 +921,23 @@ test("PRIVACY.md drops the zero-telemetry claim and says usage stats are off by 
   assert.ok(privacyDoc.includes("off by default"));
   assert.ok(privacyDoc.includes("Options"), "PRIVACY.md must say where to turn it off");
   assert.ok(privacyDoc.includes("Delete my data"), "PRIVACY.md must name the delete control");
-  assert.ok(/never (store|stores|stored)[^.]*IP address|IP address[^.]*never/i.test(privacyDoc), "PRIVACY.md must say the IP is never stored");
+  assert.ok(/does not store IP addresses/.test(privacyDoc), "PRIVACY.md must say the server function does not store IP addresses");
+  assert.ok(/request logs may transiently contain/.test(privacyDoc), "PRIVACY.md must scope the IP statement to the server function");
+});
+
+test("delete guidance: Delete my data is explained with 'before', no stale retention or no-server claims", () => {
+  for (const rel of ["PRIVACY.md", "documentation/privacy/privacy-policy.md", "CHROMEWEBSTORE.md"]) {
+    const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    assert.ok(text.includes("Delete my data"), `${rel} must name Delete my data`);
+    assert.ok(/before/i.test(text), `${rel} must say to delete before turning off or uninstalling`);
+    assert.ok(text.includes("13 months"), `${rel} must state the 13-month purge rule`);
+  }
+  for (const rel of ["PRIVACY.md", "CHROMEWEBSTORE.md", "README.md", ...fs.readdirSync(path.join(rootDir, "documentation/privacy")).map((f) => `documentation/privacy/${f}`), "documentation/ThemeSwitcher_Privacy_Compliance_Report.md"]) {
+    const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    assert.ok(!/kept until the user requests deletion/i.test(text), `${rel} has the stale retention wording`);
+    assert.ok(!text.includes("0 days (no server exists)"), `${rel} claims no server exists`);
+    assert.ok(!/No user data is ever sold, transferred, or shared with third parties/.test(text), `${rel} has the absolute no-sharing sentence`);
+  }
 });
 
 test("PRIVACY.md lists every heartbeat field name, and exactly those", () => {

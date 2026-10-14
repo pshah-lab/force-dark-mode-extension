@@ -10,7 +10,7 @@
 Under Article 5(1)(e) of the EU GDPR and Section 8(7) of India's Digital Personal Data Protection Act, 2023 (DPDP Act), personal data must not be kept longer than is necessary for the purposes for which it is processed.
 
 ThemeSwitcher applies the strictest interpretation of this principle:
-- **Server-Side Data:** Zero for everyone who has not opted in. If you opt in to anonymous usage statistics, one small row per active day (random ID, day, versions, OS family, UI language, yes/no usage flags) is stored on the developer's first-party endpoint (Vercel and Supabase) and is deleted when you click Delete my data in Options > Usage stats. IP addresses are never stored.
+- **Server-Side Data:** Zero for everyone who has not opted in. If you opt in to anonymous usage statistics, one small row per active day (random ID, day, versions, OS family, UI language, yes/no usage flags) is stored on the developer's first-party endpoint (Vercel and Supabase) and is purged automatically after 13 months. To delete it sooner, click Delete my data in Options > Usage stats BEFORE turning usage stats off or uninstalling (turning it off discards the random ID needed to find the rows). Our server function does not store IP addresses.
 - **Client-Side Data:** Exclusively user-controlled and stored locally within the browser profile.
 
 ---
@@ -23,7 +23,7 @@ ThemeSwitcher applies the strictest interpretation of this principle:
 | **Extension** | Global defaults & Viewer settings | `chrome.storage.sync` | Retained until reconfigured by user | Overwritten by user in Options / Viewer or erased via "Erase All Stored Data". |
 | **Extension** | In-Memory style tokens | Browser RAM | Discarded after DOM evaluation | Automatically reclaimed by browser garbage collector upon tab navigation or close. |
 | **Extension** | Usage-statistics state (opt-in only): random ID, today's counters | `chrome.storage.local` (`telemetryState`, never synced) | Only exists while usage stats are on | Turning usage stats off in Options, Delete my data, or uninstalling. |
-| **Server** | Anonymous usage report rows (opt-in only) | First-party database (Supabase) | Kept until the user requests deletion | **Delete my data** in Options > Usage stats removes every row for the user's random ID. |
+| **Server** | Anonymous usage report rows (opt-in only) | First-party database (Supabase) | Purged automatically after 13 months | **Delete my data** in Options > Usage stats removes every row for the user's random ID (also turns usage stats off); do this BEFORE unticking the box or uninstalling, because turning it off discards the ID. |
 | **Website** | Local feedback cache | `localStorage` (`fdex_feedback_entries`) | Retained in local browser storage | User clears browser storage / website cookies & site data. |
 | **Website** | Session tracking debounce | `sessionStorage` (`fdex_visit_logged_v1`) | Retained for current tab session | Automatically purged upon closing the browser tab. |
 

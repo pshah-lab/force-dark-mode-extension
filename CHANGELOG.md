@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Privacy
 - New host permission `https://pshah.fun/api/darkmode-telemetry*`, used only by the usage-statistics sender. `permissions` are unchanged and the CSP is unchanged.
-- Nothing about sites, URLs, page content, documents or typed text is collected, and the server never stores the IP address.
+- Nothing about sites, URLs, page content, documents or typed text is collected, and our server function does not store IP addresses. Delete my data (Options > Usage stats) also turns usage stats off, so use it before unticking or uninstalling; other records are purged after 13 months.
 - `PRIVACY.md` and the privacy documents were rewritten: "Zero Telemetry" is replaced by a section describing the opt-in statistics. Automated tests now confine `fetch` to one file and check the policy's field list against the real report.
 
 ---

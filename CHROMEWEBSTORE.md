@@ -139,7 +139,8 @@ English
 ### Data Use Certification
 
 - [X] Data is NOT sold to third parties
-- [X] Usage statistics are anonymous, opt-in, and the IP address is never stored
+- [X] Usage statistics are anonymous, opt-in, and our server function does not store IP addresses (platform request logs may transiently contain them)
+- [X] Users can delete their usage statistics with Delete my data in Options > Usage stats (do this before turning usage stats off or uninstalling, since that discards the random ID); undeleted records are purged after 13 months
 - [X] Data is NOT used for purposes unrelated to the extension's core functionality
 - [X] Data is NOT used for creditworthiness or lending purposes
 

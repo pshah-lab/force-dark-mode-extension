@@ -10,7 +10,7 @@ This document outlines how users (Data Subjects under GDPR, Data Principals unde
 | ----- | --------------- | -------------------------------- | -------------------- |
 | **Right to Access & Transparency** | GDPR Art. 15 / DPDP Sec. 11 / CCPA 1798.100 | Open ThemeSwitcher Options page to view total count and stored preferences | None. Immediately available in UI |
 | **Right to Data Portability** | GDPR Art. 20 / CCPA 1798.130 | Click **Export Settings (JSON)** in the Options page | None. Immediate local file download |
-| **Right to Erasure / Deletion** | GDPR Art. 17 / DPDP Sec. 12 / CCPA 1798.105 | Click **Erase All Stored Data** in the Options page, or uninstall extension | None. One-click instant execution |
+| **Right to Erasure / Deletion** | GDPR Art. 17 / DPDP Sec. 12 / CCPA 1798.105 | Click **Erase All Stored Data** in the Options page, or uninstall extension. For usage statistics, click **Delete my data** in Options > Usage stats BEFORE turning them off or uninstalling (it also turns them off; turning off discards the random ID needed to find the server records; undeleted records are purged after 13 months) | None. One-click instant execution |
 | **Right to Rectification / Correction** | GDPR Art. 16 / DPDP Sec. 12 | Adjust preference via popup or re-import modified JSON | None. Real-time in-place update |
 | **Right to Opt-Out of Sale / Sharing** | CCPA 1798.120 / CPRA | Not applicable. No data is sold or shared; opt-in usage statistics can be switched off and deleted in Options > Usage stats | N/A |
 | **Right of Grievance Redressal** | DPDP Sec. 13 / GDPR Art. 77 | Email grievance officer at `pshah.lab@gmail.com` | Standard email interaction |
@@ -26,6 +26,7 @@ This document outlines how users (Data Subjects under GDPR, Data Principals unde
 3. Click the red button: **Erase All Stored Data**.
 4. Confirm the browser dialog prompt.
 5. All per-site rules, custom color palettes, and viewer configurations are wiped from your `chrome.storage.sync` profile instantly.
+6. If you enabled usage statistics, first click **Delete my data** in **Options > Usage stats** (it deletes the server records and also turns usage stats off). Do this BEFORE unticking the box or uninstalling: turning usage stats off discards the random ID needed to find the records. Records not deleted this way are purged automatically after 13 months.
 
 ### B. Exercising Right to Portability (Export Data)
 1. In the **Privacy & Data Management** section of the Options page, click **Export Settings (JSON)**.

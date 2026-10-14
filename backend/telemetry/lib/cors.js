@@ -20,3 +20,18 @@ export function setCorsHeaders(res) {
   if (typeof res.setHeader !== "function") return;
   for (const [k, v] of Object.entries(CORS_HEADERS)) res.setHeader(k, v);
 }
+
+// CORS for the public statistics endpoint, read by the project website's stats page.
+// Also a single STATIC origin; no request header is read.
+export const STATS_ALLOWED_ORIGIN = "https://darkmode.pshah.fun";
+
+export const STATS_CORS_HEADERS = Object.freeze({
+  "Access-Control-Allow-Origin": STATS_ALLOWED_ORIGIN,
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  Vary: "Origin",
+});
+
+export function setStatsCorsHeaders(res) {
+  if (typeof res.setHeader !== "function") return;
+  for (const [k, v] of Object.entries(STATS_CORS_HEADERS)) res.setHeader(k, v);
+}

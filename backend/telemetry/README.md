@@ -1,6 +1,6 @@
 # Opt-in usage metrics backend
 
-Two Vercel functions plus Supabase SQL. The `api/` and `lib/` folders must be deployed inside the
+Three Vercel functions plus Supabase SQL. The `api/` and `lib/` folders must be deployed inside the
 existing Vercel project that serves `pshah.fun`: copy them into that project's `api/` and `lib/` folders
 and add `@supabase/supabase-js` to that project's dependencies. A separate Vercel project cannot also
 claim the `pshah.fun` domain. (If you host the endpoints elsewhere, change the two URLs in
@@ -22,7 +22,8 @@ user) until `EXTENSION_ID` is changed and redeployed. Confirm the ID on the stor
 
 ## Setup (owner)
 
-1. Create a Supabase project. In the SQL editor run `supabase/schema.sql`, then `supabase/views.sql`.
+1. Create a Supabase project. In the SQL editor run `supabase/schema.sql`, then `supabase/views.sql`, then
+   `supabase/public_stats.sql` (the public statistics function; re-run it whenever that file changes).
 2. Copy `api/` and `lib/` into the `pshah.fun` Vercel project (see above) and set env vars `SUPABASE_URL` and
    `SUPABASE_SERVICE_ROLE_KEY` in that project.
    The table has RLS enabled and no policies, so only the service key (used by the functions) can touch it.
@@ -36,13 +37,46 @@ user) until `EXTENSION_ID` is changed and redeployed. Confirm the ID on the stor
   or unparsable bodies, 400 if it fails `lib/schema.js` validation or `day` is not a real date within one day
   of the server's UTC date. Upserts on `(install_id, day)`, so repeats are idempotent. Responds 204.
 - `POST /api/darkmode-telemetry-delete`: body `{"id": "<uuid>"}`. Deletes every row for that ID. 204.
+- `GET /api/darkmode-stats`: the public combined statistics shown at darkmode.pshah.fun/stats.html (see below).
+  `OPTIONS` gets 204; other methods 405 with `Allow: GET, OPTIONS`. Its CORS is separate from the extension's:
+  a static `Access-Control-Allow-Origin: https://darkmode.pshah.fun` (`STATS_ALLOWED_ORIGIN` in `lib/cors.js`),
+  `Access-Control-Allow-Methods: GET, OPTIONS`, `Vary: Origin`. A 200 carries
+  `Cache-Control: public, s-maxage=3600, stale-while-revalidate=600`, so the database is queried about once an hour.
 
-The functions read only the HTTP method and body. They never read, log or store IP addresses or request
+The functions read only the HTTP method and body (the stats function reads only the method). They never read, log or store IP addresses or request
 headers. The hosting platform's own request logs may transiently contain IPs and the browser's User-Agent and Accept-Language headers; that is outside this code.
 
 `lib/schema.js` is a copy of the allow-lists and `validateHeartbeat` from `src/shared/telemetry.js`
 (the deployed project cannot import from the extension). `tests/telemetry_backend_test.mjs` asserts parity.
 Change both together.
+
+## Public statistics
+
+`supabase/public_stats.sql` defines `public_stats()`, which returns the whole public document as JSON (shape in
+`documentation/specs/2026-10-14-public-usage-stats-design.md`). Execute is revoked from `public`, `anon` and
+`authenticated`, so only the service key used by the function can call it. `api/darkmode-stats.js` checks the
+document again with `validatePublicStats` (`lib/publicStats.js`) and answers an empty 500 rather than serve anything
+that fails the check (a small count, an unknown key, an ID-like string, markup or a link).
+
+What it publishes and how small groups are hidden, in plain terms:
+
+- Only totals. Never install IDs, rows or any one install's history.
+- Period: the 30 days ending yesterday (UTC). Heartbeats dated today are ignored.
+- A number that rests on fewer than 10 installs is replaced by `null` (the page shows "fewer than 10").
+- If fewer than 10 installs were active in the 30 days, everything except the active-user counts is `null`.
+- Theme, OS, Chrome version and language: each install counts once, by its most recent heartbeat in the period.
+  Any value used by fewer than 10 installs is put into "other". If "other" would then hold between 1 and 9
+  installs, the smallest named value is folded into "other" too, so no hidden value can be worked out by
+  subtracting the published ones from the total.
+- Engines and features: an install counts if any heartbeat in the period had the flag on; any flag used by fewer
+  than 10 installs is `null`.
+- Shares are whole percentages of the 30-day active installs (they may add up to 99-101 because of rounding).
+- Daily actives: 30 days, each `null` under 10. Weekly (last 7 days) and monthly (30 days) actives: `null` under 10.
+- New vs returning: up to 4 most recent complete Monday-Sunday weeks. If either number of a week is under 10, both
+  are `null`, because new + returning can equal the published weekly actives.
+- Retention: installs first seen in the last 90 days, pooled; D1/D7/D30 is the share seen again exactly 1/7/30
+  days after their first day, counting only installs whose day N has passed. Published only if at least 10 installs
+  are counted.
 
 ## Views
 
@@ -57,5 +91,5 @@ and distorts retention for the oldest cohort (the oldest ~13-month edge only).
 
 ## Verification status
 
-The SQL was verified against fixture rows on a throwaway local Postgres 16 cluster. It was NOT verified against
+The SQL (including `public_stats.sql`) was verified against fixture rows on a throwaway local Postgres 16 cluster. It was NOT verified against
 a live Supabase or Vercel deployment, and the Supabase store code in the functions has not been run live.

@@ -32,7 +32,7 @@ ThemeSwitcher applies the strictest interpretation of this principle:
 ## 3. Server-Side Data Retention Statement
 
 ThemeSwitcher operates no user authentication system and no third-party analytics. The single first-party endpoint for the opt-in usage statistics (see the table above) stores only the anonymous report fields:
-- The endpoint never stores user IP addresses, and ThemeSwitcher records no log files containing IP addresses or user agents beyond what the hosting platform itself keeps transiently for operating the service.
+- Our server function does not store IP addresses, and ThemeSwitcher records no log files containing IP addresses or user agents beyond what the hosting platform itself keeps transiently for operating the service.
 - No database backups containing user preferences are generated or retained.
 - No archival or warm/cold storage of browsing activity exists.
 

@@ -75,12 +75,12 @@ chrome.storage.sync (Preferences synced securely per domain)
 ## 🔒 Privacy & Permissions
 
 ThemeSwitcher is built with privacy by design:
-- **Opt-in anonymous usage statistics only**: Off by default; enabled only if you click Yes in the popup or turn it on in Options. It sends a random ID, the day, versions, OS family, UI language and yes/no flags for the engine, theme and features used, never sites, content or documents, and our server function does not store IP addresses. Use Delete my data in Options > Usage stats before turning it off or uninstalling to remove your records (otherwise they are purged after 13 months). Turn it off or delete your data in Options > Usage stats. No Google Analytics, no tracking beacons, no third-party scripts.
+- **Opt-in anonymous usage statistics only**: Off by default; enabled only if you click Yes in the popup or turn it on in Options. It sends a random ID, the day, versions, OS family, UI language and yes/no flags for the engine, theme and features used, never sites, content or documents, and our server function does not store IP addresses. Use Delete my data in Options > Usage stats before turning it off or uninstalling to remove your records (otherwise they are purged after 13 months). You can turn it off in Options > Usage stats. No Google Analytics, no tracking beacons, no third-party scripts.
 - **Local processing**: All theming and document rendering is executed 100% locally on your machine.
 - **Minimal Manifest V3 Permissions**:
   - `storage`: Storing domain preferences locally in Chrome Sync.
   - `activeTab`: Inspecting luminance and applying styles when the user opens the popup.
-  - `https://pshah.fun/api/darkmode-telemetry*` (host permission): Sending the opt-in anonymous usage report and the Delete my data request; nothing else.
+  - `https://pshah.fun/api/darkmode-telemetry*` (host permission): Sending the opt-in anonymous usage report and the Delete my data request (use it before turning usage stats off or uninstalling); nothing else.
   - `<all_urls>` (content_scripts): Applying dark mode at `document_start` to prevent white flashes.
 
 Read our complete [Privacy Policy](https://darkmode.pshah.fun/privacy.html) or [PRIVACY.md](PRIVACY.md).

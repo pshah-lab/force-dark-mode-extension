@@ -100,7 +100,7 @@ You have complete agency over your data:
 1. **Right to Access & Transparency:** You can view all stored domain rules directly in the extension Options page (`chrome://extensions` -> ThemeSwitcher -> Options).
 2. **Right to Data Portability (GDPR Art. 20):** You can export all your saved configurations as a standard JSON file at any time using the "Export Settings (JSON)" button.
 3. **Right to Erasure / Deletion (DPDP Sec. 12 / GDPR Art. 17):** You can permanently delete all stored preferences with a single click using the "Erase All Stored Data" button in the Options page. Uninstalling the extension also removes all local extension storage.
-4. **Right to Opt-Out (CCPA/CPRA):** We do not sell or share personal information. Usage statistics are opt-in and can be switched off at any time in Options > Usage stats; To delete the reports stored for your random ID, click **Delete my data** in Options > Usage stats (this deletes the server records and also turns usage stats off). Do this BEFORE unticking the box or uninstalling, because turning usage stats off discards the random ID needed to find the records. Records that are not deleted this way are purged automatically after 13 months.
+4. **Right to Opt-Out (CCPA/CPRA):** We do not sell or share personal information. Usage statistics are opt-in and can be switched off at any time in Options > Usage stats. To delete the reports stored for your random ID, click **Delete my data** in Options > Usage stats (this deletes the server records and also turns usage stats off). Do this BEFORE unticking the box or uninstalling, because turning usage stats off discards the random ID needed to find the records. Records that are not deleted this way are purged automatically after 13 months.
 
 ---
 

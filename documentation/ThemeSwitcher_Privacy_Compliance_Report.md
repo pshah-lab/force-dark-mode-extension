@@ -17,7 +17,7 @@ This comprehensive audit evaluated ThemeSwitcher against national and internatio
 
 ### Key Findings & Implemented Controls:
 - **100% Local-First Architecture:** The extension runs inside the user's browser sandbox. Settings, themes, custom CSS and documents never leave the device. The only network traffic is the optional, anonymous, opt-in usage report (off by default) to a first-party endpoint hosted on Vercel with a Supabase database.
-- **Opt-in Telemetry Only & Zero Cookies:** The extension contains zero tracking pixels, third-party analytics SDKs, or remote error trackers. First-party usage statistics are opt-in, off by default, anonymous (random ID, day, versions, OS family, UI language, yes/no usage flags), never store the IP address, and can be turned off and deleted in Options > Usage stats. All third-party counter network requests on the companion website were eliminated.
+- **Opt-in Telemetry Only & Zero Cookies:** The extension contains zero tracking pixels, third-party analytics SDKs, or remote error trackers. First-party usage statistics are opt-in, off by default, anonymous (random ID, day, versions, OS family, UI language, yes/no usage flags), handled by a server function that does not store IP addresses (the hosting platform's request logs may transiently contain them), and can be turned off in Options > Usage stats; Delete my data there removes the records but should be used before turning stats off or uninstalling. All third-party counter network requests on the companion website were eliminated.
 - **Data Minimization:** Runtime message passing was hardened to transmit strictly sanitized domain hostnames (`host`), preventing URL path and query parameter leakage.
 - **Self-Service User Rights:** A dedicated "Privacy & Data Management" center was introduced in the Options page, giving users autonomous control to export settings (GDPR Art. 20 Portability) and erase all stored preferences (DPDP Sec. 12 / GDPR Art. 17 Erasure) with one click.
 - **Security Hardening:** Fallback iframe sandboxing was tightened to remove `allow-same-origin`, and the document viewer was refactored to eliminate all `innerHTML` usage in favor of safe DOM node creation.
@@ -58,7 +58,7 @@ ThemeSwitcher operates across three distinct operational boundaries:
                                                             (Encrypted User Google Sync)
 ```
 
-1. **No Page Data Leaves the Client:** No URLs, page contents, form fields, passwords, or cookies ever leave the client. The only outbound request is the opt-in anonymous usage report (and the Delete my data request), sent by the service worker alone to `https://pshah.fun/api/darkmode-telemetry*`; automated tests confine `fetch` to that one file.
+1. **No Page Data Leaves the Client:** No URLs, page contents, form fields, passwords, or cookies ever leave the client. The only outbound request is the opt-in anonymous usage report (and the request made by Delete my data, used before turning stats off or uninstalling), sent by the service worker alone to `https://pshah.fun/api/darkmode-telemetry*`; automated tests confine `fetch` to that one file.
 2. **Local Sync:** `chrome.storage.sync` synchronizes directly through the user's signed-in Google account without passing through any intermediate proxy.
 
 ---
@@ -69,7 +69,7 @@ ThemeSwitcher operates across three distinct operational boundaries:
 | ---------- | ----- | -------------------- | --------------- | ---------- |
 | `storage` | Extension permissions | Persists per-site rules across sessions. Essential for core utility. | Low | Key sanitization (`isSafeKey`) prevents prototype pollution. |
 | `activeTab` | Extension permissions | Inspects active tab on popup click to calculate luminance and toggle theme. | Low | Only granted upon explicit user click; terminates on navigation. |
-| `https://pshah.fun/api/darkmode-telemetry*` | `host_permissions` | Lets the service worker send the opt-in anonymous usage report and the Delete my data request to the developer's first-party endpoint. No access to visited sites. | Low | Single path-scoped pattern; only `telemetrySender.js` uses the network; off by default. |
+| `https://pshah.fun/api/darkmode-telemetry*` | `host_permissions` | Lets the service worker send the opt-in anonymous usage report and the Delete my data request (used before turning stats off or uninstalling) to the developer's first-party endpoint. No access to visited sites. | Low | Single path-scoped pattern; only `telemetrySender.js` uses the network; off by default. |
 | `<all_urls>` | `content_scripts.matches` | Injects CSS rules at `document_start` to eliminate blinding white screen flashes. | Medium | Script runs in isolated world; zero network calls; zero text reading. |
 
 ---
@@ -125,7 +125,7 @@ ThemeSwitcher operates across three distinct operational boundaries:
 
 - **Commercial Thresholds:** Below revenue ($25M) and consumer volume thresholds.
 - **Consumer Disclosures:** Explicit certification that personal information is **NOT sold and NOT shared**.
-- **COPPA Compliance:** No personal data collected from children under 13.
+- **COPPA Compliance:** Without usage statistics enabled, no personal data is collected from children under 13; the optional usage ID is pseudonymous and not collected from users known to be children.
 
 ---
 

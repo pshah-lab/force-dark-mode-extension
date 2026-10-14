@@ -54,7 +54,7 @@ The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF docu
 ## 4. Permissions
 - **`storage`**: Used to save your per-site preferences and viewer configuration across sessions.
 - **`activeTab`**: Used only when you click the extension popup to analyze the active tab for dark-mode suitability and apply your theme selection.
-- **Host permission `https://pshah.fun/api/darkmode-telemetry*`**: Lets the background service worker send the opt-in usage report (section 1) and the "Delete my data" request, and nothing else. It grants no access to any website you visit.
+- **Host permission `https://pshah.fun/api/darkmode-telemetry*`**: Lets the background service worker send the opt-in usage report (section 1) and the request made by "Delete my data" (use it before turning usage stats off or uninstalling), and nothing else. It grants no access to any website you visit.
 - **`<all_urls>` (Content Script)**: Used to inject CSS theme rules at `document_start` across sites, preventing white screen flashes.
 
 ---

@@ -940,6 +940,37 @@ test("delete guidance: Delete my data is explained with 'before', no stale reten
   }
 });
 
+test("every line that mentions deleting usage data also says to do it before turning off or uninstalling", () => {
+  const files = [
+    "PRIVACY.md",
+    "documentation/privacy/privacy-policy.md",
+    "CHROMEWEBSTORE.md",
+    "README.md",
+    "documentation/privacy/user-rights.md",
+    "documentation/ThemeSwitcher_Privacy_Compliance_Report.md",
+  ];
+  const mention = /delete (all )?(of )?your data|delete my data/i;
+  for (const rel of files) {
+    const lines = fs.readFileSync(path.join(rootDir, rel), "utf8").split("\n");
+    let seen = 0;
+    lines.forEach((line, i) => {
+      if (!mention.test(line)) return;
+      seen++;
+      assert.ok(/before/i.test(line), `${rel}:${i + 1} mentions deleting data without saying 'before' on the same line: ${line.slice(0, 100)}`);
+    });
+    assert.ok(seen > 0, `${rel} must mention Delete my data`);
+  }
+});
+
+test("IP statements are scoped to the server function and never absolute", () => {
+  const files = ["PRIVACY.md", "CHROMEWEBSTORE.md", "README.md", "documentation/privacy/privacy-policy.md", "documentation/privacy/data-flow.md", "documentation/privacy/data-inventory.md", "documentation/privacy/retention-policy.md", "documentation/ThemeSwitcher_Privacy_Compliance_Report.md"];
+  for (const rel of files) {
+    const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    assert.ok(!/never stores?[^.\n]*IP address/i.test(text), `${rel} has an unscoped 'never stores ... IP address'`);
+    assert.ok(!/IP addresses? (is|are) (never|not) stored/i.test(text), `${rel} has an unscoped IP-not-stored claim`);
+  }
+});
+
 test("PRIVACY.md lists every heartbeat field name, and exactly those", () => {
   const keys = flattenKeys(sampleHeartbeat());
   assert.ok(keys.length === 14, "heartbeat should have its full field set");

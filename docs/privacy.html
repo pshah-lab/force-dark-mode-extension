@@ -6,7 +6,7 @@
     <title>Privacy Policy | Force Dark Mode - ThemeSwitcher</title>
     <meta
       name="description"
-      content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. 100% offline, zero data collection, no telemetry, no tracking."
+      content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. local-first, no tracking, and anonymous usage statistics that are off unless you opt in."
     />
     <link rel="canonical" href="https://darkmode.pshah.fun/privacy.html" />
     <meta name="robots" content="index, follow" />
@@ -21,12 +21,12 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://darkmode.pshah.fun/privacy.html" />
     <meta property="og:title" content="Privacy Policy | Force Dark Mode - ThemeSwitcher" />
-    <meta property="og:description" content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. 100% offline, zero data collection, no telemetry, no tracking." />
+    <meta property="og:description" content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. local-first, no tracking, and anonymous usage statistics that are off unless you opt in." />
     <meta property="og:image" content="https://darkmode.pshah.fun/assets/icon128.png" />
 
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Privacy Policy | Force Dark Mode - ThemeSwitcher" />
-    <meta name="twitter:description" content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. 100% offline, zero data collection, no telemetry, no tracking." />
+    <meta name="twitter:description" content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. local-first, no tracking, and anonymous usage statistics that are off unless you opt in." />
     <meta name="twitter:image" content="https://darkmode.pshah.fun/assets/icon128.png" />
 
     <script type="application/ld+json">
@@ -136,7 +136,7 @@
         <h1>Privacy Policy</h1>
         <div class="article-meta">
           <span>Version 2.0.0</span> • 
-          <span>Last Updated: September 23, 2026</span> • 
+          <span>Last Updated: October 14, 2026</span> • 
           <span>Effective Immediately</span>
         </div>
       </div>
@@ -146,15 +146,34 @@
           Force Dark Mode - ThemeSwitcher is engineered with an uncompromising commitment to privacy by design, local-first processing, and data minimization. This policy explains what information is processed, how it is handled, and why your data remains entirely under your control.
         </p>
 
-        <h2>1. Zero Data Collection &amp; No Telemetry</h2>
+        <h2>1. Anonymous, Opt-In Usage Statistics</h2>
         <p>
-          ThemeSwitcher does <strong>not</strong> collect, store, transmit, or monetize any personal information, browsing activity, or web history.
+          Usage statistics are <strong>off by default</strong>. Nothing is sent unless you click <strong>Yes</strong> on the one-time card in the extension popup or switch on <strong>Usage stats</strong> on the Options page. If you click No, or never choose, the extension sends nothing to us. (The only other network request the extension can make is when you open a web PDF in the viewer: it then downloads that PDF directly from the site that hosts it.)
+        </p>
+        <p>
+          When you opt in, the extension sends one small anonymous report per day, from the background service worker only. It says that you used the extension that day and contains exactly these fields (Options &gt; Usage stats shows an example report, with a placeholder ID, before you turn it on, and today&rsquo;s report afterwards):
         </p>
         <ul>
-          <li><strong>No Telemetry or Tracking:</strong> There are zero third-party analytics trackers, advertising scripts, or tracking pixels embedded in the extension or website.</li>
-          <li><strong>Website Visit Count:</strong> This website (not the extension) counts visits with one empty request to the developer&rsquo;s own site, pshah.fun, once per browser. It sends no cookies, identifiers, page or referrer data, and is skipped when Do Not Track is on.</li>
-          <li><strong>No External Server Communication:</strong> The extension operates entirely offline. It does not ping external servers or maintain proprietary cloud databases.</li>
-          <li><strong>No Data Sharing or Sale:</strong> Because no data is collected, no information is ever sold, rented, transferred, or shared with third parties.</li>
+          <li><code>id</code>: a random identifier created when you opt in; it is not linked to your Google account, email or name</li>
+          <li><code>day</code>: the UTC calendar day of the report</li>
+          <li><code>version</code>: the extension version</li>
+          <li><code>env.chrome</code>: the Chrome major version number</li>
+          <li><code>env.os</code>: your operating system family (mac, windows, linux, chromeos or other)</li>
+          <li><code>env.lang</code>: your browser UI language code</li>
+          <li><code>engines.auto</code>, <code>engines.css</code>, <code>engines.invert</code>: whether each engine (Auto, CSS, Invert) was used that day (yes or no flags, not counts)</li>
+          <li><code>theme</code>: the built-in theme you used, or the word custom for your own theme</li>
+          <li><code>features.viewer</code>, <code>features.editor</code>, <code>features.customCss</code>, <code>features.sitePack</code>: whether you used the document viewer, the theme editor, custom CSS or a site pack that day (yes or no flags)</li>
+        </ul>
+        <p>
+          Nothing about the sites you visit, what you read or watch, the documents you open or any text you type is ever collected or sent. No hostnames, URLs, page content, custom CSS text, theme colours or file names are included.
+        </p>
+        <ul>
+          <li><strong>What the server stores:</strong> the random ID, the day and the fields above. Our server function does <strong>not store IP addresses</strong> (the hosting platform&rsquo;s own request logs may transiently contain them, along with the browser&rsquo;s User-Agent and Accept-Language headers).</li>
+          <li><strong>Legal basis:</strong> the random ID is treated as pseudonymous personal data, and the lawful basis is your consent, which you can withdraw at any time.</li>
+          <li><strong>Use and processors:</strong> the statistics are used only to understand how many people use the extension and which features matter. They are never sold, never shared with advertisers and never used for anything unrelated. They are processed only by our hosting providers (Vercel, Supabase) on our behalf; the endpoint is operated by the developer and no analytics company is involved.</li>
+          <li><strong>Turning it off and deleting your data:</strong> to delete the data already sent, click <strong>Delete my data</strong> in Options &gt; Usage stats (this deletes the server records and also turns usage stats off). Do this <strong>before</strong> unticking the box or uninstalling, because turning usage stats off discards the random ID needed to find the records. Records that are not deleted this way are purged automatically after 13 months. If the deletion request cannot reach the server, usage stats stay off and the extension keeps the random ID only to retry the deletion until the server confirms it; the ID is then removed.</li>
+          <li><strong>Website visit count:</strong> this website (not the extension) counts visits with one empty request to the developer&rsquo;s own site, pshah.fun, once per browser. It sends no cookies, identifiers, page or referrer data, and is skipped when Do Not Track is on.</li>
+          <li><strong>No sale or sharing:</strong> usage statistics are never sold or shared with anyone else. Your settings and documents are never sent to anyone.</li>
         </ul>
 
         <h2>2. Local Storage &amp; Chrome Sync</h2>
@@ -168,7 +187,7 @@
           <li>Global defaults applied to unconfigured websites.</li>
         </ul>
         <p>
-          These preferences are stored in your local Chrome profile and synchronized across your signed-in devices through Google’s official synchronization service. They are never sent to any server controlled by ThemeSwitcher.
+          These preferences are stored in your local Chrome profile and synchronized across your signed-in devices through Google’s official synchronization service. They are never sent to any server run by the developer; the only server involved is the optional usage-statistics endpoint described in section 1, which does not receive your preferences.
         </p>
 
         <h2>3. Document &amp; PDF Processing</h2>
@@ -211,7 +230,7 @@
         </p>
         <ul>
           <li><strong>Right to Portability (GDPR Art. 20):</strong> Export your saved site configurations as a portable JSON file at any time.</li>
-          <li><strong>Right to Erasure (DPDP Sec. 12 / GDPR Art. 17):</strong> Permanently wipe all stored domain preferences with a single click using the &ldquo;Erase All Stored Data&rdquo; button.</li>
+          <li><strong>Right to Erasure (DPDP Sec. 12 / GDPR Art. 17):</strong> Permanently wipe all stored domain preferences with a single click using the &ldquo;Erase All Stored Data&rdquo; button. To delete the usage statistics stored for your random ID, click &ldquo;Delete my data&rdquo; in Options &gt; Usage stats <strong>before</strong> turning usage stats off or uninstalling; records not deleted this way are purged after 13 months.</li>
           <li><strong>Right to Non-Discrimination:</strong> We provide full functionality to all users without discrimination.</li>
         </ul>
 
@@ -277,7 +296,7 @@
       <div class="container footer-bottom">
         <div>&copy; 2026 Chameleon Labs. Force Dark Mode - ThemeSwitcher is open source under the MIT License.</div>
         <div class="footer-live-status">
-          <span>Zero tracking. Zero telemetry.</span>
+          <span>No tracking. Anonymous usage stats are opt-in.</span>
         </div>
       </div>
     </footer>

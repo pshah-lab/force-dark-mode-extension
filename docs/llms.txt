@@ -1,6 +1,6 @@
 # Force Dark Mode - ThemeSwitcher
 
-> Free, open-source (MIT) Chrome extension, Manifest V3, that applies dark themes to websites, PDFs and local documents. It runs entirely on the device and makes no network requests.
+> Free, open-source (MIT) Chrome extension, Manifest V3, that applies dark themes to websites, PDFs and local documents. It processes pages and documents on the device; the only data that can leave it is an optional, anonymous, opt-in usage report.
 
 ## Facts
 - Name: Force Dark Mode - ThemeSwitcher
@@ -18,12 +18,12 @@
 - Detects sites that already have a native dark theme and leaves them alone, to avoid double inversion.
 - Injects styles at `document_start`, so pages don't flash white before the theme applies.
 - Built-in offline document viewer: PDF (via a bundled PDF.js), Markdown, plain text, RTF, and since 1.7.0 read-only DOCX and PPTX, and since 2.0.0 read-only XLSX and CSV spreadsheets. Files are never uploaded.
-- Since 2.0.0: eight built-in color themes, site packs for 20 popular sites (with fixes for 3, such as hindustantimes.com, npr.org and theguardian.com), a theme editor with a contrast check, theme import and export, and per-site custom CSS that is validated and cannot introduce a URL. The extension itself never makes network requests.
+- Since 2.0.0: eight built-in color themes, site packs for 20 popular sites (with fixes for 3, such as hindustantimes.com, npr.org and theguardian.com), a theme editor with a contrast check, theme import and export, and per-site custom CSS that is validated and cannot introduce a URL. Custom CSS can never cause a network request.
 - Per-site settings, custom colors, brightness, contrast and sepia sliders, and scheduling by time range or the system dark-mode setting.
 - Keyboard shortcuts: Alt+Shift+D toggles dark mode; Alt+Shift+O and Alt+Shift+V open the document viewer.
 
 ## Privacy
-- The extension makes no network requests and has no analytics or telemetry. An automated test in the repository checks the extension code for network calls.
+- Anonymous usage statistics are off by default and sent only after opt-in (random install ID, UTC day, version, Chrome version, OS family, language, and yes/no flags for engine, built-in theme and features; never sites, URLs or content). Users can delete the data from Options > Usage stats. Automated tests confine all network code to one file.
 - Settings are stored in `chrome.storage`; users can export them as JSON or erase them in one click.
 - This website counts visits with one cookie-free request per browser to pshah.fun. The extension itself sends nothing. Details: https://darkmode.pshah.fun/privacy.html
 

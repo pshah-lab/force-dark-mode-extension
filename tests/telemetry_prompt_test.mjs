@@ -99,6 +99,19 @@ test("the untick caveat sits directly beside the Options toggle, and only in Opt
   assert.ok(!read("src/popup/popup.html").includes("discards your random ID"), "popup card does not carry the caveat");
 });
 
+test("popup consent-card init is isolated so a storage or worker failure cannot break the popup", () => {
+  const pop = read("src/popup/popup.js");
+  assert.ok(/async function initTelemetryCard\(/.test(pop), "card init lives in its own function");
+  const calls = pop.match(/initTelemetryCard\([^)]*\)/g) || [];
+  assert.strictEqual(calls.length, 2, "one definition and one call");
+  assert.ok(/initTelemetryCard\([^)]*\)\s*\.catch\(/.test(pop), "the call is fire-and-forget with a catch, never awaited bare");
+  assert.ok(!/await\s+initTelemetryCard\(/.test(pop), "must not block the rest of the popup");
+  const body = pop.slice(pop.indexOf("async function initTelemetryCard("));
+  assert.ok(body.includes("TelemetryPrompt.recordOpen") && body.includes("telemetry-yes"), "all card wiring is inside the function");
+  const outside = pop.slice(0, pop.indexOf("async function initTelemetryCard("));
+  assert.ok(!outside.includes("TelemetryPrompt."), "no TelemetryPrompt use outside the isolated init");
+});
+
 test("options preview labels: example before opt-in, today's report after; textContent only", () => {
   const opt = read("src/options/options.js");
   assert.ok(opt.includes("Example of what would be sent if you turn this on (nothing is sent while this is off)"));

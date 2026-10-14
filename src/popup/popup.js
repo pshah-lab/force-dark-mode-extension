@@ -64,39 +64,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("feedback-rate").addEventListener("click", () => settleFeedback(FeedbackPrompt.finish));
   document.getElementById("feedback-report").addEventListener("click", () => settleFeedback(FeedbackPrompt.finish));
 
-  // Opt-in usage stats card: only when the feedback card is not showing. Nothing is sent
-  // unless the user clicks Yes; the background worker owns all telemetry state.
-  const telemetryCard = document.getElementById("telemetry-prompt");
-  const telemetryStore = {
-    read: () =>
-      new Promise((resolve) =>
-        chrome.storage.local.get(TelemetryPrompt.STATE_KEY, (d) =>
-          resolve(d?.[TelemetryPrompt.STATE_KEY])
-        )
-      ),
-    write: (state) =>
-      new Promise((resolve) =>
-        chrome.storage.local.set({ [TelemetryPrompt.STATE_KEY]: state }, resolve)
-      ),
-  };
-  let telemetryState = TelemetryPrompt.recordOpen(await telemetryStore.read());
-  await telemetryStore.write(telemetryState);
-  telemetryCard.hidden = !(feedbackCard.hidden && TelemetryPrompt.shouldShow(telemetryState));
-
-  const settleTelemetry = async (enable) => {
-    telemetryState = TelemetryPrompt.decide(telemetryState);
-    telemetryCard.hidden = true;
-    await telemetryStore.write(telemetryState);
-    if (enable) {
-      try {
-        await chrome.runtime.sendMessage({ type: "TELEMETRY_CONSENT", enabled: true });
-      } catch (err) {
-        console.warn("Could not enable usage stats:", err);
-      }
-    }
-  };
-  document.getElementById("telemetry-yes").addEventListener("click", () => settleTelemetry(true));
-  document.getElementById("telemetry-no").addEventListener("click", () => settleTelemetry(false));
+  // Opt-in usage stats card. Runs on its own and never awaited, so a storage or worker failure
+  // can never break the rest of the popup.
+  initTelemetryCard(feedbackCard).catch((err) => console.warn("Usage stats card unavailable:", err));
 
   const [tab] = await chrome.tabs.query({
     active: true,
@@ -503,3 +473,39 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   updateUI();
 });
+
+// Opt-in usage stats card: only when the feedback card is not showing. Nothing is sent
+// unless the user clicks Yes; the background worker owns all telemetry state.
+async function initTelemetryCard(feedbackCard) {
+  const telemetryCard = document.getElementById("telemetry-prompt");
+  const telemetryStore = {
+    read: () =>
+      new Promise((resolve) =>
+        chrome.storage.local.get(TelemetryPrompt.STATE_KEY, (d) =>
+          resolve(d?.[TelemetryPrompt.STATE_KEY])
+        )
+      ),
+    write: (state) =>
+      new Promise((resolve) =>
+        chrome.storage.local.set({ [TelemetryPrompt.STATE_KEY]: state }, resolve)
+      ),
+  };
+  let telemetryState = TelemetryPrompt.recordOpen(await telemetryStore.read());
+  await telemetryStore.write(telemetryState);
+  telemetryCard.hidden = !(feedbackCard.hidden && TelemetryPrompt.shouldShow(telemetryState));
+
+  const settleTelemetry = async (enable) => {
+    telemetryState = TelemetryPrompt.decide(telemetryState);
+    telemetryCard.hidden = true;
+    await telemetryStore.write(telemetryState);
+    if (enable) {
+      try {
+        await chrome.runtime.sendMessage({ type: "TELEMETRY_CONSENT", enabled: true });
+      } catch (err) {
+        console.warn("Could not enable usage stats:", err);
+      }
+    }
+  };
+  document.getElementById("telemetry-yes").addEventListener("click", () => settleTelemetry(true));
+  document.getElementById("telemetry-no").addEventListener("click", () => settleTelemetry(false));
+}

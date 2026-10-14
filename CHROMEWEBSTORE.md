@@ -58,9 +58,9 @@ HOW TO USE IT
 PRIVATE BY DEFAULT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ThemeSwitcher is built with an uncompromising commitment to privacy:
-• No analytics, tracking pixels, or advertising of any kind.
+• No third-party analytics, tracking pixels, or advertising.
 • Optional anonymous usage statistics are OFF by default and only start if you click Yes in the popup or enable them in Options. They never include sites, URLs, page content, or documents, you can see an example report before turning them on and today's report afterwards, and can turn them off in Options. To delete your data, click Delete my data in Options > Usage stats before turning it off or uninstalling (it also turns usage stats off; turning them off first discards the random ID needed to find your records, which are otherwise purged after 13 months).
-• Everything else runs 100% locally in your browser, with no other network calls.
+• Everything else runs 100% locally in your browser. The only other network request is when you open a web PDF in the viewer: it downloads that PDF directly from the site that hosts it, and nothing is sent to us.
 • No browsing history or website URLs ever leave your computer.
 • Preferences sync strictly through your personal Google Account via chrome.storage.sync.
 • Fully open-source under the MIT License for public security auditing.
@@ -140,7 +140,7 @@ No host permissions are requested. The optional, opt-in usage report (off by def
 ### Data Use Certification
 
 - [X] Data is NOT sold to third parties
-- [X] Usage statistics are anonymous, opt-in, and our server function does not store IP addresses (platform request logs may transiently contain them)
+- [X] Usage statistics are anonymous, opt-in, and our server function does not store IP addresses (platform request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers)
 - [X] Users can delete their usage statistics with Delete my data in Options > Usage stats (do this before turning usage stats off or uninstalling, since that discards the random ID); undeleted records are purged after 13 months
 - [X] Data is NOT used for purposes unrelated to the extension's core functionality
 - [X] Data is NOT used for creditworthiness or lending purposes

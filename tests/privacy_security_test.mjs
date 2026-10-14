@@ -1033,6 +1033,38 @@ test("options.html and popup.html make no unqualified 'no network requests' clai
   assert.ok(opt.includes("Custom CSS can never cause a network request."), "options.html must keep the accurate custom-CSS claim");
 });
 
+test("every IP caveat also says request logs may contain the User-Agent and Accept-Language headers", () => {
+  const files = ["PRIVACY.md", "CHROMEWEBSTORE.md", "README.md", "documentation/ThemeSwitcher_Privacy_Compliance_Report.md",
+    "documentation/specs/2026-10-14-opt-in-usage-telemetry-design.md", "backend/telemetry/README.md",
+    ...fs.readdirSync(path.join(rootDir, "documentation/privacy")).map((f) => `documentation/privacy/${f}`)];
+  let seen = 0;
+  for (const rel of files) {
+    fs.readFileSync(path.join(rootDir, rel), "utf8").split("\n").forEach((line, i) => {
+      if (!/transiently contain/i.test(line)) return;
+      seen++;
+      assert.ok(/User-Agent/.test(line) && /Accept-Language/.test(line), `${rel}:${i + 1} IP caveat must also name User-Agent and Accept-Language`);
+    });
+  }
+  assert.ok(seen >= 8, "the IP caveat must still be present in the policy documents");
+});
+
+test("store listing: no blanket no-analytics or no-network claims; web PDF fetch disclosed", () => {
+  const cws = fs.readFileSync(path.join(rootDir, "CHROMEWEBSTORE.md"), "utf8");
+  assert.ok(!/No analytics, tracking pixels, or advertising of any kind/.test(cws), "blanket no-analytics claim");
+  assert.ok(cws.includes("No third-party analytics"), "must say No third-party analytics");
+  assert.ok(!/no other network calls/i.test(cws), "the viewer can download a web PDF the user opens");
+  assert.ok(/web PDF/i.test(cws), "store listing must disclose the web PDF download");
+  const priv = fs.readFileSync(path.join(rootDir, "PRIVACY.md"), "utf8");
+  assert.ok(!/makes no network requests at all/i.test(priv), "PRIVACY.md must not claim no network requests at all");
+});
+
+test(".gitignore keeps backend docs tracked but ignores the backend node_modules", () => {
+  const gi = fs.readFileSync(path.join(rootDir, ".gitignore"), "utf8").split("\n").map((l) => l.trim());
+  assert.ok(gi.includes("!/backend/**/*.md"));
+  assert.ok(gi.includes("backend/telemetry/node_modules/"));
+  assert.ok(gi.indexOf("backend/telemetry/node_modules/") > gi.indexOf("!/backend/**/*.md"), "the node_modules rule must come after the .md negation");
+});
+
 // Final summary
 console.log("\n=========================================");
 console.log(`🎉 Privacy & Security Results: ${passed} passed, ${failed} failed`);

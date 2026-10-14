@@ -38,7 +38,7 @@ user) until `EXTENSION_ID` is changed and redeployed. Confirm the ID on the stor
 - `POST /api/darkmode-telemetry-delete`: body `{"id": "<uuid>"}`. Deletes every row for that ID. 204.
 
 The functions read only the HTTP method and body. They never read, log or store IP addresses or request
-headers. The hosting platform's own request logs may transiently contain IPs; that is outside this code.
+headers. The hosting platform's own request logs may transiently contain IPs and the browser's User-Agent and Accept-Language headers; that is outside this code.
 
 `lib/schema.js` is a copy of the allow-lists and `validateHeartbeat` from `src/shared/telemetry.js`
 (the deployed project cannot import from the extension). `tests/telemetry_backend_test.mjs` asserts parity.

@@ -26,5 +26,5 @@ ThemeSwitcher certifies that the following categories are **never collected, nev
 2. Web page DOM text, articles, or document bodies.
 3. Form values, login credentials, passwords, or authentication cookies.
 4. Financial information or payment details.
-5. IP addresses (not stored by our server function; platform request logs may transiently contain them) or device hardware fingerprints by the extension.
+5. IP addresses (not stored by our server function; platform request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers) or device hardware fingerprints by the extension.
 6. Personal communications, emails, or chat logs.

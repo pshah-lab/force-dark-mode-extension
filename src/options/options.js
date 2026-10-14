@@ -105,6 +105,72 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  // Usage stats (opt-in). All state lives in the background worker; this page only
+  // sends runtime messages and mirrors what the worker reports.
+  const TELEMETRY_PROMPT_KEY = "telemetryPromptState";
+  const telemetryToggle = document.getElementById("telemetry-toggle");
+  const telemetryPreview = document.getElementById("telemetry-preview");
+  const telemetryDeleteBtn = document.getElementById("telemetry-delete");
+  const telemetryDeleteResult = document.getElementById("telemetry-delete-result");
+  const TELEMETRY_OFF_TEXT = "Nothing is sent while this is off";
+
+  async function refreshTelemetry() {
+    if (!telemetryToggle || !telemetryPreview) return;
+    let status = null;
+    try {
+      status = await chrome.runtime.sendMessage({ type: "TELEMETRY_STATUS" });
+    } catch (err) {
+      console.warn("Could not read usage stats status:", err);
+    }
+    const enabled = status?.enabled === true;
+    telemetryToggle.checked = enabled;
+    telemetryPreview.textContent =
+      enabled && status.heartbeat ? JSON.stringify(status.heartbeat, null, 2) : TELEMETRY_OFF_TEXT;
+  }
+
+  async function markTelemetryDecided() {
+    try {
+      const data = await chrome.storage.local.get(TELEMETRY_PROMPT_KEY);
+      const prev = data?.[TELEMETRY_PROMPT_KEY];
+      const base = prev && typeof prev === "object" ? prev : {};
+      await chrome.storage.local.set({ [TELEMETRY_PROMPT_KEY]: { ...base, decided: true } });
+    } catch (err) {
+      console.warn("Could not record the usage stats choice:", err);
+    }
+  }
+
+  if (telemetryToggle) {
+    telemetryToggle.addEventListener("change", async () => {
+      try {
+        await chrome.runtime.sendMessage({ type: "TELEMETRY_CONSENT", enabled: telemetryToggle.checked });
+      } catch (err) {
+        console.warn("Could not change usage stats setting:", err);
+      }
+      await markTelemetryDecided();
+      await refreshTelemetry();
+    });
+  }
+
+  if (telemetryDeleteBtn) {
+    telemetryDeleteBtn.addEventListener("click", async () => {
+      let res = null;
+      try {
+        res = await chrome.runtime.sendMessage({ type: "TELEMETRY_DELETE" });
+      } catch (err) {
+        console.warn("Could not delete usage stats data:", err);
+      }
+      if (telemetryDeleteResult) {
+        telemetryDeleteResult.textContent =
+          res?.serverConfirmed === true
+            ? "Deleted"
+            : "Removed from this device; server deletion could not be confirmed";
+      }
+      await refreshTelemetry();
+    });
+  }
+
+  await refreshTelemetry();
+
   // Load schedule preferences
   const scheduleConfig = (await getScheduleConfig()) || { mode: "off", start: "20:00", end: "07:00" };
 

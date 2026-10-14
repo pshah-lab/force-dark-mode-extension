@@ -228,6 +228,27 @@
       </div>
     </section>
 
+    <!-- Usage stats (opt-in) -->
+    <section class="card" id="telemetry-card">
+      <h2>Usage stats</h2>
+      <p class="card-desc">Off by default. If you turn this on, the extension sends one small anonymous report per day so we can see what is used. Nothing is sent while this is off.</p>
+
+      <div class="field">
+        <label class="checkbox-label" for="telemetry-toggle">
+          <input type="checkbox" id="telemetry-toggle" />
+          <span>Share anonymous usage stats</span>
+        </label>
+      </div>
+
+      <h3 class="sub-heading">Exactly what would be sent</h3>
+      <pre id="telemetry-preview" class="telemetry-preview">Nothing is sent while this is off</pre>
+
+      <div class="actions">
+        <button id="telemetry-delete" class="btn btn-danger" type="button">Delete my data</button>
+      </div>
+      <p class="subtext" id="telemetry-delete-result" role="status" aria-live="polite"></p>
+    </section>
+
     <!-- Privacy & Data Management Card -->
     <section class="card">
       <div class="card-badge">Privacy by Design</div>

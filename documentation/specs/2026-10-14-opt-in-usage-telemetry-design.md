@@ -16,10 +16,10 @@ Give the owner simple, anonymous usage numbers across all installs: active users
 ## Consent UX
 
 - The popup shows a one-time card after a few uses of the extension. The card says, in plain language:
-  - **We count:** that you used the extension today, which engine (Auto, CSS, Invert) and built-in theme you use, whether you used the viewer, theme editor, custom CSS or a site pack, and your extension version, Chrome version, OS family and language.
+  - **We count:** that you used the extension today, which engine (Auto, CSS, Invert) and built-in theme you use, whether you used the viewer, theme editor, custom CSS or a site pack, and your extension version, Chrome version, OS family and language, plus a random ID for this install (not linked to you) used to tell days apart.
   - **We never see:** the sites you visit, what you read or watch, your documents, or anything you type.
   - Buttons: Yes, share stats / No thanks. No is remembered and the card never returns.
-- Options page: the same toggle, a preview (when off: a labelled example report with a placeholder id, nothing stored or sent; when on: today's report if sent now), and a **Delete my data** button.
+- Options page: the same toggle, a preview (when off: a labelled example report with a placeholder id, nothing stored or sent; when on: today's report if sent now), and a **Delete my data** button. The same We count / We never see copy appears in the Options card, and beside the toggle: "Turning this off stops reports and discards your random ID. To remove reports already sent, click Delete my data first."
 
 ## Data sent
 

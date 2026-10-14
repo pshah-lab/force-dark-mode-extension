@@ -233,11 +233,15 @@
       <h2>Usage stats</h2>
       <p class="card-desc">Off by default. If you turn this on, the extension sends one small anonymous report per day so we can see what is used. Nothing is sent while this is off.</p>
 
+      <p class="subtext">We count: that you used the extension today, which engine and built-in theme you use, which features you used, and your version, Chrome version, OS family and language, plus a random ID for this install (not linked to you) used to tell days apart.</p>
+      <p class="subtext">We never see: the sites you visit, what you read or watch, your documents, or anything you type.</p>
+
       <div class="field">
         <label class="checkbox-label" for="telemetry-toggle">
-          <input type="checkbox" id="telemetry-toggle" />
+          <input type="checkbox" id="telemetry-toggle" aria-describedby="telemetry-toggle-note" />
           <span>Share anonymous usage stats</span>
         </label>
+        <p class="subtext" id="telemetry-toggle-note">Turning this off stops reports and discards your random ID. To remove reports already sent, click Delete my data first.</p>
       </div>
 
       <h3 class="sub-heading" id="telemetry-preview-label">Example of what would be sent if you turn this on (nothing is sent while this is off)</h3>

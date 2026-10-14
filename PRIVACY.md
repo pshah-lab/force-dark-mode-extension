@@ -1,15 +1,35 @@
 # Privacy Policy for ThemeSwitcher (Force Dark Mode)
 
-**Last Updated:** September 23, 2026  
+**Last Updated:** October 14, 2026  
 **Policy Version:** 2.0.0  
 
-ThemeSwitcher (Force Dark Mode) is committed to protecting your privacy through an uncompromising **local-first**, **privacy-by-design** architecture. This policy outlines our data handling practices across the extension and companion website.
+ThemeSwitcher (Force Dark Mode) is committed to protecting your privacy through a **local-first**, **privacy-by-design** architecture. Your settings and documents stay on your device; the only data that can leave it is the optional, anonymous usage report described in section 1, which is off by default. This policy outlines our data handling practices across the extension and companion website.
 
 ---
 
-## 1. Zero Data Collection & Zero Telemetry
-ThemeSwitcher does **not** collect, track, sell, or transmit any personal information, browsing history, or user activity.
-- **Zero Telemetry / Analytics:** There are no analytics libraries, tracking pixels, crash reporters, or external API calls.
+## 1. Anonymous, opt-in usage statistics
+Usage statistics are **off by default**. Nothing is sent unless you click **Yes** on the one-time card in the popup or switch on **Usage stats** in the Options page. If you click No, or never choose, the extension makes no network requests at all.
+
+When you opt in, the extension sends one small anonymous report per day, from the background service worker only. A report says that you used the extension on that day and contains exactly these fields (you can see today's exact report in Options > Usage stats before and after you turn it on):
+
+<!-- fields:start -->
+- `id`: a random identifier created when you opt in; it is not linked to your Google account, email or name
+- `day`: the UTC calendar day of the report
+- `version`: the extension version
+- `env.chrome`: the Chrome major version number
+- `env.os`: your operating system family (mac, windows, linux, chromeos or other)
+- `env.lang`: your browser UI language code
+- `engines.auto`, `engines.css`, `engines.invert`: whether each engine (Auto, CSS, Invert) was used that day (yes or no flags, not counts)
+- `theme`: the built-in theme you used, or the word custom for your own theme
+- `features.viewer`, `features.editor`, `features.customCss`, `features.sitePack`: whether you used the document viewer, the theme editor, custom CSS or a site pack that day (yes or no flags)
+<!-- fields:end -->
+
+Nothing about the sites you visit, what you read or watch, the documents you open or any text you type is ever collected or sent. No hostnames, URLs, page content, custom CSS text, theme colours or file names are included.
+
+The server stores the random ID, the day and the fields above. It **never stores your IP address**. The statistics are used only to understand how many people use the extension and which features matter; they are never sold, never shared with advertisers and never used for anything unrelated. The endpoint is operated by the developer (first-party), hosted on Vercel with a Supabase database; no analytics company is involved.
+
+**Turning it off and deleting your data:** open the Options page and go to **Usage stats**. Untick the box to stop sending. Click **Delete my data** to remove every report stored for your random ID on the server.
+
 - **Zero Third-Party Sharing:** No user data is ever sold, transferred, or shared with third parties.
 - **Zero Page Content Extraction:** Web page text, form entries, credentials, and cookies are never accessed or transmitted.
 
@@ -22,18 +42,19 @@ The extension uses Chrome's built-in `chrome.storage.sync` API solely to store y
 - Viewer display settings (mode, font size, contrast).
 - Global default preferences (`__global_defaults__`).
 
-These preferences are synchronized through your Google Chrome account using Google's secure synchronization infrastructure if you have Chrome sync enabled. No proprietary servers or external databases are used.
+These preferences are synchronized through your Google Chrome account using Google's secure synchronization infrastructure if you have Chrome sync enabled. Your preferences are never sent to any server run by the developer; the only server involved is the optional usage-statistics endpoint described in section 1, which does not receive your preferences.
 
 ---
 
 ## 3. Document & PDF Viewer
-The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF documents **100% locally on your machine** using local browser APIs and bundled client-side rendering engines (PDF.js). Your documents are never uploaded, analyzed, or sent to any remote server.
+The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF documents **100% locally on your machine** using local browser APIs and bundled client-side rendering engines (PDF.js). Your documents are never uploaded, analyzed, or sent to any remote server, and they are never part of the usage statistics.
 
 ---
 
 ## 4. Permissions
 - **`storage`**: Used to save your per-site preferences and viewer configuration across sessions.
 - **`activeTab`**: Used only when you click the extension popup to analyze the active tab for dark-mode suitability and apply your theme selection.
+- **Host permission `https://pshah.fun/api/darkmode-telemetry*`**: Lets the background service worker send the opt-in usage report (section 1) and the "Delete my data" request, and nothing else. It grants no access to any website you visit.
 - **`<all_urls>` (Content Script)**: Used to inject CSS theme rules at `document_start` across sites, preventing white screen flashes.
 
 ---
@@ -41,7 +62,7 @@ The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF docu
 ## 5. User Rights & Data Control
 Under GDPR (EU), DPDP Act 2023 (India), and CCPA/CPRA (US):
 - **Right to Portability:** You can export all your saved configurations as a JSON file via the Options page.
-- **Right to Erasure:** You can erase all stored site preferences with one click in the Options page ("Erase All Stored Data") or by uninstalling the extension.
+- **Right to Erasure:** You can erase all stored site preferences with one click in the Options page ("Erase All Stored Data") or by uninstalling the extension. You can delete the usage statistics stored for your random ID with **Delete my data** in Options > Usage stats.
 
 ---
 

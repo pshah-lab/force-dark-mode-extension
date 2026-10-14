@@ -503,9 +503,11 @@ const relToRoot = (full) => path.relative(rootDir, full).split(path.sep).join("/
 // ALLOW_UNSCANNED holds any other file deliberately left out, with the reason. It must stay empty
 // unless a file genuinely cannot be scanned.
 const WALK_EXCLUDED_PREFIXES = ["src/viewer/vendor/"];
-const ALLOW_UNSCANNED = {
-  "src/background/telemetrySender.js": "sole telemetry egress; dedicated checks in telemetry tests and Task 5",
-};
+const ALLOW_UNSCANNED = {};
+// The one file allowed to touch the network: the opt-in usage-statistics sender. It is checked by the
+// dedicated "telemetry egress" tests instead of the strict zero-egress patterns.
+const SENDER_PATH = "src/background/telemetrySender.js";
+const EGRESS_ALLOWED = { [SENDER_PATH]: "opt-in anonymous usage statistics; see the dedicated egress tests" };
 
 test("every src/ .js file is covered by the egress scan or an explicit allow-list", () => {
   const found = walkFiles(path.join(rootDir, "src"), ".js").map(relToRoot);
@@ -514,14 +516,16 @@ test("every src/ .js file is covered by the egress scan or an explicit allow-lis
     (rel) =>
       !WALK_EXCLUDED_PREFIXES.some((prefix) => rel.startsWith(prefix)) &&
       !EGRESS_SCANNED_FILES.includes(rel) &&
+      !Object.prototype.hasOwnProperty.call(EGRESS_ALLOWED, rel) &&
       !Object.prototype.hasOwnProperty.call(ALLOW_UNSCANNED, rel)
   );
   assert.deepStrictEqual(uncovered, [], `JS files skipped by the egress scan: ${uncovered.join(", ")}`);
   for (const rel of EGRESS_SCANNED_FILES) {
     assert.ok(fs.existsSync(path.join(rootDir, rel)), `egress list names a missing file: ${rel}`);
   }
-  for (const rel of Object.keys(ALLOW_UNSCANNED)) {
-    assert.ok(ALLOW_UNSCANNED[rel], `allow-list entry ${rel} needs a documented reason`);
+  for (const rel of [...Object.keys(ALLOW_UNSCANNED), ...Object.keys(EGRESS_ALLOWED)]) {
+    assert.ok(fs.existsSync(path.join(rootDir, rel)), `allow-list names a missing file: ${rel}`);
+    assert.ok(ALLOW_UNSCANNED[rel] || EGRESS_ALLOWED[rel], `allow-list entry ${rel} needs a documented reason`);
   }
 });
 
@@ -532,10 +536,11 @@ test("no .mjs or .cjs source files under src/ outside the vendored viewer direct
   assert.deepStrictEqual(odd, [], `Unscanned module files under src/: ${odd.join(", ")}`);
 });
 
-test("manifest permissions unchanged: storage, activeTab, contextMenus only", () => {
+test("manifest permissions: storage, activeTab, contextMenus only, plus the single telemetry host", () => {
   const manifest = readManifest();
   assert.deepStrictEqual(manifest.permissions, ["storage", "activeTab", "contextMenus"]);
-  for (const key of ["host_permissions", "optional_permissions", "optional_host_permissions", "externally_connectable"]) {
+  assert.deepStrictEqual(manifest.host_permissions, ["https://pshah.fun/api/darkmode-telemetry*"]);
+  for (const key of ["optional_permissions", "optional_host_permissions", "externally_connectable"]) {
     assert.strictEqual(Object.prototype.hasOwnProperty.call(manifest, key), false, `manifest must not declare ${key}`);
   }
 });
@@ -772,6 +777,118 @@ test("the network trap sandbox detects a violation (self-check)", () => {
   const { ctx, tripped } = loadTrappedSandbox({ [rel]: mutated });
   assert.throws(() => exerciseThemeApis(ctx), /network API called: fetch/);
   assert.ok(tripped.includes("fetch"), "trap must record the fetch call");
+});
+
+// 9. Opt-in usage statistics: egress confinement and policy text
+console.log("\n9. Opt-in Usage Statistics: Egress Confinement & Policy Text");
+
+const senderModule = await import("../src/background/telemetrySender.js");
+const telemetryModule = await import("../src/shared/telemetry.js");
+const srcJsFiles = () =>
+  walkFiles(path.join(rootDir, "src"), ".js")
+    .map(relToRoot)
+    .filter((rel) => !WALK_EXCLUDED_PREFIXES.some((prefix) => rel.startsWith(prefix)));
+// Strips comments so prose in comments cannot trip or hide a code-level check.
+const stripComments = (code) => code.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+test("fetch is called in exactly one src file: the telemetry sender", () => {
+  const withFetch = srcJsFiles().filter((rel) => /\bfetch\s*\(/.test(stripComments(fs.readFileSync(path.join(rootDir, rel), "utf8"))));
+  assert.ok(withFetch.length <= 1, `fetch( found in several files: ${withFetch.join(", ")}`);
+  const senderCode = fs.readFileSync(path.join(rootDir, SENDER_PATH), "utf8");
+  assert.ok(/\bfetch\b/.test(senderCode), "the sender must be where fetch lives");
+  for (const rel of srcJsFiles()) {
+    if (rel === SENDER_PATH) continue;
+    assert.ok(!/\bfetch\b/.test(stripComments(fs.readFileSync(path.join(rootDir, rel), "utf8"))), `fetch referenced outside the sender: ${rel}`);
+  }
+});
+
+test("XMLHttpRequest, WebSocket, sendBeacon, EventSource and axios appear nowhere in src", () => {
+  for (const rel of srcJsFiles()) {
+    const code = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    for (const pattern of [/\bXMLHttpRequest\b/, /\bWebSocket\b/, /\bsendBeacon\b/, /\bEventSource\b/, /\baxios\b/]) {
+      assert.strictEqual(pattern.test(code), false, `Prohibited network API (${pattern}) in ${rel}`);
+    }
+  }
+});
+
+test("every http(s) URL in src/ is one of the two sender endpoints, and only in the sender", () => {
+  for (const rel of srcJsFiles()) {
+    const code = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    const urls = code.match(/https?:\/\/[^\s"'`)]+/g) || [];
+    if (rel !== SENDER_PATH) {
+      assert.deepStrictEqual(urls, [], `${rel} must not contain URLs`);
+      continue;
+    }
+    assert.ok(urls.length >= 2, "the sender must declare its endpoints");
+    for (const url of urls) {
+      assert.ok([senderModule.INGEST_URL, senderModule.DELETE_URL].includes(url), `unexpected URL in sender: ${url}`);
+    }
+  }
+});
+
+test("sender endpoints are https and covered by the manifest host_permissions pattern", () => {
+  const [pattern] = readManifest().host_permissions;
+  assert.ok(pattern.endsWith("*"));
+  const prefix = pattern.slice(0, -1);
+  for (const url of [senderModule.INGEST_URL, senderModule.DELETE_URL]) {
+    assert.ok(url.startsWith("https://"), `${url} must be https`);
+    assert.ok(url.startsWith(prefix), `${url} is not covered by host permission ${pattern}`);
+    assert.ok(!url.includes("?") && !url.includes("#"), `${url} must carry no query or fragment`);
+  }
+});
+
+test("the sender never reads tabs, location or document", () => {
+  const code = stripComments(fs.readFileSync(path.join(rootDir, SENDER_PATH), "utf8"));
+  for (const [pattern, label] of [
+    [/\bchrome\.tabs\b/, "chrome.tabs"],
+    [/\blocation\b/, "location"],
+    [/\bdocument\b/, "document"],
+    [/\bcookies?\b/i, "cookies"],
+    [/\bchrome\.history\b/, "chrome.history"],
+  ]) {
+    assert.strictEqual(pattern.test(code), false, `sender must not use ${label}`);
+  }
+});
+
+test("the telemetryState key is never stored in chrome.storage.sync", () => {
+  for (const rel of srcJsFiles()) {
+    const code = stripComments(fs.readFileSync(path.join(rootDir, rel), "utf8"));
+    assert.ok(!/storage\.sync[\s\S]{0,200}telemetryState/.test(code), `telemetryState used with storage.sync near in ${rel}`);
+    assert.ok(!/telemetryState[\s\S]{0,200}storage\.sync/.test(code), `telemetryState used with storage.sync near in ${rel}`);
+  }
+  assert.ok(srcJsFiles().some((rel) => fs.readFileSync(path.join(rootDir, rel), "utf8").includes("telemetryState")), "telemetryState must be in use");
+});
+
+const privacyDoc = fs.readFileSync(path.join(rootDir, "PRIVACY.md"), "utf8");
+const flattenKeys = (obj, prefix = "") =>
+  Object.entries(obj).flatMap(([k, v]) =>
+    v && typeof v === "object" ? flattenKeys(v, `${prefix}${k}.`) : [`${prefix}${k}`]
+  );
+const sampleHeartbeat = () =>
+  telemetryModule.buildHeartbeat({
+    id: "123e4567-e89b-42d3-a456-426614174000",
+    version: "2.1.0",
+    tally: telemetryModule.emptyTally("2026-10-14"),
+    env: telemetryModule.buildEnv({ userAgent: "Mozilla/5.0 (Macintosh) Chrome/130.0.0.0 Safari/537.36", lang: "en-US" }),
+  });
+
+test("PRIVACY.md drops the zero-telemetry claim and says usage stats are off by default", () => {
+  assert.ok(!privacyDoc.includes("Zero Telemetry"), "PRIVACY.md must not claim Zero Telemetry");
+  assert.ok(!/zero data collection/i.test(privacyDoc), "PRIVACY.md must not claim Zero Data Collection");
+  assert.ok(privacyDoc.includes("Anonymous, opt-in usage statistics"));
+  assert.ok(privacyDoc.includes("off by default"));
+  assert.ok(privacyDoc.includes("Options"), "PRIVACY.md must say where to turn it off");
+  assert.ok(privacyDoc.includes("Delete my data"), "PRIVACY.md must name the delete control");
+  assert.ok(/never (store|stores|stored)[^.]*IP address|IP address[^.]*never/i.test(privacyDoc), "PRIVACY.md must say the IP is never stored");
+});
+
+test("PRIVACY.md lists every heartbeat field name, and exactly those", () => {
+  const keys = flattenKeys(sampleHeartbeat());
+  assert.ok(keys.length === 14, "heartbeat should have its full field set");
+  const section = privacyDoc.match(/<!-- fields:start -->([\s\S]*?)<!-- fields:end -->/);
+  assert.ok(section, "PRIVACY.md must delimit the field list with fields:start / fields:end markers");
+  const documented = [...section[1].matchAll(/`([A-Za-z.]+)`/g)].map((m) => m[1]);
+  assert.deepStrictEqual([...documented].sort(), [...keys].sort(), "documented fields must equal the heartbeat keys");
 });
 
 // Final summary

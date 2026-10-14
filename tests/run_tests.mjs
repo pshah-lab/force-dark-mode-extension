@@ -516,7 +516,7 @@ test("all website HTML pages include security meta headers", () => {
   }
 });
 
-test("CHROMEWEBSTORE.md and PRIVACY.md certify zero telemetry & limited use", () => {
+test("CHROMEWEBSTORE.md and PRIVACY.md describe opt-in anonymous usage statistics & limited use", () => {
   const storeDoc = fs.readFileSync(path.join(rootDir, "CHROMEWEBSTORE.md"), "utf8");
   const privacyDoc = fs.readFileSync(path.join(rootDir, "PRIVACY.md"), "utf8");
 
@@ -524,7 +524,8 @@ test("CHROMEWEBSTORE.md and PRIVACY.md certify zero telemetry & limited use", ()
   assert.ok(storeDoc.includes("Permissions Justification"), "CHROMEWEBSTORE.md missing Permissions Justification");
   assert.ok(storeDoc.includes("Data Collection"), "CHROMEWEBSTORE.md missing Data Collection");
   assert.ok(storeDoc.includes("Data is NOT sold"), "CHROMEWEBSTORE.md missing Data sale certification");
-  assert.ok(privacyDoc.includes("Zero Telemetry"), "PRIVACY.md missing Zero Telemetry statement");
+  assert.ok(privacyDoc.includes("opt-in usage statistics"), "PRIVACY.md missing opt-in usage statistics section");
+  assert.ok(storeDoc.includes("opt-in"), "CHROMEWEBSTORE.md missing opt-in usage statistics disclosure");
   assert.ok(privacyDoc.includes("100% locally"), "PRIVACY.md missing local execution guarantee");
 });
 

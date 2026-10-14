@@ -15,15 +15,16 @@ This inventory documents every data element processed, stored, or referenced by 
 | **DI-05** | Viewer Display Configuration (`__force_dark_viewer__`) | Configuration | Viewer control inputs | Remembers user's zoom level, contrast, font size, and color mode in document reader | `chrome.storage.sync` | Persistent until edited or cleared | None | Legitimate Interest | Yes, via Options clear or viewer controls |
 | **DI-06** | Local Feedback Form Submissions | User Provided Content | User submission on `website/support.html` | Pre-fills email draft and caches submission locally | Browser `localStorage` (`fdex_feedback_entries`) | Stored in local browser cache; user can wipe browser data | None (sent via user's email client if user clicks send) | Affirmative Consent (GDPR Art. 6(1)(a) / DPDP Sec. 6) | Yes, via browser storage clear |
 | **DI-07** | In-Memory DOM Luminance Samples | Ephemeral Telemetry | Computed element styles in content script | Determines if website is already dark or requires inversion | RAM only (never persisted or written to disk) | Discarded immediately after analysis function returns (milliseconds) | None (Never leaves tab context) | Legitimate Interest (Engine Heuristic) | N/A (Ephemeral in RAM) |
+| **DI-08** | Usage Statistics Report (opt-in, off by default): random ID, UTC day, extension version, Chrome major version, OS family, UI language, yes/no flags for engine, built-in theme and feature used | Anonymous Usage Statistics | Background service worker, built from local counters | Understand how many people use the extension and which features matter | Locally: `chrome.storage.local` (`telemetryState`, never synced). Remotely: first-party database (Supabase) behind a Vercel endpoint | Locally until opt-out. Remotely until the user clicks Delete my data | First-party endpoint only (hosted on Vercel and Supabase as infrastructure providers); never sold or shared | Consent (GDPR Art. 6(1)(a) / DPDP Sec. 6), given by clicking Yes or enabling it in Options | Yes: Options > Usage stats to turn off, and **Delete my data** to erase server rows |
 
 ---
 
 ## Data Elements Explicitly Excluded (Zero Processing)
 
-ThemeSwitcher certifies that the following categories are **never collected, never stored, and never transmitted**:
+ThemeSwitcher certifies that the following categories are **never collected, never stored, and never transmitted**, including by the opt-in usage report:
 1. Browsing history and complete URLs (paths, query parameters, anchors).
 2. Web page DOM text, articles, or document bodies.
 3. Form values, login credentials, passwords, or authentication cookies.
 4. Financial information or payment details.
-5. IP addresses or device hardware fingerprints by the extension.
+5. IP addresses (never stored by the usage-statistics server) or device hardware fingerprints by the extension.
 6. Personal communications, emails, or chat logs.

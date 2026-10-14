@@ -30,7 +30,7 @@ Unlike crude global inverters that turn photos, videos, and layouts into neon ne
 - **Per-Site Background Customizer**: Choose between pitch-black (`#000000`) for OLED power savings or midnight slate (`#0f1115`) from the popup. Surfaces and borders adapt automatically.
 - **Zero White Flashes**: Injected at `document_start` so pages render dark immediately without blinding white flashes.
 - **Instant Toggle**: Toggle themes on the fly without refreshing the page.
-- **100% Offline & Private**: Zero telemetry, zero external network requests, and no tracking pixels.
+- **Private by Default**: No tracking pixels or third-party analytics. Optional anonymous usage statistics are off by default, and nothing about your sites or documents is ever sent.
 
 ---
 
@@ -75,11 +75,12 @@ chrome.storage.sync (Preferences synced securely per domain)
 ## 🔒 Privacy & Permissions
 
 ThemeSwitcher is built with privacy by design:
-- **No telemetry or analytics**: Zero tracking beacons, no Google Analytics, no third-party scripts.
-- **Zero external servers**: All computation is executed 100% locally on your machine.
+- **Opt-in anonymous usage statistics only**: Off by default; enabled only if you click Yes in the popup or turn it on in Options. It sends a random ID, the day, versions, OS family, UI language and yes/no flags for the engine, theme and features used, never sites, content or documents, and the server never stores your IP. Turn it off or delete your data in Options > Usage stats. No Google Analytics, no tracking beacons, no third-party scripts.
+- **Local processing**: All theming and document rendering is executed 100% locally on your machine.
 - **Minimal Manifest V3 Permissions**:
   - `storage`: Storing domain preferences locally in Chrome Sync.
   - `activeTab`: Inspecting luminance and applying styles when the user opens the popup.
+  - `https://pshah.fun/api/darkmode-telemetry*` (host permission): Sending the opt-in anonymous usage report and the Delete my data request; nothing else.
   - `<all_urls>` (content_scripts): Applying dark mode at `document_start` to prevent white flashes.
 
 Read our complete [Privacy Policy](https://darkmode.pshah.fun/privacy.html) or [PRIVACY.md](PRIVACY.md).

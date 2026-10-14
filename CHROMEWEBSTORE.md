@@ -17,7 +17,7 @@ Force Dark Mode - ThemeSwitcher
 **Short Description** [REQUIRED] (128 / 132 chars)
 
 ```
-Apply smart dark mode to websites, PDFs, and local docs with Auto detection, custom CSS palettes, and zero data tracking.
+Apply smart dark mode to websites, PDFs, and local docs with Auto detection, custom CSS palettes, and no tracking by default.
 ```
 
 **Detailed Description** [REQUIRED]
@@ -55,11 +55,12 @@ HOW TO USE IT
 4. Click "Open file viewer" (or press Alt+Shift+O) to open any supported document in dark mode—see Key Features above for the full format list.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-100% PRIVATE & OFFLINE
+PRIVATE BY DEFAULT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ThemeSwitcher is built with an uncompromising commitment to privacy:
-• Zero analytics, telemetry, or tracking pixels.
-• Zero external network calls—runs 100% locally in your browser.
+• No analytics, tracking pixels, or advertising of any kind.
+• Optional anonymous usage statistics are OFF by default and only start if you click Yes in the popup or enable them in Options. They never include sites, URLs, page content, or documents, and you can see exactly what is sent, turn it off, or delete your data at any time.
+• Everything else runs 100% locally in your browser, with no other network calls.
 • No browsing history or website URLs ever leave your computer.
 • Preferences sync strictly through your personal Google Account via chrome.storage.sync.
 • Fully open-source under the MIT License for public security auditing.
@@ -110,8 +111,9 @@ English
 
 | Permission     | Type            | Detailed Plain-English Justification                                                                                                                                                                      |
 | :------------- | :-------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `storage`    | permissions     | Required to store user settings (selected engine, custom background color, viewer preferences) per domain and sync them across the user's signed-in devices using Chrome Sync with zero external servers. |
+| `storage`    | permissions     | Required to store user settings (selected engine, custom background color, viewer preferences) per domain and sync them across the user's signed-in devices using Chrome Sync with no developer servers involved. |
 | `activeTab`  | permissions     | Required only when the user opens the extension popup to inspect page colors/luminance and apply theme changes without requesting broad, persistent tab access.                                           |
+| `https://pshah.fun/api/darkmode-telemetry*` | host_permissions | Required only so the background service worker can send the optional, opt-in anonymous usage report (off by default) and the "Delete my data" request to the developer's own first-party endpoint. It gives no access to any website the user visits. |
 | `<all_urls>` | content_scripts | Required to inject styling rules and evaluate surface luminance on websites at`document_start` so pages render dark immediately without bright white flashes.                                           |
 
 ---
@@ -120,7 +122,7 @@ English
 
 ### Data Collection
 
-**Does the extension collect user data?** No
+**Does the extension collect user data?** Only if the user opts in: anonymous, opt-in usage statistics (off by default). The only data type declared is "User activity". Nothing else is collected.
 
 | Data Type                    | Collected? | Transmitted Off-Device? | Purpose | Shared with Third Parties? |
 | :--------------------------- | :--------- | :---------------------- | :------ | :------------------------- |
@@ -131,12 +133,13 @@ English
 | Personal communications      | No         | No                      | None    | No                         |
 | Location                     | No         | No                      | None    | No                         |
 | Web history                  | No         | No                      | None    | No                         |
-| User activity                | No         | No                      | None    | No                         |
+| User activity                | Yes, only if the user opts in (off by default); anonymous: random ID, day, extension/Chrome version, OS family, UI language, engine/theme/feature used flags | Yes, to the developer's own endpoint (hosted on Vercel and Supabase) | Understand how many people use the extension and which features are used | No                         |
 | Website content              | No         | No                      | None    | No                         |
 
 ### Data Use Certification
 
 - [X] Data is NOT sold to third parties
+- [X] Usage statistics are anonymous, opt-in, and the IP address is never stored
 - [X] Data is NOT used for purposes unrelated to the extension's core functionality
 - [X] Data is NOT used for creditworthiness or lending purposes
 

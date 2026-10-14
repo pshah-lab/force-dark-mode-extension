@@ -16,8 +16,8 @@ ThemeSwitcher (Force Dark Mode) is a client-side browser extension and companion
 This comprehensive audit evaluated ThemeSwitcher against national and international data protection standards, including India’s **Digital Personal Data Protection Act, 2023 (DPDP Act)**, the European Union's **General Data Protection Regulation (EU GDPR)**, the **UK GDPR / PECR**, **US State Privacy Laws (CCPA/CPRA)**, and the **Chrome Web Store Developer Program Policies**.
 
 ### Key Findings & Implemented Controls:
-- **100% Local-First Architecture:** The extension runs entirely inside the user's browser sandbox. ThemeSwitcher maintains zero developer servers, zero external databases, and zero proprietary APIs.
-- **Zero Telemetry & Zero Cookies:** The extension contains zero tracking pixels, analytics SDKs, or remote error trackers. All third-party counter network requests on the companion website were eliminated.
+- **100% Local-First Architecture:** The extension runs inside the user's browser sandbox. Settings, themes, custom CSS and documents never leave the device. The only network traffic is the optional, anonymous, opt-in usage report (off by default) to a first-party endpoint hosted on Vercel with a Supabase database.
+- **Opt-in Telemetry Only & Zero Cookies:** The extension contains zero tracking pixels, third-party analytics SDKs, or remote error trackers. First-party usage statistics are opt-in, off by default, anonymous (random ID, day, versions, OS family, UI language, yes/no usage flags), never store the IP address, and can be turned off and deleted in Options > Usage stats. All third-party counter network requests on the companion website were eliminated.
 - **Data Minimization:** Runtime message passing was hardened to transmit strictly sanitized domain hostnames (`host`), preventing URL path and query parameter leakage.
 - **Self-Service User Rights:** A dedicated "Privacy & Data Management" center was introduced in the Options page, giving users autonomous control to export settings (GDPR Art. 20 Portability) and erase all stored preferences (DPDP Sec. 12 / GDPR Art. 17 Erasure) with one click.
 - **Security Hardening:** Fallback iframe sandboxing was tightened to remove `allow-same-origin`, and the document viewer was refactored to eliminate all `innerHTML` usage in favor of safe DOM node creation.
@@ -58,7 +58,7 @@ ThemeSwitcher operates across three distinct operational boundaries:
                                                             (Encrypted User Google Sync)
 ```
 
-1. **No Outbound Network Transmission:** No URLs, page contents, form fields, passwords, or cookies ever leave the client.
+1. **No Page Data Leaves the Client:** No URLs, page contents, form fields, passwords, or cookies ever leave the client. The only outbound request is the opt-in anonymous usage report (and the Delete my data request), sent by the service worker alone to `https://pshah.fun/api/darkmode-telemetry*`; automated tests confine `fetch` to that one file.
 2. **Local Sync:** `chrome.storage.sync` synchronizes directly through the user's signed-in Google account without passing through any intermediate proxy.
 
 ---
@@ -69,6 +69,7 @@ ThemeSwitcher operates across three distinct operational boundaries:
 | ---------- | ----- | -------------------- | --------------- | ---------- |
 | `storage` | Extension permissions | Persists per-site rules across sessions. Essential for core utility. | Low | Key sanitization (`isSafeKey`) prevents prototype pollution. |
 | `activeTab` | Extension permissions | Inspects active tab on popup click to calculate luminance and toggle theme. | Low | Only granted upon explicit user click; terminates on navigation. |
+| `https://pshah.fun/api/darkmode-telemetry*` | `host_permissions` | Lets the service worker send the opt-in anonymous usage report and the Delete my data request to the developer's first-party endpoint. No access to visited sites. | Low | Single path-scoped pattern; only `telemetrySender.js` uses the network; off by default. |
 | `<all_urls>` | `content_scripts.matches` | Injects CSS rules at `document_start` to eliminate blinding white screen flashes. | Medium | Script runs in isolated world; zero network calls; zero text reading. |
 
 ---
@@ -85,7 +86,7 @@ ThemeSwitcher operates across three distinct operational boundaries:
 
 ## 7. Privacy Audit
 
-- **Tracking & Telemetry:** Verified 0 analytics SDKs, 0 tracking pixels, and 0 crash reporters.
+- **Tracking & Telemetry:** Verified 0 third-party analytics SDKs, 0 tracking pixels, and 0 crash reporters. First-party usage statistics exist but are opt-in and off by default.
 - **Zero Tracking Cookies:** Both extension and companion website operate with 0 cookies.
 - **Website Network Cleanliness:** Removed all external API calls (`abacus`, `countapi`) from `website/js/main.js`. Companion site is 100% static and private.
 - **Do Not Track:** Respects `navigator.doNotTrack` and Global Privacy Control.
@@ -106,10 +107,10 @@ ThemeSwitcher operates across three distinct operational boundaries:
 ## 9. EU/EEA Compliance Assessment (GDPR)
 
 - **Territorial Scope (Art. 3):** Applicable via availability on CWS in the EEA.
-- **Lawful Basis (Art. 6):** Art. 6(1)(b) (Performance of contract/request) and Art. 6(1)(f) (Legitimate interest).
+- **Lawful Basis (Art. 6):** Art. 6(1)(b) (Performance of contract/request) and Art. 6(1)(f) (Legitimate interest) for local settings; Art. 6(1)(a) (Consent) for the opt-in usage statistics.
 - **Data Minimization (Art. 5(1)(c)):** Strictly minimized to site hostname keys.
 - **Data Subject Rights (Arts. 15–21):** Access (Options view), Erasure (Options wipe button), Portability (JSON export button).
-- **International Transfers (Chapter V):** Zero developer transfers to third countries.
+- **International Transfers (Chapter V):** None for local data. Opt-in usage statistics are processed on Vercel and Supabase infrastructure (see section 14).
 
 ---
 
@@ -146,7 +147,7 @@ ThemeSwitcher operates across three distinct operational boundaries:
 
 ## 14. Third-Party Vendor Assessment
 
-- **Zero Processors:** ThemeSwitcher engages 0 third-party data processors or sub-processors.
+- **Processors:** No analytics or marketing processors. The first-party opt-in usage endpoint is hosted on Vercel Inc. with a Supabase database, acting as infrastructure only.
 - Platform providers: Google LLC (Chrome Sync) and GitHub Inc. (Static hosting).
 
 ---
@@ -259,7 +260,7 @@ Comprehensive STRIDE and Privacy threat model completed in `docs/security/threat
 
 - [x] No unnecessary permissions requested (`storage`, `activeTab`, `<all_urls>`).
 - [x] No server secrets or API keys in client code.
-- [x] Zero outbound network requests in extension code.
+- [x] Outbound network requests confined to the single opt-in usage-statistics sender (`src/background/telemetrySender.js`); zero elsewhere in extension code.
 - [x] Zero third-party telemetry or trackers on companion website.
 - [x] Strict Content Security Policy implemented (`script-src 'self'; object-src 'none'`).
 - [x] Safe DOM node creation; zero `innerHTML` in extension.

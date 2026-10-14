@@ -10,7 +10,7 @@
 Under Article 5(1)(e) of the EU GDPR and Section 8(7) of India's Digital Personal Data Protection Act, 2023 (DPDP Act), personal data must not be kept longer than is necessary for the purposes for which it is processed.
 
 ThemeSwitcher applies the strictest interpretation of this principle:
-- **Server-Side Data:** Zero days. ThemeSwitcher maintains no proprietary databases or backend servers.
+- **Server-Side Data:** Zero for everyone who has not opted in. If you opt in to anonymous usage statistics, one small row per active day (random ID, day, versions, OS family, UI language, yes/no usage flags) is stored on the developer's first-party endpoint (Vercel and Supabase) and is deleted when you click Delete my data in Options > Usage stats. IP addresses are never stored.
 - **Client-Side Data:** Exclusively user-controlled and stored locally within the browser profile.
 
 ---
@@ -22,6 +22,8 @@ ThemeSwitcher applies the strictest interpretation of this principle:
 | **Extension** | Domain preferences (engine, color) | `chrome.storage.sync` | Retained as long as user desires the site rule | 1. User clicks "Erase All Stored Data" in Options.<br>2. User removes rule via popup toggle.<br>3. User uninstalls extension. |
 | **Extension** | Global defaults & Viewer settings | `chrome.storage.sync` | Retained until reconfigured by user | Overwritten by user in Options / Viewer or erased via "Erase All Stored Data". |
 | **Extension** | In-Memory style tokens | Browser RAM | Discarded after DOM evaluation | Automatically reclaimed by browser garbage collector upon tab navigation or close. |
+| **Extension** | Usage-statistics state (opt-in only): random ID, today's counters | `chrome.storage.local` (`telemetryState`, never synced) | Only exists while usage stats are on | Turning usage stats off in Options, Delete my data, or uninstalling. |
+| **Server** | Anonymous usage report rows (opt-in only) | First-party database (Supabase) | Kept until the user requests deletion | **Delete my data** in Options > Usage stats removes every row for the user's random ID. |
 | **Website** | Local feedback cache | `localStorage` (`fdex_feedback_entries`) | Retained in local browser storage | User clears browser storage / website cookies & site data. |
 | **Website** | Session tracking debounce | `sessionStorage` (`fdex_visit_logged_v1`) | Retained for current tab session | Automatically purged upon closing the browser tab. |
 
@@ -29,8 +31,8 @@ ThemeSwitcher applies the strictest interpretation of this principle:
 
 ## 3. Server-Side Data Retention Statement
 
-Because ThemeSwitcher does not operate backend servers, cloud databases, user authentication systems, or proprietary analytics endpoints:
-- No log files containing user IP addresses or user agents are recorded by ThemeSwitcher.
+ThemeSwitcher operates no user authentication system and no third-party analytics. The single first-party endpoint for the opt-in usage statistics (see the table above) stores only the anonymous report fields:
+- The endpoint never stores user IP addresses, and ThemeSwitcher records no log files containing IP addresses or user agents beyond what the hosting platform itself keeps transiently for operating the service.
 - No database backups containing user preferences are generated or retained.
 - No archival or warm/cold storage of browsing activity exists.
 

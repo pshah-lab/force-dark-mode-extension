@@ -4,6 +4,7 @@
   "version": "2.0.0",
   "description": "Apply smart dark mode to websites, PDFs, and documents with Auto, CSS, Invert, native dark detection, and local PDF rendering.",
   "permissions": ["storage", "activeTab", "contextMenus"],
+  "host_permissions": ["https://pshah.fun/api/darkmode-telemetry*"],
   "background": {
     "service_worker": "src/background/serviceWorker.js",
     "type": "module"

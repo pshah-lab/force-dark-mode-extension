@@ -158,7 +158,7 @@ function deferredSetup() {
     fetchFn, now: () => base.clock.t, version: "2.1.0",
     env: () => ({ userAgent: "Chrome/130.0.0.0 Macintosh", lang: "en" }),
   });
-  const tick = () => new Promise((r) => setTimeout(r, 5));
+  const tick = async () => { for (let i = 0; i < 50; i++) await Promise.resolve(); };
   return { t, map: base.map, pending, order, tick };
 }
 
@@ -238,6 +238,62 @@ test("invalid heartbeat is never sent", async () => {
   s.map.set("telemetryState", { ...s.map.get("telemetryState"), id: "not-a-uuid" });
   assert.strictEqual(await s.t.send(), false);
   assert.strictEqual(s.calls.length, 0);
+});
+
+const flush = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); };
+
+test("recordUsage starting while the DELETE fetch is pending issues no ingest", async () => {
+  const { t, map, pending, order, tick } = deferredSetup();
+  await t.setConsent(true);
+  const del = t.deleteMyData();
+  await tick();
+  assert.deepStrictEqual(order, [DELETE_URL]);
+  await t.recordUsage({ engine: "css" });
+  await tick();
+  assert.deepStrictEqual(order, [DELETE_URL], "no ingest while delete is pending");
+  pending[0].resolve({ ok: true });
+  assert.deepStrictEqual(await del, { serverConfirmed: true });
+  assert.deepStrictEqual(order, [DELETE_URL]);
+  assert.strictEqual(map.size, 0);
+});
+
+test("recordUsage suspended at its state read when delete runs sends no ingest", async () => {
+  const map = new Map();
+  let gate = null;
+  let release;
+  const storage = {
+    get: async (k) => {
+      const v = map.get(k);
+      if (gate) { const g = gate; gate = null; await g; }
+      return v;
+    },
+    set: async (k, v) => { map.set(k, JSON.parse(JSON.stringify(v))); },
+    remove: async (k) => { map.delete(k); },
+  };
+  const order = [];
+  const fetchFn = async (url) => { order.push(url); return { ok: true }; };
+  const t = createTelemetry({
+    storage, fetchFn, now: () => new Date("2026-10-14T10:00:00Z"), version: "2.1.0",
+    env: () => ({ userAgent: "Chrome/130.0.0.0 Macintosh", lang: "en" }),
+  });
+  await t.setConsent(true);
+  // Let recordUsage pass its exclusive section, then suspend at the post-exclusive state read.
+  const origGet = storage.get;
+  let calls = 0;
+  storage.get = async (k) => {
+    calls++;
+    if (calls === 2) { gate = new Promise((r) => { release = r; }); }
+    return origGet(k);
+  };
+  const rec = t.recordUsage({ engine: "css" });
+  await flush();
+  const del = t.deleteMyData();
+  await flush();
+  release();
+  await rec;
+  await del;
+  assert.ok(!order.includes(INGEST_URL), `ingest must not be sent: ${order.join(",")}`);
+  assert.strictEqual(map.size, 0);
 });
 
 console.log("=========================================");

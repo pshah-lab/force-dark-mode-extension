@@ -46,7 +46,8 @@ export function createTelemetry({
 
   async function doSend() {
     try {
-      const state = await readState();
+      // Checked inside the exclusive section so it is ordered against deleteMyData/setConsent.
+      const state = await exclusive(readState);
       if (!state) return false;
       const today = utcDay(now());
       const heartbeat = heartbeatFor(state, today);
@@ -129,24 +130,23 @@ export function createTelemetry({
   }
 
   async function deleteMyData() {
-    // Let any pending heartbeat and queued state writes settle first, so a late ingest cannot
-    // recreate server data for an ID we have just asked to delete.
+    // Read the id and disable local telemetry first, inside the exclusive section, so any
+    // recordUsage/send that starts from now on is a no-op and cannot re-create server data.
+    let id = null;
+    try {
+      await exclusive(async () => {
+        const s = await storage.get(STATE_KEY);
+        if (s && typeof s.id === "string") id = s.id;
+        await storage.remove(STATE_KEY);
+      });
+    } catch (e) {
+      // ignore
+    }
+    // A heartbeat that was already on the wire must settle before the delete is posted.
     try {
       if (inFlight) await inFlight;
     } catch (e) {
       // ignore
-    }
-    try {
-      await chain;
-    } catch (e) {
-      // ignore
-    }
-    let id = null;
-    try {
-      const s = await storage.get(STATE_KEY);
-      if (s && typeof s.id === "string") id = s.id;
-    } catch (e) {
-      id = null;
     }
     let serverConfirmed = false;
     if (id) {
@@ -164,7 +164,11 @@ export function createTelemetry({
       }
     }
     try {
-      await exclusive(() => storage.remove(STATE_KEY));
+      // Retry only if the first removal failed; never wipe a state created by a later opt-in.
+      await exclusive(async () => {
+        const s = await storage.get(STATE_KEY);
+        if (s && s.id === id) await storage.remove(STATE_KEY);
+      });
     } catch (e) {
       // ignore
     }

@@ -1,6 +1,6 @@
 # Opt-in anonymous usage metrics: design
 
-Date: 2026-10-14. Target release: 2.1.0. Status: draft for owner review.
+Date: 2026-10-14. Target release: 2.0.0 (folded into the 2.0.0 release). Status: draft for owner review.
 
 ## Goal
 

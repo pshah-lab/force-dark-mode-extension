@@ -9,14 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **Anonymous, opt-in usage statistics**, off by default. A one-time card in the popup asks; the same switch lives in Options > Usage stats, with a preview (an example report before you turn it on, today's report afterwards) and a **Delete my data** button. When on, one small report per day (random ID, UTC day, extension version, Chrome major version, OS family, UI language, and yes/no flags for the engine, built-in theme and features used) is sent from the service worker to the developer's own endpoint.
-
-### Privacy
-- No new permissions and no host permissions: the usage-statistics endpoint answers CORS for the extension's own origin instead, so updating does not show a new permission prompt. `permissions` are unchanged and the CSP is unchanged.
-- Nothing about sites, URLs, page content, documents or typed text is collected, and our server function does not store IP addresses. Delete my data (Options > Usage stats) also turns usage stats off, so use it before unticking or uninstalling; other records are purged after 13 months. If the delete request cannot reach the server, stats stay off and the request is retried automatically (on the next click and when the browser starts the extension) until the server confirms it.
-- `PRIVACY.md` and the privacy documents were rewritten: "Zero Telemetry" is replaced by a section describing the opt-in statistics. Automated tests now confine `fetch` to one file and check the policy's field list against the real report.
-
 ---
 
 ## [2.0.0] - 2026-10-12
@@ -29,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Theme editor** in Options: create and edit your own themes with a live preview and a contrast guard. Text and link colours at or above 4.5:1 save cleanly, below 4.5:1 shows a warning, and below 3:1 cannot be saved.
 - **Theme import and export** as JSON files, with size and field validation on import.
 - **Per-site custom CSS** in Options, checked by a sanitiser before it is stored or injected. Custom CSS cannot introduce a URL.
+- **Anonymous, opt-in usage statistics**, off by default. A one-time card in the popup asks; the same switch lives in Options > Usage stats, with a preview (an example report before you turn it on, today's report afterwards) and a **Delete my data** button. When on, one small report per day (random ID, UTC day, extension version, Chrome major version, OS family, UI language, and yes/no flags for the engine, built-in theme and features used) is sent from the service worker to the developer's own endpoint.
 
 ### Changed
 - Images and video are dimmed through one adjustable theme setting, and SVG icons and keep-light elements are handled more carefully by the CSS engine. Dimming applies only when a theme sets it above 0 (otherwise images keep no filter), and an image inside a `<picture>` is dimmed once, not twice.
@@ -37,7 +30,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom CSS is limited to 40,000 characters across all sites together, so it can never fill browser sync storage.
 
 ### Privacy
-- No new permissions, host permissions or network requests. Themes and custom CSS are stored with the rest of your settings in `chrome.storage`, and the extension never makes network requests.
+- Themes and custom CSS are stored with the rest of your settings in `chrome.storage`. Custom CSS can never cause a network request.
+- No new permissions and no host permissions: the usage-statistics endpoint answers CORS for the extension's own origin instead, so updating does not show a new permission prompt. `permissions` are unchanged and the CSP is unchanged.
+- Nothing about sites, URLs, page content, documents or typed text is collected, and our server function does not store IP addresses. Delete my data (Options > Usage stats) also turns usage stats off, so use it before unticking or uninstalling; other records are purged after 13 months. If the delete request cannot reach the server, stats stay off and the request is retried automatically (on the next click and when the browser starts the extension) until the server confirms it.
+- `PRIVACY.md` and the privacy documents were rewritten: "Zero Telemetry" is replaced by a section describing the opt-in statistics. Automated tests now confine `fetch` to one file and check the policy's field list against the real report.
 
 ---
 

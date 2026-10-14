@@ -2,6 +2,8 @@
 
 Prepared 2026-10-13 for the store dashboard (Store listing → language dropdown → add language). Machine-drafted from the current English listing in `CHROMEWEBSTORE.md`; have a native speaker skim each one before publishing, and keep the privacy claims identical to the English text.
 
+Updated 2026-10-14 for the opt-in usage statistics: the privacy section and short description of every language below were machine-redrafted from the current English listing. UI names ("Yes, share stats", "Delete my data", "Options > Usage stats") stay in English because the extension UI is English. These privacy sentences describe data collection, so a native speaker must check them before publishing.
+
 Rules kept from the earlier keyword-spam rejection: the document format list appears once per language, no repeated keyword lists, nothing promotional beyond features that exist.
 
 Why these languages: GA4 listing visitors (Jul 14 – Oct 11 2026): Brazil 94, Germany 33, Indonesia 32, Turkey 25, Vietnam 25, France 23, Spanish-speaking countries about 70 together.
@@ -10,9 +12,9 @@ Short description limit: 132 characters (counts shown).
 
 ## Português (Brasil) — pt-BR
 
-**Short description** (128/132)
+**Short description** (129/132)
 ```
-Modo escuro inteligente para sites, PDFs e documentos locais, com detecção automática, cores personalizadas e zero rastreamento.
+Modo escuro inteligente para sites, PDFs e documentos locais: detecção automática, cores à escolha e sem rastreamento por padrão.
 ```
 
 **Detailed description**
@@ -30,9 +32,10 @@ PRINCIPAIS RECURSOS
 • Temas e CSS personalizado: escolha entre oito temas integrados no popup, use ajustes prontos para 20 sites populares, crie o seu no editor de temas com prévia e verificação de contraste, ou adicione CSS personalizado por site. O CSS personalizado é validado e não pode introduzir uma URL.
 • Sem flashes brancos e ativação instantânea. Atalho: Alt+Shift+D.
 
-100% PRIVADO E OFFLINE
-• Sem análises, telemetria ou rastreadores.
-• Nenhuma chamada de rede externa: tudo roda localmente no navegador.
+PRIVADO POR PADRÃO
+• Sem análises de terceiros, pixels de rastreamento ou anúncios.
+• Estatísticas de uso anônimas e opcionais ficam DESATIVADAS por padrão e só começam se você clicar em "Yes, share stats" no popup ou ativá-las em Options. Nunca incluem sites, URLs, conteúdo de páginas ou documentos; você vê um relatório de exemplo antes de ativar e pode desativar a qualquer momento em Options. Para excluir seus dados, clique em "Delete my data" em Options > Usage stats antes de desativar ou desinstalar (desativar primeiro descarta o ID aleatório necessário para encontrar seus registros, que de outra forma são apagados após 13 meses).
+• Todo o resto roda localmente no navegador. A única outra requisição de rede ocorre quando você abre um PDF da web no leitor: ele baixa o PDF diretamente do site que o hospeda, e nada é enviado a nós.
 • Seu histórico e os endereços dos sites nunca saem do seu computador.
 • As preferências são sincronizadas apenas pela sua Conta Google (chrome.storage.sync).
 • Código aberto sob licença MIT.
@@ -46,7 +49,7 @@ Suporte e feedback: https://darkmode.pshah.fun/support.html
 
 **Short description** (127/132)
 ```
-Modo oscuro inteligente para sitios web, PDF y documentos locales, con detección automática, colores a tu gusto y cero rastreo.
+Modo oscuro inteligente para sitios web, PDF y documentos locales: detección automática, tus colores y sin rastreo por defecto.
 ```
 
 **Detailed description**
@@ -64,9 +67,10 @@ FUNCIONES PRINCIPALES
 • Temas y CSS personalizado: elige entre ocho temas integrados en el popup, usa ajustes preparados para 20 sitios populares, crea el tuyo en el editor de temas con vista previa y comprobación de contraste, o añade CSS personalizado por sitio. El CSS personalizado se valida y no puede introducir una URL.
 • Sin destellos blancos y activación instantánea. Atajo: Alt+Shift+D.
 
-100 % PRIVADO Y SIN CONEXIÓN
-• Sin analítica, telemetría ni rastreadores.
-• Sin llamadas de red externas: todo se ejecuta localmente en tu navegador.
+PRIVADO POR DEFECTO
+• Sin analítica de terceros, píxeles de seguimiento ni publicidad.
+• Las estadísticas de uso anónimas y opcionales están DESACTIVADAS por defecto y solo empiezan si haces clic en "Yes, share stats" en el popup o las activas en Options. Nunca incluyen sitios, URL, contenido de páginas ni documentos; puedes ver un informe de ejemplo antes de activarlas y desactivarlas en cualquier momento en Options. Para borrar tus datos, haz clic en "Delete my data" en Options > Usage stats antes de desactivarlas o desinstalar (si las desactivas primero, se descarta el ID aleatorio necesario para encontrar tus registros, que de lo contrario se eliminan a los 13 meses).
+• Todo lo demás se ejecuta localmente en tu navegador. La única otra petición de red ocurre cuando abres un PDF web en el visor: lo descarga directamente del sitio que lo aloja y no se nos envía nada.
 • Tu historial y las direcciones de los sitios nunca salen de tu equipo.
 • Las preferencias se sincronizan solo a través de tu cuenta de Google (chrome.storage.sync).
 • Código abierto bajo licencia MIT.
@@ -78,9 +82,9 @@ Soporte y comentarios: https://darkmode.pshah.fun/support.html
 
 ## Bahasa Indonesia — id
 
-**Short description** (123/132)
+**Short description** (126/132)
 ```
-Mode gelap pintar untuk situs web, PDF, dan dokumen lokal, dengan deteksi otomatis, warna kustom, dan tanpa pelacakan data.
+Mode gelap pintar untuk situs web, PDF, dan dokumen lokal: deteksi otomatis, warna kustom, dan tanpa pelacakan secara default.
 ```
 
 **Detailed description**
@@ -98,9 +102,10 @@ FITUR UTAMA
 • Tema dan CSS kustom: pilih dari delapan tema bawaan di popup, gunakan pengaturan siap pakai untuk 20 situs populer, buat tema sendiri di editor tema dengan pratinjau dan pemeriksaan kontras, atau tambahkan CSS kustom per situs. CSS kustom divalidasi dan tidak dapat menyertakan URL.
 • Tanpa kilatan putih dan bisa diaktifkan seketika. Pintasan: Alt+Shift+D.
 
-100% PRIVAT DAN OFFLINE
-• Tanpa analitik, telemetri, atau pelacak.
-• Tanpa panggilan jaringan eksternal: semuanya berjalan lokal di browser Anda.
+PRIVAT SECARA DEFAULT
+• Tanpa analitik pihak ketiga, piksel pelacak, atau iklan.
+• Statistik penggunaan anonim yang opsional NONAKTIF secara default dan baru dimulai jika Anda mengklik "Yes, share stats" di popup atau mengaktifkannya di Options. Statistik tidak pernah memuat situs, URL, isi halaman, atau dokumen; Anda dapat melihat contoh laporan sebelum mengaktifkan dan menonaktifkannya kapan saja di Options. Untuk menghapus data Anda, klik "Delete my data" di Options > Usage stats sebelum menonaktifkan atau menghapus instalasi (menonaktifkan lebih dulu akan membuang ID acak yang diperlukan untuk menemukan catatan Anda, yang jika tidak akan dihapus setelah 13 bulan).
+• Semua yang lain berjalan lokal di browser Anda. Satu-satunya permintaan jaringan lain terjadi saat Anda membuka PDF web di penampil: PDF diunduh langsung dari situs yang menyimpannya, dan tidak ada yang dikirim kepada kami.
 • Riwayat dan alamat situs tidak pernah keluar dari komputer Anda.
 • Preferensi hanya disinkronkan melalui Akun Google Anda (chrome.storage.sync).
 • Sumber terbuka dengan lisensi MIT.
@@ -112,9 +117,9 @@ Dukungan dan masukan: https://darkmode.pshah.fun/support.html
 
 ## Deutsch — de
 
-**Short description** (128/132)
+**Short description** (130/132)
 ```
-Intelligenter Dunkelmodus für Websites, PDFs und lokale Dokumente – mit Auto-Erkennung, eigenen Farben und ohne Datenverfolgung.
+Intelligenter Dunkelmodus für Websites, PDFs und lokale Dokumente – Auto-Erkennung, eigene Farben und standardmäßig ohne Tracking.
 ```
 
 **Detailed description**
@@ -132,9 +137,10 @@ WICHTIGSTE FUNKTIONEN
 • Themes und eigenes CSS: Wähle im Popup aus acht integrierten Themes, nutze fertige Einstellungen für 20 beliebte Websites, erstelle im Theme-Editor mit Vorschau und Kontrastprüfung eigene Themes oder füge pro Website eigenes CSS hinzu. Eigenes CSS wird geprüft und kann keine URL einbinden.
 • Keine weißen Blitze und sofortiges Umschalten. Tastenkürzel: Alt+Shift+D.
 
-100 % PRIVAT UND OFFLINE
-• Keine Analyse, Telemetrie oder Tracker.
-• Keine externen Netzwerkaufrufe: Alles läuft lokal in Ihrem Browser.
+STANDARDMÄSSIG PRIVAT
+• Keine Analysedienste von Drittanbietern, Tracking-Pixel oder Werbung.
+• Optionale anonyme Nutzungsstatistiken sind standardmäßig AUS und starten nur, wenn Sie im Popup auf "Yes, share stats" klicken oder sie in Options aktivieren. Sie enthalten nie Websites, URLs, Seiteninhalte oder Dokumente; vor dem Einschalten sehen Sie einen Beispielbericht und können sie jederzeit in Options ausschalten. Um Ihre Daten zu löschen, klicken Sie unter Options > Usage stats auf "Delete my data", bevor Sie die Statistik ausschalten oder deinstallieren (wer zuerst ausschaltet, verwirft die zufällige ID, mit der Ihre Einträge gefunden werden; sie werden sonst nach 13 Monaten gelöscht).
+• Alles andere läuft lokal in Ihrem Browser. Die einzige weitere Netzwerkanfrage entsteht, wenn Sie ein Web-PDF im Viewer öffnen: Es wird direkt von der hostenden Website geladen, und nichts wird an uns gesendet.
 • Ihr Verlauf und die Adressen der Websites verlassen Ihren Computer nie.
 • Einstellungen werden ausschließlich über Ihr Google-Konto synchronisiert (chrome.storage.sync).
 • Open Source unter der MIT-Lizenz.
@@ -146,9 +152,9 @@ Support und Feedback: https://darkmode.pshah.fun/support.html
 
 ## Français — fr
 
-**Short description** (131/132)
+**Short description** (130/132)
 ```
-Mode sombre intelligent pour sites web, PDF et documents locaux, avec détection automatique, couleurs personnalisées et zéro suivi.
+Mode sombre intelligent pour sites web, PDF et documents locaux : détection automatique, couleurs au choix, sans suivi par défaut.
 ```
 
 **Detailed description**
@@ -166,9 +172,10 @@ FONCTIONNALITÉS PRINCIPALES
 • Thèmes et CSS personnalisé : choisissez parmi huit thèmes intégrés dans la popup, utilisez des réglages prêts pour 20 sites populaires, créez le vôtre dans l'éditeur de thèmes avec aperçu et vérification du contraste, ou ajoutez du CSS personnalisé par site. Le CSS personnalisé est validé et ne peut pas introduire d'URL.
 • Aucun flash blanc et activation instantanée. Raccourci : Alt+Maj+D.
 
-100 % PRIVÉ ET HORS LIGNE
-• Aucune analyse, télémétrie ni traceur.
-• Aucun appel réseau externe : tout s'exécute localement dans votre navigateur.
+PRIVÉ PAR DÉFAUT
+• Aucune analyse tierce, aucun pixel de suivi ni publicité.
+• Les statistiques d'usage anonymes et facultatives sont DÉSACTIVÉES par défaut et ne démarrent que si vous cliquez sur "Yes, share stats" dans la popup ou les activez dans Options. Elles n'incluent jamais de sites, d'URL, de contenu de page ni de documents ; vous voyez un exemple de rapport avant de les activer et pouvez les désactiver à tout moment dans Options. Pour supprimer vos données, cliquez sur "Delete my data" dans Options > Usage stats avant de les désactiver ou de désinstaller (les désactiver d'abord supprime l'identifiant aléatoire nécessaire pour retrouver vos enregistrements, qui sont sinon purgés après 13 mois).
+• Tout le reste s'exécute localement dans votre navigateur. La seule autre requête réseau a lieu quand vous ouvrez un PDF web dans la visionneuse : il est téléchargé directement depuis le site qui l'héberge, et rien ne nous est envoyé.
 • Votre historique et les adresses des sites ne quittent jamais votre ordinateur.
 • Les préférences se synchronisent uniquement via votre compte Google (chrome.storage.sync).
 • Open source sous licence MIT.
@@ -180,9 +187,9 @@ Assistance et commentaires: https://darkmode.pshah.fun/support.html
 
 ## Türkçe — tr
 
-**Short description** (119/132)
+**Short description** (130/132)
 ```
-Web siteleri, PDF'ler ve yerel belgeler için akıllı karanlık mod: otomatik algılama, özel renkler ve sıfır veri takibi.
+Web siteleri, PDF'ler ve yerel belgeler için akıllı karanlık mod: otomatik algılama, özel renkler ve varsayılan olarak izleme yok.
 ```
 
 **Detailed description**
@@ -200,9 +207,10 @@ Fotoğrafları, video küçük resimlerini ve sayfa düzenini bozan basit renk t
 • Temalar ve özel CSS: açılır pencereden sekiz yerleşik tema arasından seçin, 20 popüler site için hazır ayarları kullanın, önizleme ve kontrast denetimi olan tema düzenleyicide kendi temanızı oluşturun veya site başına özel CSS ekleyin. Özel CSS doğrulanır ve bir URL ekleyemez.
 • Beyaz parlama yok, anında açma/kapama. Kısayol: Alt+Shift+D.
 
-%100 GİZLİ VE ÇEVRİMDIŞI
-• Analiz, telemetri veya izleyici yok.
-• Harici ağ çağrısı yok: Her şey tarayıcınızda yerel olarak çalışır.
+VARSAYILAN OLARAK GİZLİ
+• Üçüncü taraf analiz, izleme pikseli veya reklam yok.
+• İsteğe bağlı anonim kullanım istatistikleri varsayılan olarak KAPALIDIR ve yalnızca açılır pencerede "Yes, share stats" düğmesine tıklarsanız ya da Options'tan açarsanız başlar. Siteleri, URL'leri, sayfa içeriğini veya belgeleri asla içermez; açmadan önce örnek bir rapor görebilir, istediğiniz zaman Options'tan kapatabilirsiniz. Verilerinizi silmek için kapatmadan veya kaldırmadan önce Options > Usage stats bölümünde "Delete my data" düğmesine tıklayın (önce kapatmak kayıtlarınızı bulmak için gereken rastgele kimliği siler; kayıtlar aksi halde 13 ay sonra temizlenir).
+• Geri kalan her şey tarayıcınızda yerel olarak çalışır. Diğer tek ağ isteği, görüntüleyicide bir web PDF'si açtığınızda olur: PDF doğrudan onu barındıran siteden indirilir ve bize hiçbir şey gönderilmez.
 • Geçmişiniz ve site adresleriniz bilgisayarınızdan asla çıkmaz.
 • Tercihler yalnızca Google Hesabınız üzerinden eşitlenir (chrome.storage.sync).
 • MIT lisansı altında açık kaynaklıdır.
@@ -214,9 +222,9 @@ Destek ve geri bildirim: https://darkmode.pshah.fun/support.html
 
 ## Tiếng Việt — vi
 
-**Short description** (124/132)
+**Short description** (130/132)
 ```
-Chế độ tối thông minh cho trang web, PDF và tài liệu cục bộ, với tự động nhận diện, màu tùy chỉnh và không theo dõi dữ liệu.
+Chế độ tối thông minh cho trang web, PDF và tài liệu cục bộ, với tự động nhận diện, màu tùy chỉnh và không theo dõi theo mặc định.
 ```
 
 **Detailed description**
@@ -234,9 +242,10 @@ TÍNH NĂNG CHÍNH
 • Giao diện và CSS tùy chỉnh: chọn trong tám giao diện tích hợp ở cửa sổ popup, dùng thiết lập sẵn cho 20 trang phổ biến, tự tạo giao diện trong trình chỉnh sửa với bản xem trước và kiểm tra độ tương phản, hoặc thêm CSS tùy chỉnh cho từng trang. CSS tùy chỉnh được kiểm tra và không thể chèn URL.
 • Không nháy trắng và bật tắt tức thì. Phím tắt: Alt+Shift+D.
 
-100% RIÊNG TƯ VÀ NGOẠI TUYẾN
-• Không phân tích, không đo từ xa, không trình theo dõi.
-• Không gọi mạng bên ngoài: mọi thứ chạy cục bộ trong trình duyệt của bạn.
+RIÊNG TƯ THEO MẶC ĐỊNH
+• Không có phân tích của bên thứ ba, pixel theo dõi hay quảng cáo.
+• Thống kê sử dụng ẩn danh, tùy chọn, TẮT theo mặc định và chỉ bắt đầu khi bạn nhấp "Yes, share stats" trong popup hoặc bật trong Options. Chúng không bao giờ gồm trang web, URL, nội dung trang hay tài liệu; bạn xem được báo cáo mẫu trước khi bật và có thể tắt bất cứ lúc nào trong Options. Để xóa dữ liệu, nhấp "Delete my data" trong Options > Usage stats trước khi tắt hoặc gỡ cài đặt (tắt trước sẽ hủy ID ngẫu nhiên cần để tìm bản ghi của bạn; các bản ghi còn lại sẽ bị xóa sau 13 tháng).
+• Mọi thứ còn lại chạy cục bộ trong trình duyệt của bạn. Yêu cầu mạng duy nhất khác xảy ra khi bạn mở PDF web trong trình xem: PDF được tải trực tiếp từ trang lưu trữ nó và không có gì được gửi cho chúng tôi.
 • Lịch sử và địa chỉ trang web không bao giờ rời khỏi máy tính của bạn.
 • Tùy chọn chỉ được đồng bộ qua Tài khoản Google của bạn (chrome.storage.sync).
 • Mã nguồn mở theo giấy phép MIT.

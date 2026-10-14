@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Privacy
 - No new permissions and no host permissions: the usage-statistics endpoint answers CORS for the extension's own origin instead, so updating does not show a new permission prompt. `permissions` are unchanged and the CSP is unchanged.
-- Nothing about sites, URLs, page content, documents or typed text is collected, and our server function does not store IP addresses. Delete my data (Options > Usage stats) also turns usage stats off, so use it before unticking or uninstalling; other records are purged after 13 months.
+- Nothing about sites, URLs, page content, documents or typed text is collected, and our server function does not store IP addresses. Delete my data (Options > Usage stats) also turns usage stats off, so use it before unticking or uninstalling; other records are purged after 13 months. If the delete request cannot reach the server, stats stay off and the request is retried automatically (on the next click and when the browser starts the extension) until the server confirms it.
 - `PRIVACY.md` and the privacy documents were rewritten: "Zero Telemetry" is replaced by a section describing the opt-in statistics. Automated tests now confine `fetch` to one file and check the policy's field list against the real report.
 
 ---

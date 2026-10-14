@@ -8,7 +8,8 @@
 --     "other" is then between 1 and 9 installs, the smallest remaining named group is folded
 --     into "other" as well (complementary suppression), so no hidden group can be recovered
 --     by subtracting published groups from the total.
---   * Non-exclusive flags (engines, features): null per item under 10.
+--   * Non-exclusive flags (engines, features): null per item when fewer than 10 installs used it
+--     OR fewer than 10 active installs did NOT use it (else MAU - users reveals the non-users).
 --   * New vs returning: if either count of a week is under 10 both are null, because their
 --     sum (that week's active installs) can equal the published WAU.
 --   * Retention: published only when the pooled denominator is at least 10.
@@ -169,16 +170,16 @@ as $$
        from week_counts), '[]'::jsonb)) end,
     'retention', case when m.n >= 10 then (select doc from ret) end,
     'engines', case when m.n >= 10 then jsonb_build_object(
-      'auto', case when fc.auto >= 10 then round(100.0 * fc.auto / m.n)::int end,
-      'css', case when fc.css >= 10 then round(100.0 * fc.css / m.n)::int end,
-      'invert', case when fc.invert >= 10 then round(100.0 * fc.invert / m.n)::int end) end,
+      'auto', case when fc.auto >= 10 and m.n - fc.auto >= 10 then round(100.0 * fc.auto / m.n)::int end,
+      'css', case when fc.css >= 10 and m.n - fc.css >= 10 then round(100.0 * fc.css / m.n)::int end,
+      'invert', case when fc.invert >= 10 and m.n - fc.invert >= 10 then round(100.0 * fc.invert / m.n)::int end) end,
     'themes', public_stats_merge((select jsonb_object_agg(theme, c) from
         (select theme, count(*)::int as c from latest group by theme) t), m.n),
     'features', case when m.n >= 10 then jsonb_build_object(
-      'viewer', case when fc.viewer >= 10 then round(100.0 * fc.viewer / m.n)::int end,
-      'editor', case when fc.editor >= 10 then round(100.0 * fc.editor / m.n)::int end,
-      'customCss', case when fc.custom_css >= 10 then round(100.0 * fc.custom_css / m.n)::int end,
-      'sitePack', case when fc.site_pack >= 10 then round(100.0 * fc.site_pack / m.n)::int end) end,
+      'viewer', case when fc.viewer >= 10 and m.n - fc.viewer >= 10 then round(100.0 * fc.viewer / m.n)::int end,
+      'editor', case when fc.editor >= 10 and m.n - fc.editor >= 10 then round(100.0 * fc.editor / m.n)::int end,
+      'customCss', case when fc.custom_css >= 10 and m.n - fc.custom_css >= 10 then round(100.0 * fc.custom_css / m.n)::int end,
+      'sitePack', case when fc.site_pack >= 10 and m.n - fc.site_pack >= 10 then round(100.0 * fc.site_pack / m.n)::int end) end,
     'os', public_stats_merge((select jsonb_object_agg(os, c) from
         (select os, count(*)::int as c from latest group by os) t), m.n),
     'chrome', public_stats_merge((select jsonb_object_agg(chrome, c) from

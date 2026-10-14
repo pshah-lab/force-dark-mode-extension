@@ -87,28 +87,52 @@ function validNewVsReturning(v) {
   });
 }
 
-function validFixedShares(v, keys) {
-  if (v === null) return true;
-  return isPlainObject(v) && hasExactKeys(v, keys) && Object.values(v).every(isShare);
+// Share bounds implied by the MAU. A share p of a group with c installs is round(100 * c / mau).
+// Every published group has c >= MIN_GROUP, so p >= round(100 * MIN_GROUP / mau); engine and
+// feature flags also need mau - c >= MIN_GROUP (else the non-users are derivable), so
+// p <= round(100 * (mau - MIN_GROUP) / mau). floor/ceil add slack so a legitimately rounded
+// value is never rejected; only clearly impossible shares are.
+const minShare = (mau) => Math.floor((100 * MIN_GROUP) / mau);
+const maxFlagShare = (mau) => Math.ceil((100 * (mau - MIN_GROUP)) / mau);
+
+function shareFits(p, mau, isFlag) {
+  if (p === null) return true;
+  if (!isShare(p)) return false;
+  if (p < minShare(mau)) return false;
+  return !isFlag || p <= maxFlagShare(mau);
 }
 
-function validCategory(v, keyOk) {
+function validFixedShares(v, keys, mau = null, isFlag = false) {
+  if (v === null) return true;
+  if (!isPlainObject(v) || !hasExactKeys(v, keys) || !Object.values(v).every(isShare)) return false;
+  return mau === null || Object.values(v).every((p) => shareFits(p, mau, isFlag));
+}
+
+function validCategory(v, keyOk, mau) {
   if (v === null) return true;
   if (!isPlainObject(v)) return false;
-  return Object.entries(v).every(([k, p]) => keyOk(k) && isShare(p));
+  return Object.entries(v).every(([k, p]) => keyOk(k) && isShare(p) && shareFits(p, mau, false));
 }
+
+const GATED_SECTIONS = ["newVsReturning", "retention", "engines", "themes", "features", "os", "chrome", "lang"];
 
 export function validatePublicStats(doc) {
   if (!isPlainObject(doc) || !hasExactKeys(doc, TOP_KEYS)) return false;
   if (!isIsoTimestamp(doc.generatedAt)) return false;
   if (doc.minGroup !== MIN_GROUP || doc.windowDays !== WINDOW_DAYS) return false;
   if (!validActive(doc.active)) return false;
+  const mau = doc.active.mau;
+  // MAU gate: with fewer than 10 active installs nothing but `active` (itself all null) is published.
+  if (mau === null) {
+    if (doc.active.wau !== null || doc.active.dau.some((e) => e.count !== null)) return false;
+    if (GATED_SECTIONS.some((k) => doc[k] !== null)) return false;
+  }
   if (!validNewVsReturning(doc.newVsReturning)) return false;
-  if (!validFixedShares(doc.retention, RETENTION_KEYS)) return false;
-  if (!validFixedShares(doc.engines, ENGINE_KEYS)) return false;
-  if (!validFixedShares(doc.features, FEATURE_KEYS)) return false;
+  if (!validFixedShares(doc.retention, RETENTION_KEYS)) return false; // relative to the cohort, not MAU
+  if (!validFixedShares(doc.engines, ENGINE_KEYS, mau, true)) return false;
+  if (!validFixedShares(doc.features, FEATURE_KEYS, mau, true)) return false;
   for (const [section, keyOk] of Object.entries(CATEGORY_KEY)) {
-    if (!validCategory(doc[section], keyOk)) return false;
+    if (!validCategory(doc[section], keyOk, mau)) return false;
   }
   return stringsAreSafe(doc);
 }

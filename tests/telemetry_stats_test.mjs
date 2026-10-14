@@ -45,11 +45,11 @@ function fullDoc() {
     },
     retention: { d1: 55, d7: 30, d30: null },
     engines: { auto: 80, css: 25, invert: null },
-    themes: { "builtin:midnight": 50, "builtin:oled": 20, custom: 17, other: 13 },
-    features: { viewer: 40, editor: null, customCss: 17, sitePack: 0 },
-    os: { mac: 40, windows: 35, linux: 17, other: 8 },
-    chrome: { "130": 70, "129": 20, other: 10 },
-    lang: { en: 60, de: 25, other: 15 },
+    themes: { "builtin:midnight": 50, "builtin:oled": 20, custom: 17, other: 17 },
+    features: { viewer: 40, editor: null, customCss: 17, sitePack: null },
+    os: { mac: 40, windows: 35, linux: 17, other: 17 },
+    chrome: { "130": 70, "129": 20, other: 17 },
+    lang: { en: 60, de: 25, other: 17 },
   };
 }
 
@@ -181,7 +181,7 @@ test("category keys must match their safe patterns", () => {
     (d) => { d.lang.engl = 5; },
   ];
   for (const f of bad) assert.strictEqual(validatePublicStats(mutated(f)), false, f.toString());
-  assert.strictEqual(validatePublicStats(mutated((d) => { d.os.chromeos = 1; d.lang.fil = 3; })), true);
+  assert.strictEqual(validatePublicStats(mutated((d) => { d.os.chromeos = 20; d.lang.fil = 20; })), true);
 });
 
 test("rejects any string containing a UUID, '<' or 'http'", () => {
@@ -202,6 +202,69 @@ test("an all-null section document requires every non-active section to be null 
   const d = emptyDoc();
   d.engines = { auto: 50 };
   assert.strictEqual(validatePublicStats(d), false);
+});
+
+test("MAU gate: when mau is null every non-active section must be null (probe rejected)", () => {
+  const probe = emptyDoc();
+  probe.engines = { auto: 3, css: null, invert: null };
+  assert.strictEqual(validatePublicStats(probe), false, "engines with mau null");
+  const probe2 = emptyDoc();
+  probe2.themes = { "builtin:x": 1 };
+  assert.strictEqual(validatePublicStats(probe2), false, "themes with mau null");
+  for (const k of ["newVsReturning", "retention", "features", "os", "chrome", "lang"]) {
+    const d = emptyDoc();
+    d[k] = clone(fullDoc()[k]);
+    assert.strictEqual(validatePublicStats(d), false, k);
+  }
+  const d = emptyDoc();
+  d.active.wau = 12;
+  assert.strictEqual(validatePublicStats(d), false, "wau with mau null");
+  const d2 = emptyDoc();
+  d2.active.dau[4].count = 12;
+  assert.strictEqual(validatePublicStats(d2), false, "dau count with mau null");
+});
+
+test("a share too small to rest on 10 installs for the MAU is rejected", () => {
+  // mau 60: 10 installs = 16.7% -> any share under 16 is impossible.
+  const bad = [
+    (d) => { d.themes["builtin:oled"] = 5; },
+    (d) => { d.os.other = 8; },
+    (d) => { d.chrome.other = 10; },
+    (d) => { d.lang.de = 1; },
+    (d) => { d.engines.css = 15; },
+    (d) => { d.features.viewer = 0; },
+    (d) => { d.active.mau = 1000; d.themes.custom = 0; },
+  ];
+  for (const f of bad) assert.strictEqual(validatePublicStats(mutated(f)), false, f.toString());
+});
+
+test("engine/feature shares must also leave at least 10 installs that did not use them", () => {
+  // mau 60: 55 of 60 = 92% leaves 5 non-users -> impossible; 50 of 60 = 83% is the maximum.
+  for (const f of [(d) => { d.engines.auto = 92; }, (d) => { d.features.viewer = 100; }, (d) => { d.engines.css = 90; }]) {
+    assert.strictEqual(validatePublicStats(mutated(f)), false, f.toString());
+  }
+  // Exclusive categories may legitimately be 100 (a single group).
+  assert.strictEqual(validatePublicStats(mutated((d) => { d.os = { mac: 100 }; })), true);
+});
+
+test("legitimately rounded edge shares are accepted", () => {
+  // mau 60: 10 installs -> 17%, 50 installs -> 83%.
+  assert.strictEqual(validatePublicStats(mutated((d) => { d.themes.custom = 17; d.engines.auto = 83; d.features.viewer = 17; })), true);
+  // mau 11: 10 installs -> 91%; 0 non-users allowed only for exclusive categories.
+  const small = mutated((d) => {
+    d.active.mau = 11; d.active.wau = 11; d.active.dau = d.active.dau.map((e) => ({ day: e.day, count: null }));
+    d.engines = { auto: null, css: null, invert: null }; d.features = { viewer: null, editor: null, customCss: null, sitePack: null };
+    d.themes = { "builtin:midnight": 100 }; d.os = { mac: 91 }; d.chrome = { "130": 100 }; d.lang = { en: 100 };
+  });
+  assert.strictEqual(validatePublicStats(small), true);
+  // mau 20: 10 users and 10 non-users -> exactly 50 is allowed for flags.
+  const twenty = mutated((d) => {
+    d.active.mau = 20; d.active.wau = 20; d.active.dau = d.active.dau.map((e) => ({ day: e.day, count: null }));
+    d.engines = { auto: 50, css: null, invert: null }; d.features = { viewer: 50, editor: null, customCss: null, sitePack: null };
+    d.themes = { "builtin:midnight": 50, other: 50 }; d.os = { mac: 100 }; d.chrome = { "130": 100 }; d.lang = { en: 100 };
+  });
+  assert.strictEqual(validatePublicStats(twenty), true);
+  assert.strictEqual(validatePublicStats({ ...twenty, engines: { auto: 55, css: null, invert: null } }), false);
 });
 
 // ---- handler -------------------------------------------------------------------------
@@ -300,6 +363,12 @@ test("invalid document from the store: 500, empty body, never served", async () 
     assert.ok(isEmptyBody(res.body));
     assert.notStrictEqual(res.headers["cache-control"], CACHE);
   }
+});
+
+test("createStatsHandler takes no clock: generatedAt comes from the database", () => {
+  const text = fs.readFileSync(path.join(ROOT, "backend/telemetry/api/darkmode-stats.js"), "utf8");
+  assert.ok(!/\bnow\b/.test(text.replace(/now\(\)/g, "")), "no unused now option");
+  assert.ok(/export function createStatsHandler\(\{ store \} = \{\}\)/.test(text));
 });
 
 test("a req whose headers getter throws is still served (headers are never read)", async () => {

@@ -31,9 +31,8 @@ function finish(res, status, { body, cache, allow } = {}) {
   else res.end();
 }
 
-// `now` is accepted for parity with the other handlers; generatedAt comes from the database.
-export function createStatsHandler({ store, now = () => new Date() } = {}) {
-  void now;
+// generatedAt comes from the database, so the handler takes no clock.
+export function createStatsHandler({ store } = {}) {
   let lazyStore = store;
   return async function handler(req, res) {
     const method = req.method;

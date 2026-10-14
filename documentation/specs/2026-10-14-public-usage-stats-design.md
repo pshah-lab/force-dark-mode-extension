@@ -14,9 +14,10 @@ Active users (DAU trend, WAU, MAU), new versus returning installs and D1/D7/D30 
 
 - Minimum group size `MIN_GROUP = 10` distinct installs. Any published count or share that rests on fewer than 10 installs is `null` ("fewer than 10" on the page).
 - If MAU < 10, every section except `active` is `null` ("not enough data yet").
-- Mutually exclusive categories (theme, os, chrome, lang): groups under 10 are merged into `"other"`; if `"other"` is still under 10 it is merged into the smallest remaining group (complementary suppression), so no hidden group can be derived by subtraction. Non-exclusive categories (engines, features) are `null` per item under 10.
+- Mutually exclusive categories (theme, os, chrome, lang): groups under 10 are merged into `"other"`; if `"other"` is still under 10 it is merged into the smallest remaining group (complementary suppression), so no hidden group can be derived by subtraction. Non-exclusive categories (engines, features) are `null` per item under 10; for engines and features, an item is also null when fewer than 10 active installs did NOT use it.
 - Windows: 30 days ending yesterday (UTC). An install counts toward a flag if any of its heartbeats in the window has it true; its theme and environment are from its most recent heartbeat in the window.
 - Shares are the number of installs in the group divided by MAU installs, rounded to a whole percent, published as integers 0-100.
+- Residual risks (documented, accepted): the window is rolling, so comparing consecutive days' published numbers can reveal changes smaller than 10 in a published group; MAU - WAU can be under 10; and anyone can inflate a rare group with fake installs until it crosses the threshold.
 - Retention pools cohorts first seen in the last 90 days: dN = installs seen exactly N days after their first day, over all cohort installs whose Nth day is in the past; published only if the pooled denominator is at least 10, as an integer percent.
 
 ## Endpoint

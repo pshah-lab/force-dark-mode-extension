@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- `MIN_GROUP = 10`: any published count or share resting on fewer than 10 installs is `null`; MAU < 10 hides every section except `active`; exclusive categories merge small groups into `"other"` with complementary suppression (spec "Disclosure control").
+- `MIN_GROUP = 10`: any published count or share resting on fewer than 10 installs is `null`; MAU < 10 hides every section except `active`; exclusive categories merge small groups into `"other"` with complementary suppression; an engine/feature share is also null when fewer than 10 active installs did NOT use it (spec "Disclosure control").
 - JSON shape exactly as in the spec; shares are integers 0-100; window = 30 days ending yesterday (UTC).
 - The endpoint exposes no ID, row or per-install series, reads no request header, sets static CORS `https://darkmode.pshah.fun`, and fails closed (500, no detail) if `validatePublicStats` rejects the document.
 - Website script writes with `textContent`/DOM APIs only; no cookies or analytics on the stats page; the stats URL appears only in `docs/js/stats.js`.

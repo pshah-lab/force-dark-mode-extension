@@ -9,11 +9,12 @@ claim the `pshah.fun` domain. (If you host the endpoints elsewhere, change the t
 ## CORS and the extension ID
 
 The extension declares no host permissions (so updating never disables it pending re-approval). Instead
-both functions answer CORS themselves, from `lib/cors.js`: every response, including errors, carries a
-STATIC `Access-Control-Allow-Origin: chrome-extension://kmhhphbakbhohiohagkhhgdgfbplkfke`, plus
+the two ingest/delete functions answer CORS themselves, from `lib/cors.js`: every response, including errors,
+carries a STATIC `Access-Control-Allow-Origin: chrome-extension://kmhhphbakbhohiohagkhhgdgfbplkfke`, plus
 `Access-Control-Allow-Methods: POST, OPTIONS`, `Access-Control-Allow-Headers: Content-Type`,
 `Access-Control-Max-Age` and `Vary: Origin`, and an `OPTIONS` preflight gets 204 without touching the
-store. No request header (not even `Origin`) is read.
+store. No request header (not even `Origin`) is read. The third function, `darkmode-stats`, uses its own static
+origin `https://darkmode.pshah.fun` (`STATS_ALLOWED_ORIGIN`, see Endpoints).
 
 The ID is defined once, as `EXTENSION_ID` in `lib/cors.js`. If the Chrome Web Store ID of the published
 extension differs from `kmhhphbakbhohiohagkhhgdgfbplkfke`, or you test an unpacked development build
@@ -68,8 +69,9 @@ What it publishes and how small groups are hidden, in plain terms:
   Any value used by fewer than 10 installs is put into "other". If "other" would then hold between 1 and 9
   installs, the smallest named value is folded into "other" too, so no hidden value can be worked out by
   subtracting the published ones from the total.
-- Engines and features: an install counts if any heartbeat in the period had the flag on; any flag used by fewer
-  than 10 installs is `null`.
+- Engines and features: an install counts if any heartbeat in the period had the flag on; a flag is `null` if
+  fewer than 10 installs used it OR fewer than 10 active installs did not use it (otherwise the few non-users
+  could be worked out as the total minus the users).
 - Shares are whole percentages of the 30-day active installs (they may add up to 99-101 because of rounding).
 - Daily actives: 30 days, each `null` under 10. Weekly (last 7 days) and monthly (30 days) actives: `null` under 10.
 - New vs returning: up to 4 most recent complete Monday-Sunday weeks. If either number of a week is under 10, both
@@ -77,6 +79,8 @@ What it publishes and how small groups are hidden, in plain terms:
 - Retention: installs first seen in the last 90 days, pooled; D1/D7/D30 is the share seen again exactly 1/7/30
   days after their first day, counting only installs whose day N has passed. Published only if at least 10 installs
   are counted.
+
+Residual risks (documented, accepted): the window is rolling, so comparing consecutive days' published numbers can reveal changes smaller than 10 in a published group; MAU - WAU can be under 10; and anyone can inflate a rare group with fake installs until it crosses the threshold.
 
 ## Views
 

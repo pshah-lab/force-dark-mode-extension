@@ -1022,6 +1022,17 @@ test("no document claims a telemetry host permission; the CORS design is describ
   assert.ok(be.includes("kmhhphbakbhohiohagkhhgdgfbplkfke") && /EXTENSION_ID/.test(be), "backend README must name the extension ID constant");
 });
 
+test("options.html and popup.html make no unqualified 'no network requests' claim", () => {
+  for (const rel of ["src/options/options.html", "src/popup/popup.html"]) {
+    const text = fs.readFileSync(path.join(rootDir, rel), "utf8").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+    for (const re of [/never makes? (any )?network requests?/i, /\bno network requests?\b/i, /makes? no network requests?/i, /never (contacts|talks to) (a|any) server/i]) {
+      assert.ok(!re.test(text), `${rel} claims ${re}, which is false now that opt-in usage stats exist`);
+    }
+  }
+  const opt = fs.readFileSync(path.join(rootDir, "src/options/options.html"), "utf8");
+  assert.ok(opt.includes("Custom CSS can never cause a network request."), "options.html must keep the accurate custom-CSS claim");
+});
+
 // Final summary
 console.log("\n=========================================");
 console.log(`🎉 Privacy & Security Results: ${passed} passed, ${failed} failed`);

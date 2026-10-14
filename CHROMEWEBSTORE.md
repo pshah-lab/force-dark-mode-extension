@@ -59,7 +59,7 @@ PRIVATE BY DEFAULT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ThemeSwitcher is built with an uncompromising commitment to privacy:
 • No analytics, tracking pixels, or advertising of any kind.
-• Optional anonymous usage statistics are OFF by default and only start if you click Yes in the popup or enable them in Options. They never include sites, URLs, page content, or documents, and you can see exactly what is sent, and can turn it off in Options. To delete your data, click Delete my data in Options > Usage stats before turning it off or uninstalling (it also turns usage stats off; turning them off first discards the random ID needed to find your records, which are otherwise purged after 13 months).
+• Optional anonymous usage statistics are OFF by default and only start if you click Yes in the popup or enable them in Options. They never include sites, URLs, page content, or documents, you can see an example report before turning them on and today's report afterwards, and can turn them off in Options. To delete your data, click Delete my data in Options > Usage stats before turning it off or uninstalling (it also turns usage stats off; turning them off first discards the random ID needed to find your records, which are otherwise purged after 13 months).
 • Everything else runs 100% locally in your browser, with no other network calls.
 • No browsing history or website URLs ever leave your computer.
 • Preferences sync strictly through your personal Google Account via chrome.storage.sync.

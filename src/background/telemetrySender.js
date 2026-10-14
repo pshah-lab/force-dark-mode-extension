@@ -14,6 +14,9 @@ import {
 
 export const INGEST_URL = "https://pshah.fun/api/darkmode-telemetry";
 export const DELETE_URL = "https://pshah.fun/api/darkmode-telemetry-delete";
+// Placeholder id for the example report shown before opt-in. Validly shaped, obviously fake,
+// never stored and never sent.
+export const EXAMPLE_ID = "00000000-0000-4000-8000-000000000000";
 
 const STATE_KEY = "telemetryState";
 
@@ -119,11 +122,17 @@ export function createTelemetry({
     }
   }
 
+  // Read-only: never writes storage, never creates an id, never sends. When usage stats are off
+  // it returns an example report (empty tally for today, placeholder id) so the user can see the
+  // shape of what would be sent before opting in.
   async function preview() {
     try {
       const state = await readState();
-      if (!state) return { enabled: false, heartbeat: null };
-      return { enabled: true, heartbeat: heartbeatFor(state, utcDay(now())) };
+      const today = utcDay(now());
+      if (!state) {
+        return { enabled: false, heartbeat: heartbeatFor({ id: EXAMPLE_ID, tally: null }, today), example: true };
+      }
+      return { enabled: true, heartbeat: heartbeatFor(state, today) };
     } catch (e) {
       return { enabled: false, heartbeat: null };
     }

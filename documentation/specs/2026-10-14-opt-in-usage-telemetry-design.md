@@ -19,7 +19,7 @@ Give the owner simple, anonymous usage numbers across all installs: active users
   - **We count:** that you used the extension today, which engine (Auto, CSS, Invert) and built-in theme you use, whether you used the viewer, theme editor, custom CSS or a site pack, and your extension version, Chrome version, OS family and language.
   - **We never see:** the sites you visit, what you read or watch, your documents, or anything you type.
   - Buttons: Yes, share stats / No thanks. No is remembered and the card never returns.
-- Options page: the same toggle, a live preview of today's exact payload, and a **Delete my data** button.
+- Options page: the same toggle, a preview (when off: a labelled example report with a placeholder id, nothing stored or sent; when on: today's report if sent now), and a **Delete my data** button.
 
 ## Data sent
 

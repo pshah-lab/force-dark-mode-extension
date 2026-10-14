@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Anonymous, opt-in usage statistics**, off by default. A one-time card in the popup asks; the same switch lives in Options > Usage stats, with a live preview of exactly what would be sent and a **Delete my data** button. When on, one small report per day (random ID, UTC day, extension version, Chrome major version, OS family, UI language, and yes/no flags for the engine, built-in theme and features used) is sent from the service worker to the developer's own endpoint.
+- **Anonymous, opt-in usage statistics**, off by default. A one-time card in the popup asks; the same switch lives in Options > Usage stats, with a preview (an example report before you turn it on, today's report afterwards) and a **Delete my data** button. When on, one small report per day (random ID, UTC day, extension version, Chrome major version, OS family, UI language, and yes/no flags for the engine, built-in theme and features used) is sent from the service worker to the developer's own endpoint.
 
 ### Privacy
 - No new permissions and no host permissions: the usage-statistics endpoint answers CORS for the extension's own origin instead, so updating does not show a new permission prompt. `permissions` are unchanged and the CSP is unchanged.

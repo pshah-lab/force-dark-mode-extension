@@ -10,7 +10,7 @@ ThemeSwitcher (Force Dark Mode) is committed to protecting your privacy through 
 ## 1. Anonymous, opt-in usage statistics
 Usage statistics are **off by default**. Nothing is sent unless you click **Yes** on the one-time card in the popup or switch on **Usage stats** in the Options page. If you click No, or never choose, the extension makes no network requests at all.
 
-When you opt in, the extension sends one small anonymous report per day, from the background service worker only. A report says that you used the extension on that day and contains exactly these fields (you can see today's exact report in Options > Usage stats before and after you turn it on):
+When you opt in, the extension sends one small anonymous report per day, from the background service worker only. A report says that you used the extension on that day and contains exactly these fields (Options > Usage stats shows an example report, with a placeholder ID, before you turn it on, and today's report afterwards):
 
 <!-- fields:start -->
 - `id`: a random identifier created when you opt in; it is not linked to your Google account, email or name

@@ -110,9 +110,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const TELEMETRY_PROMPT_KEY = "telemetryPromptState";
   const telemetryToggle = document.getElementById("telemetry-toggle");
   const telemetryPreview = document.getElementById("telemetry-preview");
+  const telemetryPreviewLabel = document.getElementById("telemetry-preview-label");
   const telemetryDeleteBtn = document.getElementById("telemetry-delete");
   const telemetryDeleteResult = document.getElementById("telemetry-delete-result");
   const TELEMETRY_OFF_TEXT = "Nothing is sent while this is off";
+  const TELEMETRY_EXAMPLE_LABEL = "Example of what would be sent if you turn this on (nothing is sent while this is off)";
+  // The live tally can include features used after the day's first-use send, so this is not
+  // necessarily byte-for-byte what was sent today.
+  const TELEMETRY_LIVE_LABEL = "Today's report if sent now";
 
   async function refreshTelemetry() {
     if (!telemetryToggle || !telemetryPreview) return;
@@ -123,9 +128,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.warn("Could not read usage stats status:", err);
     }
     const enabled = status?.enabled === true;
+    const heartbeat = status?.heartbeat && typeof status.heartbeat === "object" ? status.heartbeat : null;
     telemetryToggle.checked = enabled;
-    telemetryPreview.textContent =
-      enabled && status.heartbeat ? JSON.stringify(status.heartbeat, null, 2) : TELEMETRY_OFF_TEXT;
+    if (telemetryPreviewLabel) {
+      telemetryPreviewLabel.textContent = enabled ? TELEMETRY_LIVE_LABEL : TELEMETRY_EXAMPLE_LABEL;
+    }
+    const showable = heartbeat && (enabled || status.example === true);
+    telemetryPreview.textContent = showable ? JSON.stringify(heartbeat, null, 2) : TELEMETRY_OFF_TEXT;
   }
 
   async function markTelemetryDecided() {

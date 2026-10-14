@@ -74,6 +74,18 @@ test("options page has the usage stats controls", () => {
   for (const id of ["telemetry-toggle", "telemetry-preview", "telemetry-delete"]) assert.ok(html.includes(`id="${id}"`), `missing #${id}`);
   assert.ok(/<pre[^>]*id="telemetry-preview"/.test(html));
   assert.ok(/Usage stats/.test(html) && /Delete my data/.test(html));
+  assert.ok(/id="telemetry-preview-label"/.test(html), "preview needs a label element");
+  assert.ok(!html.includes("Exactly what would be sent"), "the live tally can differ from what was sent; do not say Exactly");
+});
+
+test("options preview labels: example before opt-in, today's report after; textContent only", () => {
+  const opt = read("src/options/options.js");
+  assert.ok(opt.includes("Example of what would be sent if you turn this on (nothing is sent while this is off)"));
+  assert.ok(opt.includes("Today's report if sent now"));
+  assert.ok(!/Exactly what is sent/i.test(opt) && !/Exactly what is sent/i.test(read("src/options/options.html")));
+  assert.ok(/telemetryPreviewLabel\.textContent\s*=/.test(opt), "label must be set with textContent");
+  assert.ok(/telemetryPreview\.textContent\s*=/.test(opt), "preview must be set with textContent");
+  assert.ok(/status\??\.example === true/.test(opt) || /\.example === true/.test(opt), "options must distinguish the example");
 });
 
 test("popup and options code use messages only, no network or innerHTML", () => {

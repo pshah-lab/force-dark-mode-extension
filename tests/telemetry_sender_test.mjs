@@ -1,6 +1,6 @@
 // tests/telemetry_sender_test.mjs
 import assert from "assert";
-import { createTelemetry, handleTelemetryMessage, INGEST_URL, DELETE_URL } from "../src/background/telemetrySender.js";
+import { createTelemetry, handleTelemetryMessage, INGEST_URL, DELETE_URL, EXAMPLE_ID } from "../src/background/telemetrySender.js";
 import { validateHeartbeat } from "../src/shared/telemetry.js";
 
 let passed = 0;
@@ -41,7 +41,51 @@ test("no fetch and no id before consent", async () => {
   await t.recordUsage({ engine: "css" });
   assert.strictEqual(calls.length, 0);
   assert.strictEqual(map.size, 0);
-  assert.deepStrictEqual(await t.preview(), { enabled: false, heartbeat: null });
+  const p = await t.preview();
+  assert.deepStrictEqual(Object.keys(p).sort(), ["enabled", "example", "heartbeat"]);
+  assert.strictEqual(p.enabled, false);
+  assert.strictEqual(p.example, true);
+  assert.strictEqual(p.heartbeat.id, EXAMPLE_ID);
+  assert.strictEqual(map.size, 0);
+  assert.strictEqual(calls.length, 0);
+});
+
+test("disabled preview is a valid, empty example for today with a placeholder id; no storage write, no fetch", async () => {
+  assert.strictEqual(EXAMPLE_ID, "00000000-0000-4000-8000-000000000000");
+  const writes = [];
+  const map = new Map();
+  const calls = [];
+  const t = createTelemetry({
+    storage: {
+      get: async (k) => map.get(k),
+      set: async (k, v) => { writes.push(["set", k]); map.set(k, v); },
+      remove: async (k) => { writes.push(["remove", k]); map.delete(k); },
+    },
+    fetchFn: async (...a) => { calls.push(a); return { ok: true }; },
+    now: () => new Date("2026-10-14T10:00:00Z"), version: "2.1.0",
+    env: () => ({ userAgent: "Mozilla/5.0 (Windows NT 10.0) Chrome/131.0.0.0 Safari/537.36", lang: "de-DE" }),
+  });
+  const p = await t.preview();
+  assert.ok(validateHeartbeat(p.heartbeat), "example must be validly shaped");
+  assert.strictEqual(p.heartbeat.day, "2026-10-14");
+  assert.strictEqual(p.heartbeat.version, "2.1.0");
+  assert.deepStrictEqual(p.heartbeat.env, { chrome: 131, os: "windows", lang: "de" });
+  assert.deepStrictEqual(p.heartbeat.engines, { auto: false, css: false, invert: false });
+  assert.ok(Object.values(p.heartbeat.features).every((v) => v === false), "empty tally: no features");
+  await t.preview();
+  assert.deepStrictEqual(writes, [], "preview must never write storage");
+  assert.strictEqual(map.size, 0, "no id is created or stored");
+  assert.strictEqual(calls.length, 0);
+});
+
+test("enabled preview is the live report, not an example", async () => {
+  const { t, map } = setup();
+  await t.setConsent(true);
+  const p = await t.preview();
+  assert.strictEqual(p.enabled, true);
+  assert.notStrictEqual(p.example, true);
+  assert.strictEqual(p.heartbeat.id, map.get("telemetryState").id);
+  assert.notStrictEqual(p.heartbeat.id, EXAMPLE_ID);
 });
 
 test("setConsent(true) stores state and does not fetch", async () => {

@@ -55,7 +55,7 @@ One heartbeat per UTC day, sent at the first use of the extension that day (so a
 
 - Unit: payload builder and allow-list rejection (hostnames, URLs, unknown keys, custom theme names all fail).
 - Service worker: nothing sent before opt-in or after opt-out; at most one send per UTC day; no send on an unused day; retry behaviour.
-- Consent: choice persists; No is never re-asked; opt-out deletes the ID; Delete my data calls the delete endpoint then clears local state.
+- Consent: choice persists; No is never re-asked; opt-out deletes the ID; Delete my data turns stats off at once, keeps the ID only as `pendingDeleteIds` until the delete endpoint returns 2xx (retried on the next Delete click and on worker start; Ruling 14), then clears local state; a later opt-in gets a new ID and never re-uses a pending one.
 - Backend: ingest accepts valid and rejects invalid payloads, upserts idempotently, and our function does not store IP addresses (the hosting platform's request logs may transiently contain them); the SQL views are checked against fixture rows.
 
 ## Out of scope

@@ -1,5 +1,6 @@
 // tests/telemetry_sender_test.mjs
 import assert from "assert";
+import fs from "fs";
 import { createTelemetry, handleTelemetryMessage, INGEST_URL, DELETE_URL, EXAMPLE_ID } from "../src/background/telemetrySender.js";
 import { validateHeartbeat } from "../src/shared/telemetry.js";
 
@@ -262,18 +263,158 @@ test("deleteMyData posts id, clears state, reports confirmation", async () => {
   assert.strictEqual(map.size, 0);
 });
 
-test("deleteMyData with rejected fetch returns serverConfirmed false and still clears", async () => {
-  const { t, map } = setup({ responses: [new Error("offline")] });
+test("deleteMyData with rejected fetch returns serverConfirmed false, disables, and keeps only the id for retry", async () => {
+  const { t, map, calls } = setup({ responses: [new Error("offline")] });
   await t.setConsent(true);
+  const id = map.get("telemetryState").id;
   const r = await t.deleteMyData();
   assert.deepStrictEqual(r, { serverConfirmed: false });
+  assert.deepStrictEqual(map.get("telemetryState"), { enabled: false, pendingDeleteIds: [id] });
+  assert.strictEqual((await t.preview()).enabled, false);
+  await t.recordUsage({ engine: "css" });
+  assert.strictEqual(await t.send(), false);
+  assert.deepStrictEqual(calls.map((c) => c.url), [DELETE_URL], "no ingest while a delete is pending");
+});
+
+test("deleteMyData with a non-2xx response keeps the pending id", async () => {
+  const { t, map } = setup({ responses: [{ ok: false, status: 500 }] });
+  await t.setConsent(true);
+  const id = map.get("telemetryState").id;
+  assert.deepStrictEqual(await t.deleteMyData(), { serverConfirmed: false });
+  assert.deepStrictEqual(map.get("telemetryState"), { enabled: false, pendingDeleteIds: [id] });
+});
+
+test("deleteMyData with no state makes no call and reports nothing to delete", async () => {
+  const { t, calls, map } = setup();
+  assert.deepStrictEqual(await t.deleteMyData(), { serverConfirmed: false, nothingToDelete: true });
+  assert.strictEqual(calls.length, 0);
   assert.strictEqual(map.size, 0);
 });
 
-test("deleteMyData with no state makes no call", async () => {
-  const { t, calls } = setup();
+test("failed DELETE then Delete again: the same id is retried and the key is removed only after a 2xx", async () => {
+  const { t, map, calls } = setup({ responses: [{ ok: false, status: 503 }, new Error("offline"), { ok: true, status: 204 }] });
+  await t.setConsent(true);
+  const id = map.get("telemetryState").id;
   assert.deepStrictEqual(await t.deleteMyData(), { serverConfirmed: false });
-  assert.strictEqual(calls.length, 0);
+  assert.deepStrictEqual(await t.deleteMyData(), { serverConfirmed: false });
+  assert.deepStrictEqual(map.get("telemetryState"), { enabled: false, pendingDeleteIds: [id] });
+  assert.deepStrictEqual(await t.deleteMyData(), { serverConfirmed: true });
+  assert.strictEqual(map.size, 0);
+  assert.deepStrictEqual(calls.map((c) => c.url), [DELETE_URL, DELETE_URL, DELETE_URL]);
+  for (const c of calls) assert.deepStrictEqual(JSON.parse(c.init.body), { id });
+  assert.deepStrictEqual(await t.deleteMyData(), { serverConfirmed: false, nothingToDelete: true });
+  assert.strictEqual(calls.length, 3);
+});
+
+test("retryPendingDelete at worker start (fresh instance, same storage) deletes the pending id", async () => {
+  const a = setup({ responses: [new Error("offline")] });
+  await a.t.setConsent(true);
+  const id = a.map.get("telemetryState").id;
+  await a.t.deleteMyData();
+  // Simulate a worker restart: a new telemetry object over the same storage.
+  const calls = [];
+  let fail = true;
+  const storage = {
+    get: async (k) => a.map.get(k),
+    set: async (k, v) => { a.map.set(k, JSON.parse(JSON.stringify(v))); },
+    remove: async (k) => { a.map.delete(k); },
+  };
+  const mk = () => createTelemetry({
+    storage, now: () => new Date("2026-10-14T11:00:00Z"), version: "2.1.0",
+    fetchFn: async (url, init) => { calls.push({ url, init }); if (fail) throw new Error("still offline"); return { ok: true, status: 204 }; },
+  });
+  assert.deepStrictEqual(await mk().retryPendingDelete(), { serverConfirmed: false });
+  assert.deepStrictEqual(a.map.get("telemetryState"), { enabled: false, pendingDeleteIds: [id] });
+  fail = false;
+  assert.deepStrictEqual(await mk().retryPendingDelete(), { serverConfirmed: true });
+  assert.strictEqual(a.map.size, 0);
+  assert.deepStrictEqual(calls.map((c) => [c.url, JSON.parse(c.init.body).id]), [[DELETE_URL, id], [DELETE_URL, id]]);
+  for (const c of calls) assert.strictEqual(c.init.credentials, "omit");
+  assert.deepStrictEqual(await mk().retryPendingDelete(), { serverConfirmed: false, nothingToDelete: true });
+  assert.strictEqual(calls.length, 2, "nothing pending: no request");
+});
+
+test("a pending delete survives opt-in: new id, old id still deleted, new state not wiped", async () => {
+  const { t, map, calls } = setup({ responses: [new Error("offline"), { ok: true }, { ok: true }] });
+  await t.setConsent(true);
+  const oldId = map.get("telemetryState").id;
+  await t.deleteMyData();
+  await t.setConsent(true);
+  const s = map.get("telemetryState");
+  assert.strictEqual(s.enabled, true);
+  assert.notStrictEqual(s.id, oldId, "a later opt-in never reuses the old id");
+  assert.deepStrictEqual(s.pendingDeleteIds, [oldId]);
+  await t.recordUsage({ engine: "css" });
+  assert.strictEqual(calls[1].url, INGEST_URL);
+  const body = calls[1].init.body;
+  assert.strictEqual(JSON.parse(body).id, s.id);
+  assert.ok(!body.includes(oldId) && !body.includes("pendingDelete"), "the pending id is never in a heartbeat");
+  assert.deepStrictEqual(await t.retryPendingDelete(), { serverConfirmed: true });
+  assert.deepStrictEqual(JSON.parse(calls[2].init.body), { id: oldId });
+  const after = map.get("telemetryState");
+  assert.strictEqual(after.enabled, true);
+  assert.strictEqual(after.id, s.id);
+  assert.strictEqual(after.lastSentDay, "2026-10-14");
+  assert.ok(!("pendingDeleteIds" in after));
+});
+
+test("Delete with an old pending id and a current id posts both and keeps only the failures", async () => {
+  const { t, map, calls } = setup({ responses: [new Error("offline"), { ok: true }, { ok: false, status: 500 }] });
+  await t.setConsent(true);
+  const oldId = map.get("telemetryState").id;
+  await t.deleteMyData();
+  await t.setConsent(true);
+  const newId = map.get("telemetryState").id;
+  assert.deepStrictEqual(await t.deleteMyData(), { serverConfirmed: false });
+  assert.deepStrictEqual(calls.slice(1).map((c) => JSON.parse(c.init.body).id), [oldId, newId]);
+  assert.deepStrictEqual(map.get("telemetryState"), { enabled: false, pendingDeleteIds: [newId] });
+});
+
+test("unticking while a delete is pending stops reports but keeps the pending delete", async () => {
+  const { t, map } = setup({ responses: [new Error("offline")] });
+  await t.setConsent(true);
+  const oldId = map.get("telemetryState").id;
+  await t.deleteMyData();
+  await t.setConsent(true);
+  await t.setConsent(false);
+  assert.deepStrictEqual(map.get("telemetryState"), { enabled: false, pendingDeleteIds: [oldId] });
+});
+
+test("no heartbeat is ever sent while only a pending delete is stored", async () => {
+  const { t, map, calls, clock } = setup({ responses: [new Error("offline")] });
+  await t.setConsent(true);
+  const id = map.get("telemetryState").id;
+  await t.deleteMyData();
+  for (const usage of [{ engine: "css" }, { feature: "viewer" }, { theme: "builtin:midnight" }]) await t.recordUsage(usage);
+  clock.t = new Date("2026-10-15T09:00:00Z");
+  await t.recordUsage({ engine: "auto" });
+  assert.strictEqual(await t.send(), false);
+  assert.ok(calls.every((c) => c.url === DELETE_URL), "only delete requests");
+  const p = await t.preview();
+  assert.strictEqual(p.example, true);
+  assert.notStrictEqual(p.heartbeat.id, id, "the pending id never appears in a preview either");
+});
+
+test("deleteMyData still disables telemetry when the first storage read throws", async () => {
+  const map = new Map();
+  let throwNext = false;
+  const calls = [];
+  const t = createTelemetry({
+    storage: {
+      get: async (k) => { if (throwNext) { throwNext = false; throw new Error("storage down"); } return map.get(k); },
+      set: async (k, v) => { map.set(k, JSON.parse(JSON.stringify(v))); },
+      remove: async (k) => { map.delete(k); },
+    },
+    fetchFn: async (url) => { calls.push(url); return { ok: true }; },
+    now: () => new Date("2026-10-14T10:00:00Z"), version: "2.1.0",
+    env: () => ({ userAgent: "Chrome/130.0.0.0 Macintosh", lang: "en" }),
+  });
+  await t.setConsent(true);
+  throwNext = true;
+  assert.deepStrictEqual(await t.deleteMyData(), { serverConfirmed: false });
+  assert.notStrictEqual(map.get("telemetryState")?.enabled, true, "state must not stay enabled");
+  await t.recordUsage({ engine: "css" });
+  assert.ok(!calls.includes(INGEST_URL), "no ingest after Delete even if the read failed");
 });
 
 test("invalid heartbeat is never sent", async () => {
@@ -340,6 +481,16 @@ test("recordUsage suspended at its state read when delete runs sends no ingest",
   assert.strictEqual(map.size, 0);
 });
 
+test("the service worker retries a pending delete once at startup, fire-and-forget", () => {
+  const code = fs.readFileSync(new URL("../src/background/serviceWorker.js", import.meta.url), "utf8")
+    .replace(/\/\/[^\n]*/g, "");
+  const m = code.match(/telemetry\.retryPendingDelete\(\)\s*\.catch\(\s*\(\)\s*=>\s*\{\s*\}\s*\)/g) || [];
+  assert.strictEqual(m.length, 1, "exactly one top-level retryPendingDelete().catch(() => {}) call");
+  const idx = code.indexOf("telemetry.retryPendingDelete()");
+  assert.ok(idx > code.indexOf("const telemetry = createTelemetry("), "called after the telemetry object exists");
+  assert.ok(!/await\s+telemetry\.retryPendingDelete/.test(code), "must not block worker startup");
+});
+
 function fakeTelemetry() {
   const calls = [];
   return {
@@ -382,6 +533,15 @@ test("handleTelemetryMessage returns preview and delete results", async () => {
   const t = fakeTelemetry();
   assert.deepStrictEqual(await handleTelemetryMessage(t, { type: "TELEMETRY_STATUS" }), { enabled: false, heartbeat: null });
   assert.deepStrictEqual(await handleTelemetryMessage(t, { type: "TELEMETRY_DELETE" }), { serverConfirmed: true });
+});
+
+test("handleTelemetryMessage distinguishes confirmed, unconfirmed and nothing-to-delete", async () => {
+  for (const r of [{ serverConfirmed: true }, { serverConfirmed: false }, { serverConfirmed: false, nothingToDelete: true }]) {
+    const t = { ...fakeTelemetry(), deleteMyData: async () => r };
+    assert.deepStrictEqual(await handleTelemetryMessage(t, { type: "TELEMETRY_DELETE" }), r);
+  }
+  const bad = { ...fakeTelemetry(), deleteMyData: async () => { throw new Error("x"); } };
+  assert.deepStrictEqual(await handleTelemetryMessage(bad, { type: "TELEMETRY_DELETE" }), { serverConfirmed: false });
 });
 
 test("handleTelemetryMessage never rejects when telemetry throws", async () => {

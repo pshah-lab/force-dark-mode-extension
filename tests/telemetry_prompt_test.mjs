@@ -121,7 +121,11 @@ test("popup and options code use messages only, no network or innerHTML", () => 
   const opt = read("src/options/options.js");
   for (const t of ["TELEMETRY_CONSENT", "TELEMETRY_STATUS", "TELEMETRY_DELETE"]) assert.ok(opt.includes(t), t);
   assert.ok(opt.includes("Nothing is sent while this is off"));
-  assert.ok(opt.includes("Removed from this device; server deletion could not be confirmed"));
+  assert.ok(opt.includes("Usage stats are off on this device. Server deletion could not be confirmed; it will be retried automatically."));
+  assert.ok(!opt.includes("Removed from this device"), "the id is kept locally for the retry, so do not say it was removed");
+  assert.ok(opt.includes('"Nothing to delete"'), "nothing-to-delete status");
+  assert.ok(/res\?\.nothingToDelete === true/.test(opt), "options must check nothingToDelete");
+  assert.ok(/res\?\.serverConfirmed === true/.test(opt), "options must check serverConfirmed");
 });
 
 console.log(`\n🎉 Results: ${passed} passed, ${failed} failed`);

@@ -170,9 +170,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       if (telemetryDeleteResult) {
         telemetryDeleteResult.textContent =
-          res?.serverConfirmed === true
+          !res || typeof res !== "object"
+            ? "Could not delete right now. Please try again."
+            : res?.nothingToDelete === true
+            ? "Nothing to delete"
+            : res?.serverConfirmed === true
             ? "Deleted"
-            : "Removed from this device; server deletion could not be confirmed";
+            : "Usage stats are off on this device. Server deletion could not be confirmed; it will be retried automatically.";
       }
       await refreshTelemetry();
     });

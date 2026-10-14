@@ -19,6 +19,9 @@ const telemetry = createTelemetry({
   version: chrome.runtime.getManifest().version,
   env: () => ({ userAgent: navigator.userAgent, lang: chrome.i18n.getUILanguage() }),
 });
+// A "Delete my data" request that never got a 2xx is retried once each time the worker starts.
+// It does nothing (and sends nothing) unless a delete is pending; failures are swallowed.
+telemetry.retryPendingDelete().catch(() => {});
 
 function getHostFromUrl(url) {
   try {

@@ -8,6 +8,19 @@ import { isMemoryError } from "./spreadsheet/errors.js";
 import { renderSpreadsheet } from "./spreadsheet/spreadsheetRenderer.js";
 import { MAX_CSV_BYTES } from "./spreadsheet/spreadsheetLimits.js";
 
+// Anonymous, opt-in usage counter, once per viewer page load; silent if the worker is unavailable.
+let viewerUsageReported = false;
+function reportViewerUsage() {
+  if (viewerUsageReported) return;
+  viewerUsageReported = true;
+  try {
+    const result = chrome.runtime.sendMessage({ type: "USAGE", feature: "viewer" }, () => void chrome.runtime.lastError);
+    if (result && typeof result.catch === "function") result.catch(() => {});
+  } catch (error) {
+    // ignore
+  }
+}
+
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
   "src/viewer/vendor/pdf.worker.min.mjs"
 );
@@ -106,6 +119,7 @@ function loadInitialDocument() {
   const name = params.get("name");
 
   if (source && isSafeDocumentUrl(source)) {
+    reportViewerUsage();
     openPdf(source, name || getNameFromUrl(source) || "PDF document");
   } else if (source) {
     showEmptyState("Invalid or disallowed document URL");
@@ -117,6 +131,10 @@ async function openLocalFile(file) {
   currentPdfSource = null;
   currentSpreadsheet = null;
   renderGeneration += 1;
+
+  if (isPdfFile(file) || isSpreadsheetFile(file) || isReadableDocument(file) || isOfficeDocument(file)) {
+    reportViewerUsage();
+  }
 
   if (isPdfFile(file)) {
     const data = new Uint8Array(await file.arrayBuffer());

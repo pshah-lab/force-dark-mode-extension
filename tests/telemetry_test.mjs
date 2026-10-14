@@ -163,5 +163,48 @@ test("telemetry.js has no chrome.* calls or network patterns", () => {
   }
 });
 
+function walkSrc(dir, out = []) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) {
+      if (e.name === "vendor") continue;
+      walkSrc(full, out);
+    } else if (/\.(js|mjs)$/.test(e.name)) out.push(full);
+  }
+  return out;
+}
+
+test("every USAGE message literal under src/ carries only type plus engine, theme or feature", () => {
+  let found = 0;
+  for (const file of walkSrc(path.join(rootDir, "src"))) {
+    const src = fs.readFileSync(file, "utf8");
+    for (const m of src.matchAll(/\{[^{}]*\btype:\s*["']USAGE["'][^{}]*\}/g)) {
+      found++;
+      const keys = [...m[0].matchAll(/(?:^|[{,]\s*)([A-Za-z_]\w*)\s*[:,}]/g)].map((k) => k[1]);
+      const extra = keys.filter((k) => !["type", "engine", "theme", "feature"].includes(k));
+      assert.deepStrictEqual(extra, [], `${path.relative(rootDir, file)}: ${m[0]}`);
+      assert.ok(keys.filter((k) => k !== "type").length <= 1, `${path.relative(rootDir, file)}: ${m[0]}`);
+    }
+  }
+  assert.ok(found >= 4, `expected USAGE literals in content, viewer and editor, found ${found}`);
+});
+
+test("serviceWorker returns early on foreign senders before any telemetry handling", () => {
+  const src = fs.readFileSync(path.join(rootDir, "src/background/serviceWorker.js"), "utf8");
+  const guard = src.indexOf("sender.id !== chrome.runtime.id");
+  const handle = src.indexOf("handleTelemetryMessage(");
+  assert.ok(guard !== -1, "sender id guard missing");
+  assert.ok(handle !== -1, "telemetry handler not wired");
+  assert.ok(guard < handle, "guard must precede telemetry handling");
+  assert.match(src.slice(guard - 5, guard + 60), /if \(sender\.id !== chrome\.runtime\.id\) return;/);
+});
+
+test("fetch is called only from telemetrySender.js (vendored pdf.js excluded)", () => {
+  for (const file of walkSrc(path.join(rootDir, "src"))) {
+    if (file.endsWith(path.join("background", "telemetrySender.js"))) continue;
+    assert.ok(!/\bfetch\s*\(/.test(fs.readFileSync(file, "utf8")), path.relative(rootDir, file));
+  }
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

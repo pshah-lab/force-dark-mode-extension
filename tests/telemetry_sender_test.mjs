@@ -1,6 +1,6 @@
 // tests/telemetry_sender_test.mjs
 import assert from "assert";
-import { createTelemetry, INGEST_URL, DELETE_URL } from "../src/background/telemetrySender.js";
+import { createTelemetry, handleTelemetryMessage, INGEST_URL, DELETE_URL } from "../src/background/telemetrySender.js";
 import { validateHeartbeat } from "../src/shared/telemetry.js";
 
 let passed = 0;
@@ -294,6 +294,56 @@ test("recordUsage suspended at its state read when delete runs sends no ingest",
   await del;
   assert.ok(!order.includes(INGEST_URL), `ingest must not be sent: ${order.join(",")}`);
   assert.strictEqual(map.size, 0);
+});
+
+function fakeTelemetry() {
+  const calls = [];
+  return {
+    calls,
+    recordUsage: async (m) => { calls.push(["usage", m]); },
+    setConsent: async (e) => { calls.push(["consent", e]); },
+    preview: async () => ({ enabled: false, heartbeat: null }),
+    deleteMyData: async () => ({ serverConfirmed: true }),
+  };
+}
+
+test("handleTelemetryMessage ignores non-telemetry messages", () => {
+  const t = fakeTelemetry();
+  for (const m of [null, undefined, "x", 5, {}, { type: "TOGGLE" }, { type: "ANALYZE_PAGE" }]) {
+    assert.strictEqual(handleTelemetryMessage(t, m), undefined);
+  }
+  assert.strictEqual(t.calls.length, 0);
+});
+
+test("handleTelemetryMessage routes USAGE and replies ok", async () => {
+  const t = fakeTelemetry();
+  const msg = { type: "USAGE", engine: "css" };
+  const p = handleTelemetryMessage(t, msg);
+  assert.ok(p instanceof Promise);
+  assert.deepStrictEqual(await p, { ok: true });
+  assert.deepStrictEqual(t.calls, [["usage", msg]]);
+});
+
+test("handleTelemetryMessage consent requires a boolean", async () => {
+  const t = fakeTelemetry();
+  assert.deepStrictEqual(await handleTelemetryMessage(t, { type: "TELEMETRY_CONSENT", enabled: true }), { ok: true });
+  assert.deepStrictEqual(await handleTelemetryMessage(t, { type: "TELEMETRY_CONSENT", enabled: false }), { ok: true });
+  for (const enabled of ["true", 1, null, undefined]) {
+    assert.deepStrictEqual(await handleTelemetryMessage(t, { type: "TELEMETRY_CONSENT", enabled }), { ok: false });
+  }
+  assert.deepStrictEqual(t.calls, [["consent", true], ["consent", false]]);
+});
+
+test("handleTelemetryMessage returns preview and delete results", async () => {
+  const t = fakeTelemetry();
+  assert.deepStrictEqual(await handleTelemetryMessage(t, { type: "TELEMETRY_STATUS" }), { enabled: false, heartbeat: null });
+  assert.deepStrictEqual(await handleTelemetryMessage(t, { type: "TELEMETRY_DELETE" }), { serverConfirmed: true });
+});
+
+test("handleTelemetryMessage never rejects when telemetry throws", async () => {
+  const t = { ...fakeTelemetry(), recordUsage: async () => { throw new Error("x"); }, preview: async () => { throw new Error("x"); } };
+  assert.deepStrictEqual(await handleTelemetryMessage(t, { type: "USAGE", engine: "css" }), { ok: false });
+  assert.deepStrictEqual(await handleTelemetryMessage(t, { type: "TELEMETRY_STATUS" }), { enabled: false, heartbeat: null });
 });
 
 console.log("=========================================");

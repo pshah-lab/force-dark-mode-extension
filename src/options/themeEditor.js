@@ -6,6 +6,16 @@ const COLOR_KEYS = ["background", "surface", "text", "muted", "link", "border"];
 const OPTIONAL_KEYS = COLOR_KEYS.slice(1);
 const BLANK_BACKGROUND = "#0f1115";
 
+// Anonymous, opt-in usage counter; fire-and-forget and silent if the worker is unavailable.
+function reportEditorUsage() {
+  try {
+    const result = chrome.runtime.sendMessage({ type: "USAGE", feature: "editor" }, () => void chrome.runtime.lastError);
+    if (result && typeof result.catch === "function") result.catch(() => {});
+  } catch (error) {
+    // ignore
+  }
+}
+
 function core() {
   return globalThis.ForceDarkThemes;
 }
@@ -156,6 +166,7 @@ export async function initThemeEditor({ showStatus }) {
       showStatus(result.error || "Could not save the theme.", "error");
       return false;
     }
+    reportEditorUsage();
     showStatus(okMessage);
     await renderList();
     return true;

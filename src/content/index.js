@@ -47,6 +47,46 @@ function applyEngine(config) {
 
   // Only when an engine actually applied dark mode (not on natively dark pages).
   applyCustomCss(currentCustomCss);
+  reportUsageOnce(config, engine);
+}
+
+// Anonymous, opt-in usage counters. Fire-and-forget: the service worker records them only
+// when the user has opted in, and a missing worker or invalidated context is ignored.
+// Messages carry an allow-listed engine, theme ID or feature name only; never a host or URL.
+const reportedUsage = new Set();
+
+function sendUsage(msg) {
+  try {
+    const result = chrome.runtime.sendMessage(msg, () => void chrome.runtime.lastError);
+    if (result && typeof result.catch === "function") result.catch(() => {});
+  } catch (error) {
+    // extension context invalidated
+  }
+}
+
+function reportUsageOnce(config, engine) {
+  const once = (key, send) => {
+    if (reportedUsage.has(key)) return;
+    reportedUsage.add(key);
+    send();
+  };
+  once("engine", () => sendUsage({ type: "USAGE", engine: normalizeEngine(config?.engine) }));
+  if (engine === "invert") return;
+
+  let resolved = null;
+  try {
+    resolved = window.ForceDarkThemes?.resolveTheme?.({ config, host, userThemes: currentUserThemes }) || null;
+  } catch (error) {
+    resolved = null;
+  }
+  const themeId = resolved?.theme?.id;
+  if (typeof themeId === "string" && themeId) {
+    once("theme", () => sendUsage({ type: "USAGE", theme: themeId }));
+  }
+  if (resolved?.pack) once("sitePack", () => sendUsage({ type: "USAGE", feature: "sitePack" }));
+  if (document.getElementById(CUSTOM_CSS_STYLE_ID)) {
+    once("customCss", () => sendUsage({ type: "USAGE", feature: "customCss" }));
+  }
 }
 
 // Adds the resolved theme's palette and image dimming, and the site pack's fixes, to

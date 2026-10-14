@@ -7,6 +7,18 @@ import {
   clampFilterValue,
   THEME_ID_PATTERN,
 } from "../shared/constants.js";
+import { createTelemetry, handleTelemetryMessage } from "./telemetrySender.js";
+
+const telemetry = createTelemetry({
+  storage: {
+    get: async (key) => (await chrome.storage.local.get(key))[key],
+    set: (key, value) => chrome.storage.local.set({ [key]: value }),
+    remove: (key) => chrome.storage.local.remove(key),
+  },
+  now: () => new Date(),
+  version: chrome.runtime.getManifest().version,
+  env: () => ({ userAgent: navigator.userAgent, lang: chrome.i18n.getUILanguage() }),
+});
 
 function getHostFromUrl(url) {
   try {
@@ -20,8 +32,13 @@ function getHostFromUrl(url) {
   }
 }
 
-chrome.runtime.onMessage.addListener((msg, sender) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
+  const telemetryReply = handleTelemetryMessage(telemetry, msg);
+  if (telemetryReply) {
+    telemetryReply.then(sendResponse);
+    return true;
+  }
   if (!msg || typeof msg !== "object" || msg.type !== "TOGGLE") return;
 
   handleToggleMessage(msg, sender.tab?.url);

@@ -177,3 +177,23 @@ export function createTelemetry({
 
   return { setConsent, recordUsage, send, preview, deleteMyData };
 }
+
+// Routes the four telemetry message types. Returns undefined for any other message so the
+// caller can fall through; otherwise a Promise of the reply. The caller must already have
+// verified sender.id === chrome.runtime.id. Never rejects.
+export function handleTelemetryMessage(telemetry, msg) {
+  if (!msg || typeof msg !== "object") return undefined;
+  switch (msg.type) {
+    case "USAGE":
+      return telemetry.recordUsage(msg).then(() => ({ ok: true }), () => ({ ok: false }));
+    case "TELEMETRY_CONSENT":
+      if (typeof msg.enabled !== "boolean") return Promise.resolve({ ok: false });
+      return telemetry.setConsent(msg.enabled === true).then(() => ({ ok: true }), () => ({ ok: false }));
+    case "TELEMETRY_STATUS":
+      return telemetry.preview().catch(() => ({ enabled: false, heartbeat: null }));
+    case "TELEMETRY_DELETE":
+      return telemetry.deleteMyData().catch(() => ({ serverConfirmed: false }));
+    default:
+      return undefined;
+  }
+}

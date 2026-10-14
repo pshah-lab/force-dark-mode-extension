@@ -1,0 +1,9 @@
+{
+  "name": "darkmode-telemetry-backend",
+  "private": true,
+  "type": "module",
+  "description": "Opt-in anonymous usage metrics ingest/delete functions for Force Dark Mode",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

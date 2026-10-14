@@ -5,7 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "node tests/run_tests.mjs && node tests/dom_engine_test.mjs && node tests/privacy_security_test.mjs && node tests/zip_reader_test.mjs && node tests/docx_parser_test.mjs && node tests/pptx_parser_test.mjs && node tests/seo_test.mjs && node tests/csv_parser_test.mjs && node tests/number_format_test.mjs && node tests/xlsx_styles_test.mjs && node tests/xlsx_parser_test.mjs && node tests/cell_colors_test.mjs && node tests/spreadsheet_view_test.mjs && node tests/spreadsheet_renderer_test.mjs && node tests/spreadsheet_errors_test.mjs && node tests/feedback_prompt_test.mjs && node tests/theme_core_test.mjs && node tests/builtin_themes_test.mjs && node tests/site_packs_test.mjs && node tests/storage_themes_test.mjs && node tests/theme_ui_test.mjs && node tests/custom_css_test.mjs && node tests/telemetry_test.mjs && node tests/telemetry_sender_test.mjs && node tests/telemetry_prompt_test.mjs",
+    "test": "node tests/run_tests.mjs && node tests/dom_engine_test.mjs && node tests/privacy_security_test.mjs && node tests/zip_reader_test.mjs && node tests/docx_parser_test.mjs && node tests/pptx_parser_test.mjs && node tests/seo_test.mjs && node tests/csv_parser_test.mjs && node tests/number_format_test.mjs && node tests/xlsx_styles_test.mjs && node tests/xlsx_parser_test.mjs && node tests/cell_colors_test.mjs && node tests/spreadsheet_view_test.mjs && node tests/spreadsheet_renderer_test.mjs && node tests/spreadsheet_errors_test.mjs && node tests/feedback_prompt_test.mjs && node tests/theme_core_test.mjs && node tests/builtin_themes_test.mjs && node tests/site_packs_test.mjs && node tests/storage_themes_test.mjs && node tests/theme_ui_test.mjs && node tests/custom_css_test.mjs && node tests/telemetry_test.mjs && node tests/telemetry_sender_test.mjs && node tests/telemetry_prompt_test.mjs && node tests/telemetry_backend_test.mjs",
     "test:core": "node tests/run_tests.mjs",
     "test:dom": "node tests/dom_engine_test.mjs",
     "test:privacy": "node tests/privacy_security_test.mjs",
@@ -30,6 +30,7 @@
     "test:customcss": "node tests/custom_css_test.mjs",
     "test:telemetry": "node tests/telemetry_test.mjs",
     "test:telemetrysender": "node tests/telemetry_sender_test.mjs",
+    "test:telemetrybackend": "node tests/telemetry_backend_test.mjs",
     "serve": "python3 -m http.server 8080 --directory docs"
   },
   "keywords": [

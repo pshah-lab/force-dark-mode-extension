@@ -33,7 +33,7 @@ One heartbeat per UTC day, sent at the first use of the extension that day (so a
 ```
 
 - `id`: random UUID created at opt-in, kept in `chrome.storage.local` (never synced, so each device counts separately). Opting out deletes it.
-- The server stores `(id, day, version, env, counters)` and never stores the IP address.
+- The server stores `(id, day, version, env, counters)`. Our server function does not store IP addresses; the hosting platform's request logs may transiently contain them. Rows older than 13 months are purged (`backend/telemetry/supabase/purge.sql`). **Delete my data** posts the ID to the delete endpoint before telemetry is turned off, so the server rows are removed.
 
 ## Components
 
@@ -56,7 +56,7 @@ One heartbeat per UTC day, sent at the first use of the extension that day (so a
 - Unit: payload builder and allow-list rejection (hostnames, URLs, unknown keys, custom theme names all fail).
 - Service worker: nothing sent before opt-in or after opt-out; at most one send per UTC day; no send on an unused day; retry behaviour.
 - Consent: choice persists; No is never re-asked; opt-out deletes the ID; Delete my data calls the delete endpoint then clears local state.
-- Backend: ingest accepts valid and rejects invalid payloads, upserts idempotently, and never stores the IP; the SQL views are checked against fixture rows.
+- Backend: ingest accepts valid and rejects invalid payloads, upserts idempotently, and our function does not store IP addresses (the hosting platform's request logs may transiently contain them); the SQL views are checked against fixture rows.
 
 ## Out of scope
 

@@ -27,7 +27,8 @@
     "test:storagethemes": "node tests/storage_themes_test.mjs",
     "test:themeui": "node tests/theme_ui_test.mjs",
     "test:customcss": "node tests/custom_css_test.mjs",
-    "test:telemetry": "node tests/telemetry_test.mjs && node tests/telemetry_sender_test.mjs",
+    "test:telemetry": "node tests/telemetry_test.mjs",
+    "test:telemetrysender": "node tests/telemetry_sender_test.mjs",
     "serve": "python3 -m http.server 8080 --directory docs"
   },
   "keywords": [

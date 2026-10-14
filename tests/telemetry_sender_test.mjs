@@ -106,11 +106,11 @@ test("500 leaves lastSentDay null and next event retries once", async () => {
 });
 
 test("rejected fetch does not throw", async () => {
-  const { t, calls } = setup({ responses: [new Error("offline")] });
+  const { t, calls, map } = setup({ responses: [new Error("offline")] });
   await t.setConsent(true);
   await t.recordUsage({ engine: "css" });
   assert.strictEqual(calls.length, 1);
-  assert.strictEqual(await t.send(), true);
+  assert.strictEqual((await map.get("telemetryState")).lastSentDay, null);
 });
 
 test("day rollover resets tally and posts again", async () => {
@@ -134,7 +134,76 @@ test("opt-out empties storage; re-opt-in gives a new id", async () => {
   await t.setConsent(false);
   assert.strictEqual(map.size, 0);
   await t.setConsent(true);
-  assert.notStrictEqual(map.get("telemetryState").id, id1);
+  const s2 = map.get("telemetryState");
+  assert.notStrictEqual(s2.id, id1);
+  assert.strictEqual(s2.lastSentDay, null);
+  assert.strictEqual(s2.tally, null);
+});
+
+// A fetch whose response the test releases manually.
+function deferredSetup() {
+  const base = setup();
+  const pending = [];
+  const order = [];
+  const fetchFn = (url, init) => {
+    order.push(url);
+    return new Promise((resolve) => pending.push({ url, resolve }));
+  };
+  const t = createTelemetry({
+    storage: {
+      get: async (k) => base.map.get(k),
+      set: async (k, v) => { base.map.set(k, JSON.parse(JSON.stringify(v))); },
+      remove: async (k) => { base.map.delete(k); },
+    },
+    fetchFn, now: () => base.clock.t, version: "2.1.0",
+    env: () => ({ userAgent: "Chrome/130.0.0.0 Macintosh", lang: "en" }),
+  });
+  const tick = () => new Promise((r) => setTimeout(r, 5));
+  return { t, map: base.map, pending, order, tick };
+}
+
+test("deleteMyData waits for the in-flight heartbeat before posting delete", async () => {
+  const { t, map, pending, order, tick } = deferredSetup();
+  await t.setConsent(true);
+  const rec = t.recordUsage({ engine: "css" });
+  await tick();
+  assert.deepStrictEqual(order, [INGEST_URL]);
+  const del = t.deleteMyData();
+  await tick();
+  assert.deepStrictEqual(order, [INGEST_URL], "delete must not be issued while ingest is pending");
+  pending[0].resolve({ ok: true });
+  await tick();
+  assert.deepStrictEqual(order, [INGEST_URL, DELETE_URL]);
+  pending[1].resolve({ ok: true });
+  assert.deepStrictEqual(await del, { serverConfirmed: true });
+  await rec;
+  assert.strictEqual(map.size, 0);
+});
+
+test("stale response after opt-out or opt-out/opt-in does not restore old state", async () => {
+  const a = deferredSetup();
+  await a.t.setConsent(true);
+  const recA = a.t.recordUsage({ engine: "css" });
+  await a.tick();
+  await a.t.setConsent(false);
+  a.pending[0].resolve({ ok: true });
+  await recA;
+  assert.strictEqual(a.map.size, 0);
+
+  const b = deferredSetup();
+  await b.t.setConsent(true);
+  const id1 = b.map.get("telemetryState").id;
+  const recB = b.t.recordUsage({ engine: "css" });
+  await b.tick();
+  await b.t.setConsent(false);
+  await b.t.setConsent(true);
+  const id2 = b.map.get("telemetryState").id;
+  b.pending[0].resolve({ ok: true });
+  await recB;
+  const s = b.map.get("telemetryState");
+  assert.notStrictEqual(id2, id1);
+  assert.strictEqual(s.id, id2);
+  assert.strictEqual(s.lastSentDay, null);
 });
 
 test("deleteMyData posts id, clears state, reports confirmation", async () => {

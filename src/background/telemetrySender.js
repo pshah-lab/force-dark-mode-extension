@@ -129,6 +129,18 @@ export function createTelemetry({
   }
 
   async function deleteMyData() {
+    // Let any pending heartbeat and queued state writes settle first, so a late ingest cannot
+    // recreate server data for an ID we have just asked to delete.
+    try {
+      if (inFlight) await inFlight;
+    } catch (e) {
+      // ignore
+    }
+    try {
+      await chain;
+    } catch (e) {
+      // ignore
+    }
     let id = null;
     try {
       const s = await storage.get(STATE_KEY);

@@ -132,6 +132,27 @@ test("companion website makes zero third-party telemetry network calls", () => {
   }
 });
 
+test("only docs/js/stats.js may reference the usage statistics endpoint, and nothing else", () => {
+  const jsDir = path.join(rootDir, "docs/js");
+  for (const f of fs.readdirSync(jsDir).filter((n) => n.endsWith(".js"))) {
+    const src = fs.readFileSync(path.join(jsDir, f), "utf8");
+    const urls = src.match(/https?:\/\/[^\s"'`)]+/g) || [];
+    if (f === "stats.js") {
+      // The SVG namespace is an XML identifier passed to createElementNS, never a network target.
+      const nonNs = urls.filter((u) => u !== "http://www.w3.org/2000/svg");
+      assert.deepStrictEqual(nonNs, ["https://pshah.fun/api/darkmode-stats"], "docs/js/stats.js may contain exactly the stats URL");
+      continue;
+    }
+    assert.ok(!src.includes("darkmode-stats"), `docs/js/${f} must not reference the stats endpoint`);
+    for (const url of urls) {
+      assert.ok(
+        url.startsWith("https://pshah.fun/api/darkmode-visit") || url.startsWith("https://chromewebstore.google.com/"),
+        `docs/js/${f} references an unexpected URL: ${url}`
+      );
+    }
+  }
+});
+
 // 2. Data Minimization & Leakage Protection
 console.log("\n2. Data Minimization & Leakage Protection");
 

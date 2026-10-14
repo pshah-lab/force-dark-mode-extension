@@ -9,6 +9,7 @@
   var STATS_URL = "https://pshah.fun/api/darkmode-stats";
   var SVG_NS = "http://www.w3.org/2000/svg";
   var FEWER = "fewer than 10";
+  var HIDDEN = "hidden to protect privacy";
   var UNAVAILABLE = "Statistics are temporarily unavailable. Please try again later.";
 
   var isObj = function (v) { return v !== null && typeof v === "object" && !Array.isArray(v); };
@@ -67,7 +68,7 @@
     return s;
   }
 
-  function bars(parent, map, labels) {
+  function bars(parent, map, labels, hiddenText) {
     if (map === null) {
       parent.appendChild(el("p", "stats-empty", "Not enough data yet"));
       return;
@@ -88,7 +89,7 @@
       fill.style.width = (p === null ? 0 : clampPct(p)) + "%";
       track.appendChild(fill);
       row.appendChild(track);
-      row.appendChild(el("span", "stats-bar-value", fmtShare(p)));
+      row.appendChild(el("span", "stats-bar-value", p === null && hiddenText ? hiddenText : fmtShare(p)));
       list.appendChild(row);
     });
     parent.appendChild(list);
@@ -96,17 +97,21 @@
 
   function trendChart(parent, dau) {
     var W = 600, H = 140, PAD = 8;
-    var pts = [];
+    var segs = [];
+    var cur = [];
+    var npts = 0;
     var max = 1;
     dau.forEach(function (d) { if (d.count !== null && d.count > max) max = d.count; });
     var step = dau.length > 1 ? (W - 2 * PAD) / (dau.length - 1) : 0;
     dau.forEach(function (d, i) {
-      if (d.count === null) return;
+      if (d.count === null) { if (cur.length) segs.push(cur); cur = []; return; }
       var x = PAD + i * step;
       var y = H - PAD - (d.count / max) * (H - 2 * PAD);
-      pts.push(x.toFixed(1) + "," + y.toFixed(1));
+      cur.push(x.toFixed(1) + "," + y.toFixed(1));
+      npts++;
     });
-    if (pts.length < 2) {
+    if (cur.length) segs.push(cur);
+    if (npts < 2) {
       parent.appendChild(el("p", "stats-empty", "Not enough daily data to draw a trend yet"));
       return;
     }
@@ -115,12 +120,24 @@
     svg.setAttribute("class", "stats-trend");
     svg.setAttribute("role", "img");
     svg.setAttribute("aria-label", "Daily active installs over the last 30 days, peaking at " + max);
-    var line = document.createElementNS(SVG_NS, "polyline");
-    line.setAttribute("points", pts.join(" "));
-    line.setAttribute("fill", "none");
-    line.setAttribute("stroke", "currentColor");
-    line.setAttribute("stroke-width", "2");
-    svg.appendChild(line);
+    segs.forEach(function (seg) {
+      if (seg.length < 2) {
+        var xy = seg[0].split(",");
+        var dot = document.createElementNS(SVG_NS, "circle");
+        dot.setAttribute("cx", xy[0]);
+        dot.setAttribute("cy", xy[1]);
+        dot.setAttribute("r", "2");
+        dot.setAttribute("fill", "currentColor");
+        svg.appendChild(dot);
+        return;
+      }
+      var line = document.createElementNS(SVG_NS, "polyline");
+      line.setAttribute("points", seg.join(" "));
+      line.setAttribute("fill", "none");
+      line.setAttribute("stroke", "currentColor");
+      line.setAttribute("stroke-width", "2");
+      svg.appendChild(line);
+    });
     parent.appendChild(svg);
     parent.appendChild(el("p", "stats-note", "Days with fewer than 10 active installs are left out of the line."));
   }
@@ -128,6 +145,7 @@
   var FIXED_LABELS = {
     engines: { auto: "Auto", css: "CSS override", invert: "Invert" },
     features: { viewer: "Document viewer", editor: "Theme editor", customCss: "Custom CSS", sitePack: "Site packs" },
+    themes: { "builtin:midnight": "Midnight", "builtin:oled": "OLED Black", "builtin:dracula": "Dracula", "builtin:nord": "Nord", "builtin:solarized": "Solarized Dark", "builtin:contrast": "High Contrast", "builtin:dim": "Dim", "builtin:sepia": "Sepia Dark", custom: "Custom", other: "Other" },
     retention: { d1: "Back after 1 day", d7: "Back after 7 days", d30: "Back after 30 days" },
     os: { mac: "macOS", windows: "Windows", linux: "Linux", chromeos: "ChromeOS", other: "Other" },
   };
@@ -157,27 +175,27 @@
       trendChart(s, a.dau);
 
       if (doc.newVsReturning !== null) {
-        var nr = section(root, "New and returning installs", "Per week, starting on the Monday shown.");
+        var nr = section(root, "New and returning installs", "Per week, starting on the Monday shown. A week is hidden when either number is under 10.");
         if (doc.newVsReturning.weeks.length === 0) nr.appendChild(el("p", "stats-empty", "Not enough data yet"));
         var ul = el("ul", "stats-weeks");
         doc.newVsReturning.weeks.forEach(function (w) {
-          ul.appendChild(el("li", "", String(w.weekStart) + ": " + fmtCount(w.new) + " new, " + fmtCount(w.returning) + " returning"));
+          ul.appendChild(el("li", "", String(w.weekStart) + ": " + (w.new === null || w.returning === null ? HIDDEN : fmtCount(w.new) + " new, " + fmtCount(w.returning) + " returning")));
         });
         nr.appendChild(ul);
       }
 
       var plan = [
         ["retention", "Retention", "Share of recent new installs that came back. A retention figure of 0% or 100% means none or all of a small group returned."],
-        ["engines", "Theme engines", "Share of active installs using each engine."],
+        ["engines", "Theme engines", "Share of active installs using each engine. Hidden when fewer than 10 installs used the item, or fewer than 10 did not."],
         ["themes", "Themes", "Share of active installs by theme."],
-        ["features", "Features", "Share of active installs that used each feature."],
+        ["features", "Features", "Share of active installs that used each feature. Hidden when fewer than 10 installs used the item, or fewer than 10 did not."],
         ["os", "Operating system", null],
         ["chrome", "Chrome version", null],
         ["lang", "Interface language", null],
       ];
       plan.forEach(function (p) {
         var sec = section(root, p[1], p[2]);
-        bars(sec, doc[p[0]], FIXED_LABELS[p[0]]);
+        bars(sec, doc[p[0]], FIXED_LABELS[p[0]], p[0] === "engines" || p[0] === "features" ? HIDDEN : null);
       });
 
       root.appendChild(el("p", "stats-updated", "Generated " + String(doc.generatedAt)));

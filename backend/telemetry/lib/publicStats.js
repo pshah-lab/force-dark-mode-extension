@@ -83,7 +83,7 @@ function validNewVsReturning(v) {
     if (!isPlainObject(w) || !hasExactKeys(w, ["weekStart", "new", "returning"])) return false;
     const t = dayToMs(w.weekStart);
     if (t === null || new Date(t).getUTCDay() !== 1) return false; // Monday
-    return isCount(w.new) && isCount(w.returning);
+    return isCount(w.new) && isCount(w.returning) && (w.new === null) === (w.returning === null); // Ruling 3: both hidden or neither
   });
 }
 

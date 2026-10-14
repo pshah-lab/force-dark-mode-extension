@@ -984,6 +984,22 @@ test("published-totals wording: policy docs say combined totals are published, g
   }
 });
 
+test("no page or doc still claims zero telemetry or that the extension sends nothing", () => {
+  const banned = [/zero[- ]telemetry/i, /sends nothing(?! to us)/i, /does not collect or transmit/i, /(?<![^.\n]*(custom css|by default|opt-in)[^.\n]*)no network calls(?![^.\n]*(custom css|by default|opt-in))/i];
+  // The patterns must flag the stale sentences and leave the legitimate ones alone.
+  for (const bad of ["zero telemetry;", "our zero-telemetry architecture", "The extension itself sends nothing.", "does not collect or transmit your personal data", "The extension itself makes no network calls; only"])
+    assert.ok(banned.some((re) => re.test(bad)), `pattern set must flag: ${bad}`);
+  for (const good of ["If you click No, the extension sends nothing to us.", "Custom CSS makes no network calls.", "It makes no network calls by default."])
+    assert.ok(!banned.some((re) => re.test(good)), `pattern set must not flag: ${good}`);
+  const files = ["TERMS.md", "README.md", "PRIVACY.md", "CHROMEWEBSTORE.md", "docs/llms.txt", "tools/site-audit/README.md", "documentation/compliance/jurisdiction-matrix.md"];
+  for (const dir of ["docs", "docs/blog"]) for (const f of fs.readdirSync(path.join(rootDir, dir))) if (f.endsWith(".html")) files.push(`${dir}/${f}`);
+  for (const rel of files) {
+    const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    for (const re of banned) assert.ok(!re.test(text), `${rel} matches banned pattern ${re}`);
+  }
+  assert.ok(/opt/i.test(fs.readFileSync(path.join(rootDir, "TERMS.md"), "utf8").split("\n").find((l) => l.startsWith("Your privacy is paramount"))), "TERMS.md privacy line must mention opt-in");
+});
+
 test("delete guidance: Delete my data is explained with 'before', no stale retention or no-server claims", () => {
   for (const rel of ["PRIVACY.md", "documentation/privacy/privacy-policy.md", "CHROMEWEBSTORE.md"]) {
     const text = fs.readFileSync(path.join(rootDir, rel), "utf8");

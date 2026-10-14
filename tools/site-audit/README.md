@@ -6,7 +6,7 @@ backed by evidence.
 
 This folder is **never shipped**: `package-extension.sh` zips only
 `manifest.json`, `assets/` and `src/`, and the harness is not part of `npm test`.
-The extension itself makes no network calls; only this dev tool opens sites.
+The extension itself sends no data by default (anonymous usage statistics are opt-in); only this dev tool opens sites.
 
 ## Requirements
 

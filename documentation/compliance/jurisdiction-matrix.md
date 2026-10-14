@@ -74,7 +74,7 @@ ThemeSwitcher is an open-source utility that:
 Even though commercial thresholds do not legally bind ThemeSwitcher, we uphold consumer rights as best practice:
 - **No Sale or Sharing of Personal Information:** We do not sell or share personal information under California Civil Code § 1798.140.
 - **Do Not Track / Global Privacy Control (GPC):** The companion website checks `navigator.doNotTrack` and operates with zero analytics regardless of browser signals.
-- **Children's Privacy (COPPA):** The product does not collect online contact information or persistent identifiers from children under 13.
+- **Children's Privacy (COPPA):** The product does not collect online contact information from children under 13. The only persistent identifier is the random install ID used by the opt-in, off-by-default usage statistics, which is not collected from users known to be children.
 
 ---
 
@@ -82,6 +82,6 @@ Even though commercial thresholds do not legally bind ThemeSwitcher, we uphold c
 
 | Jurisdiction | Statute | Applicability Analysis | Current Posture |
 | ------------ | ------- | ---------------------- | --------------- |
-| **Canada** | Personal Information Protection and Electronic Documents Act (PIPEDA) | Applies to commercial activities involving personal information. ThemeSwitcher operates locally and does not collect or monetize personal info. | Compliant with fair information principles |
+| **Canada** | Personal Information Protection and Electronic Documents Act (PIPEDA) | Applies to commercial activities involving personal information. ThemeSwitcher operates locally and does not monetize personal info; the only data it can send is the anonymous, opt-in usage report (random ID, day, versions, OS family, language, yes/no flags). | Compliant with fair information principles |
 | **Australia** | Privacy Act 1988 & Australian Privacy Principles (APPs) | Threshold for "APP entities" ($3M AUD turnover) not met. Product adheres to open and transparent management of personal information (APP 1). | Aligned with APPs |
 | **Brazil** | Lei Geral de Proteção de Dados (LGPD) | Applies to data processing targeting individuals in Brazil. Local storage basis aligns with legal basis of legitimate interest and contract execution (Art. 7, V and IX). | Technical controls support requirements |

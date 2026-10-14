@@ -42,7 +42,7 @@ function fullDoc(over = {}) {
   return {
     generatedAt: "2026-10-14T10:00:00Z", minGroup: 10, windowDays: 30,
     active: { dau: Array.from({ length: 30 }, (_, i) => ({ day: day(i), count: 20 + i })), wau: 60, mau: 120 },
-    newVsReturning: { weeks: [{ weekStart: "2026-09-21", new: 15, returning: 40 }, { weekStart: "2026-09-28", new: null, returning: 50 }] },
+    newVsReturning: { weeks: [{ weekStart: "2026-09-21", new: 15, returning: 40 }, { weekStart: "2026-09-28", new: null, returning: null }] },
     retention: { d1: 40, d7: 25, d30: 100 },
     engines: { auto: 70, css: 20, invert: 10 },
     themes: { "builtin:midnight": 30, custom: 12, other: null },
@@ -124,6 +124,48 @@ await test("prototype-chain key names render as inert raw text, not inherited pr
   const labels = findAll(root, (n) => n.classList.contains("stats-bar-label")).map((n) => n.textContent);
   assert.ok(labels.includes("constructor") && labels.includes("toString"), "raw key shown for prototype names: " + labels.join("|"));
   assert.ok(!labels.some((l) => /function|\[object/.test(l)), "no inherited function/object text");
+});
+
+await test("values hidden for the opposite reason say 'hidden to protect privacy', not 'fewer than 10'", () => {
+  const F = load();
+  const root = newRoot();
+  F.renderStats(fullDoc({
+    engines: { auto: null, css: 20, invert: 10 },
+    features: { viewer: 50, editor: null, customCss: 15, sitePack: 40 },
+    themes: { custom: 12 }, os: { mac: 40 }, chrome: { "130": 60 }, lang: { en: 70 },
+  }), root);
+  const t = text(root);
+  const values = findAll(root, (n) => n.classList.contains("stats-bar-value")).map((n) => n.textContent);
+  assert.strictEqual(values.filter((v) => v === "hidden to protect privacy").length, 2, values.join("|"));
+  assert.ok(!values.some((v) => v === "fewer than 10"), "no bar value claims fewer than 10 here");
+  const li = findAll(root, (n) => n.tagName === "li" && /2026-09-28/.test(n.textContent))[0];
+  assert.ok(li && li.textContent.includes("hidden to protect privacy") && !li.textContent.includes("fewer than 10"), li && li.textContent);
+  assert.ok(t.includes("Hidden when fewer than 10 installs used the item, or fewer than 10 did not."));
+  assert.ok(t.includes("A week is hidden when either number is under 10."));
+  const rows = findAll(root, (n) => n.classList.contains("stats-bar-row")).map((n) => n.textContent);
+  const engines = rows.filter((r) => /Auto|CSS override|Invert/.test(r));
+  assert.ok(/Auto/.test(engines[engines.length - 1]), "hidden engine sorts last");
+});
+
+await test("trend line is broken at hidden days", () => {
+  const F = load();
+  const root = newRoot();
+  const d = fullDoc();
+  d.active.dau[10].count = null;
+  F.renderStats(d, root);
+  assert.strictEqual(byTag(root, "polyline").length, 2, "two segments around the hidden day");
+  const root2 = newRoot();
+  F.renderStats(fullDoc(), root2);
+  assert.strictEqual(byTag(root2, "polyline").length, 1);
+});
+
+await test("built-in theme ids render as readable names; unknown ids stay raw text", () => {
+  const F = load();
+  const root = newRoot();
+  F.renderStats(fullDoc({ themes: { "builtin:midnight": 30, "builtin:sepia": 12, "builtin:zzz": 5, custom: 8 } }), root);
+  const labels = findAll(root, (n) => n.classList.contains("stats-bar-label")).map((n) => n.textContent);
+  assert.ok(labels.includes("Midnight") && labels.includes("Sepia Dark"), labels.join("|"));
+  assert.ok(labels.includes("builtin:zzz"));
 });
 
 await test("malformed documents render the unavailable message and never throw", () => {

@@ -170,6 +170,15 @@ test("newVsReturning: at most 4 weeks, each weekStart a real Monday", () => {
   for (const f of bad) assert.strictEqual(validatePublicStats(mutated(f)), false, f.toString());
 });
 
+test("newVsReturning: a week hides both numbers or neither", () => {
+  const bad = [
+    (d) => { d.newVsReturning.weeks[0] = { weekStart: "2026-09-14", new: null, returning: 50 }; },
+    (d) => { d.newVsReturning.weeks[0] = { weekStart: "2026-09-14", new: 5, returning: null }; },
+  ];
+  for (const f of bad) assert.strictEqual(validatePublicStats(mutated(f)), false, f.toString());
+  assert.strictEqual(validatePublicStats(mutated(() => {})), true, "the valid fixture (with a both-null week) still passes");
+});
+
 test("category keys must match their safe patterns", () => {
   const bad = [
     (d) => { d.themes["github.com"] = 5; },

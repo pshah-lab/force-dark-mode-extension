@@ -82,7 +82,7 @@
     keys.forEach(function (key) {
       var p = map[key];
       var row = el("li", "stats-bar-row");
-      row.appendChild(el("span", "stats-bar-label", labels && labels[key] ? labels[key] : key));
+      row.appendChild(el("span", "stats-bar-label", labels && Object.prototype.hasOwnProperty.call(labels, key) && labels[key] ? labels[key] : key));
       var track = el("span", "stats-bar-track");
       var fill = el("span", "stats-bar-fill");
       fill.style.width = (p === null ? 0 : clampPct(p)) + "%";

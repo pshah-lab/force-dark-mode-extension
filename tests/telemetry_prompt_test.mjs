@@ -60,6 +60,7 @@ test("functions do not mutate their input", () => {
 
 const WE_COUNT = "We count: that you used the extension today, which engine and built-in theme you use, which features you used, and your version, Chrome version, OS family and language, plus a random ID for this install (not linked to you) used to tell days apart.";
 const WE_NEVER_SEE = "We never see: the sites you visit, what you read or watch, your documents, or anything you type.";
+const PUBLISH_SENTENCE = "Only combined totals are published at darkmode.pshah.fun/stats.html.";
 const TOGGLE_CAVEAT = "Turning this off stops reports and discards your random ID. To remove reports already sent, click Delete my data first.";
 
 test("popup declares a hidden consent card with the exact copy", () => {
@@ -69,6 +70,8 @@ test("popup declares a hidden consent card with the exact copy", () => {
   assert.ok(html.includes("Share anonymous usage stats?"));
   assert.ok(html.includes(WE_COUNT), "popup must use the exact We count copy (incl. the random ID)");
   assert.ok(html.includes(WE_NEVER_SEE));
+  assert.ok(html.includes(`${WE_NEVER_SEE} ${PUBLISH_SENTENCE}`), "popup must state right after We never see that only combined totals are published");
+  assert.strictEqual(html.split(PUBLISH_SENTENCE).length - 1, 1, "publish sentence appears once in the popup");
   assert.ok(html.includes("Yes, share stats") && html.includes("No thanks"));
   assert.ok(html.includes('src="telemetryPrompt.js"'));
 });
@@ -88,6 +91,8 @@ test("options Usage stats card discloses the random ID with the same exact copy 
   assert.ok(card, "telemetry card must exist");
   assert.ok(card[1].includes(WE_COUNT), "options card must use the exact We count copy");
   assert.ok(card[1].includes(WE_NEVER_SEE), "options card must use the exact We never see copy");
+  assert.ok(card[1].includes(`${WE_NEVER_SEE} ${PUBLISH_SENTENCE}`), "options card must state right after We never see that only combined totals are published");
+  assert.strictEqual(html.split(PUBLISH_SENTENCE).length - 1, 1, "publish sentence appears once in Options");
 });
 
 test("the untick caveat sits directly beside the Options toggle, and only in Options", () => {

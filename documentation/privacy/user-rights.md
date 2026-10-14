@@ -12,7 +12,7 @@ This document outlines how users (Data Subjects under GDPR, Data Principals unde
 | **Right to Data Portability** | GDPR Art. 20 / CCPA 1798.130 | Click **Export Settings (JSON)** in the Options page | None. Immediate local file download |
 | **Right to Erasure / Deletion** | GDPR Art. 17 / DPDP Sec. 12 / CCPA 1798.105 | Click **Erase All Stored Data** in the Options page, or uninstall extension. For usage statistics, click **Delete my data** in Options > Usage stats BEFORE turning them off or uninstalling (it also turns them off; turning off discards the random ID needed to find the server records; undeleted records are purged after 13 months) | None. One-click instant execution |
 | **Right to Rectification / Correction** | GDPR Art. 16 / DPDP Sec. 12 | Adjust preference via popup or re-import modified JSON | None. Real-time in-place update |
-| **Right to Opt-Out of Sale / Sharing** | CCPA 1798.120 / CPRA | Not applicable. No data is sold or shared; opt-in usage statistics can be switched off and deleted in Options > Usage stats | N/A |
+| **Right to Opt-Out of Sale / Sharing** | CCPA 1798.120 / CPRA | Not applicable. No data is sold; only combined totals (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, with groups of fewer than 10 installs never shown; opt-in usage statistics can be switched off and deleted in Options > Usage stats | N/A |
 | **Right of Grievance Redressal** | DPDP Sec. 13 / GDPR Art. 77 | Email grievance officer at `pshah.lab@gmail.com` | Standard email interaction |
 
 ---

@@ -53,6 +53,8 @@ Change both together.
 
 ## Public statistics
 
+Only combined totals are published at darkmode.pshah.fun/stats.html (the same wording the privacy policy uses); individual reports and random IDs are never published, and groups of fewer than 10 installs are never shown.
+
 `supabase/public_stats.sql` defines `public_stats()`, which returns the whole public document as JSON (shape in
 `documentation/specs/2026-10-14-public-usage-stats-design.md`). Execute is revoked from `public`, `anon` and
 `authenticated`, so only the service key used by the function can call it. `api/darkmode-stats.js` checks the

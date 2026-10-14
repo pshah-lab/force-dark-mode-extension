@@ -117,6 +117,15 @@ await test("hostile keys are inert text, never elements", () => {
   assert.strictEqual(byTag(root, "img").length, 0);
 });
 
+await test("prototype-chain key names render as inert raw text, not inherited properties", () => {
+  const F = load();
+  const root = newRoot();
+  F.renderStats(fullDoc({ os: JSON.parse('{"constructor":40,"__proto__":10,"toString":5}') }), root);
+  const labels = findAll(root, (n) => n.classList.contains("stats-bar-label")).map((n) => n.textContent);
+  assert.ok(labels.includes("constructor") && labels.includes("toString"), "raw key shown for prototype names: " + labels.join("|"));
+  assert.ok(!labels.some((l) => /function|\[object/.test(l)), "no inherited function/object text");
+});
+
 await test("malformed documents render the unavailable message and never throw", () => {
   const F = load();
   for (const bad of [null, undefined, 5, "x", [], {}, { active: 3 }, { ...fullDoc(), active: { dau: "no", wau: 1, mau: 1 } }, { ...fullDoc(), engines: 7 }]) {

@@ -87,7 +87,7 @@ flowchart TD
 - **Source:** Local counters kept by the background service worker in `chrome.storage.local`, only after the user clicks Yes in the popup or enables Usage stats in Options. Off by default.
 - **Data Sent:** random ID, UTC day, extension version, Chrome major version, OS family, UI language, and yes/no flags for engine, built-in theme and feature used.
 - **Data Not Sent:** hostnames, URLs, page content, documents, typed text, custom CSS or theme colours. Our server function does not store IP addresses (platform request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers).
-- **Destination:** the developer's first-party endpoints `https://pshah.fun/api/darkmode-telemetry` and `https://pshah.fun/api/darkmode-telemetry-delete` (hosted on Vercel and Supabase). The service worker is the only sender; the popup and content scripts never make network requests.
+- **Destination:** the developer's first-party endpoints `https://pshah.fun/api/darkmode-telemetry` and `https://pshah.fun/api/darkmode-telemetry-delete` (hosted on Vercel and Supabase, which process the data on our behalf). Only combined totals (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, and groups of fewer than 10 installs are never shown. The service worker is the only sender; the popup and content scripts never make network requests.
 - **Access model:** the extension declares no host permissions; the endpoints answer CORS only for the extension's own origin (`chrome-extension://kmhhphbakbhohiohagkhhgdgfbplkfke`), set statically without reading any request header.
 - **Egress:** **Only when opted in**, once per day, plus a delete request when the user clicks Delete my data. Otherwise zero.
 

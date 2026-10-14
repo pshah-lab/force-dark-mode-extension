@@ -9,7 +9,7 @@
 Under Article 28 of the EU GDPR and applicable data protection regulations, organizations must maintain an accurate register of all data processors and subprocessors engaged to process personal data.
 
 ### Affirmative Certification
-**ThemeSwitcher engages no third-party analytics providers or marketing subprocessors. The extension itself works fully offline. The optional, opt-in anonymous usage statistics (off by default) are received by a first-party endpoint operated by the developer, which runs on the infrastructure providers listed in section 2 (Vercel and Supabase) acting only as hosting and database infrastructure.**
+**ThemeSwitcher engages no third-party analytics providers or marketing subprocessors. The extension itself works fully offline. The optional, opt-in anonymous usage statistics (off by default) are received by a first-party endpoint operated by the developer, which runs on the infrastructure providers listed in section 2 (Vercel and Supabase) acting only as hosting and database infrastructure. They process the data on our behalf; only combined totals (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, and groups of fewer than 10 installs are never shown.**
 
 ---
 

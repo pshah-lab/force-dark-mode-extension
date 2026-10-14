@@ -960,6 +960,30 @@ test("PRIVACY.md drops the zero-telemetry claim and says usage stats are off by 
   assert.ok(/request logs may transiently contain/.test(privacyDoc), "PRIVACY.md must scope the IP statement to the server function");
 });
 
+test("published-totals wording: policy docs say combined totals are published, groups under 10 hidden, and drop the no-sharing absolute", () => {
+  const privacyHtml = fs.readFileSync(path.join(rootDir, "docs/privacy.html"), "utf8");
+  const texts = {
+    "PRIVACY.md": privacyDoc,
+    "docs/privacy.html": privacyHtml,
+    "CHROMEWEBSTORE.md": fs.readFileSync(path.join(rootDir, "CHROMEWEBSTORE.md"), "utf8"),
+  };
+  for (const [rel, text] of Object.entries(texts)) {
+    assert.ok(text.includes("combined totals"), `${rel} must say combined totals are published`);
+    assert.ok(text.includes("stats.html"), `${rel} must name the stats page`);
+    assert.ok(text.includes("fewer than 10"), `${rel} must say groups of fewer than 10 installs are never shown`);
+  }
+  const all = [...Object.keys(texts), "README.md", "CHANGELOG.md", "docs/llms.txt", "backend/telemetry/README.md", "documentation/ThemeSwitcher_Privacy_Compliance_Report.md",
+    ...fs.readdirSync(path.join(rootDir, "documentation/privacy")).map((f) => `documentation/privacy/${f}`)];
+  for (const rel of all) {
+    const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    assert.ok(!/never (sold or )?shared with anyone else/i.test(text), `${rel} has the stale no-sharing sentence`);
+    assert.ok(!/used only to understand how many people use the extension and which features matter(?!, and to publish combined totals)/.test(text), `${rel} omits that combined totals are published`);
+  }
+  for (const rel of ["README.md", "documentation/ThemeSwitcher_Privacy_Compliance_Report.md", "documentation/privacy/privacy-policy.md", "CHANGELOG.md", "backend/telemetry/README.md"]) {
+    assert.ok(fs.readFileSync(path.join(rootDir, rel), "utf8").includes("combined totals"), `${rel} must mention combined totals`);
+  }
+});
+
 test("delete guidance: Delete my data is explained with 'before', no stale retention or no-server claims", () => {
   for (const rel of ["PRIVACY.md", "documentation/privacy/privacy-policy.md", "CHROMEWEBSTORE.md"]) {
     const text = fs.readFileSync(path.join(rootDir, rel), "utf8");

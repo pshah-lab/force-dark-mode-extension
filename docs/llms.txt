@@ -23,7 +23,7 @@
 - Keyboard shortcuts: Alt+Shift+D toggles dark mode; Alt+Shift+O and Alt+Shift+V open the document viewer.
 
 ## Privacy
-- Anonymous usage statistics are off by default and sent only after opt-in (random install ID, UTC day, version, Chrome version, OS family, language, and yes/no flags for engine, built-in theme and features; never sites, URLs or content). Users can delete the data from Options > Usage stats. Automated tests confine all network code to one file.
+- Anonymous usage statistics are off by default and sent only after opt-in (random install ID, UTC day, version, Chrome version, OS family, language, and yes/no flags for engine, built-in theme and features; never sites, URLs or content). Users can delete the data from Options > Usage stats. Only combined totals (never individual reports or IDs) are published at https://darkmode.pshah.fun/stats.html, and groups under 10 installs are never shown. Automated tests confine all network code to one file.
 - Settings are stored in `chrome.storage`; users can export them as JSON or erase them in one click.
 - This website counts visits with one cookie-free request per browser to pshah.fun. The extension itself sends nothing. Details: https://darkmode.pshah.fun/privacy.html
 

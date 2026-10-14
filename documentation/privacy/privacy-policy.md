@@ -33,7 +33,7 @@ To prevent any ambiguity, ThemeSwitcher explicitly confirms that it **does NOT**
 - **No Page Content or DOM Data:** While the extension inspects DOM color styles in memory to calculate contrast, the content of web pages (articles, emails, messages, documents) is never extracted or transmitted.
 - **No Keystrokes or Form Input:** We do not access, log, or record form fields, passwords, search queries, payment card information, or credentials.
 - **No Personal Identifiers:** We do not collect names, email addresses, phone numbers, IP addresses, or hardware MAC addresses through the extension. The opt-in usage report carries only a random ID, which we treat as pseudonymous personal data (lawful basis: consent, GDPR Art. 6(1)(a)); our server function does not store IP addresses (the hosting platform's own request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers).
-- **No Behavioral Profiling or Third-Party Analytics:** There are zero third-party telemetry libraries, crash reporting SDKs, advertising trackers, or tracking pixels in the extension. The only first-party exception is the opt-in anonymous usage report described in the Anonymous, opt-in usage statistics section of the main `PRIVACY.md` (off by default; random ID, day, extension and Chrome version, OS family, UI language, and yes/no flags for engine, built-in theme and feature used; no sites, content or documents).
+- **No Behavioral Profiling or Third-Party Analytics:** There are zero third-party telemetry libraries, crash reporting SDKs, advertising trackers, or tracking pixels in the extension. The only first-party exception is the opt-in anonymous usage report described in the Anonymous, opt-in usage statistics section of the main `PRIVACY.md` (off by default; random ID, day, extension and Chrome version, OS family, UI language, and yes/no flags for engine, built-in theme and feature used; no sites, content or documents). Usage statistics are never sold; only combined totals (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, and groups of fewer than 10 installs are never shown.
 - **No User Cookies:** The extension does not read, set, or transmit browser cookies.
 
 ---
@@ -100,7 +100,7 @@ You have complete agency over your data:
 1. **Right to Access & Transparency:** You can view all stored domain rules directly in the extension Options page (`chrome://extensions` -> ThemeSwitcher -> Options).
 2. **Right to Data Portability (GDPR Art. 20):** You can export all your saved configurations as a standard JSON file at any time using the "Export Settings (JSON)" button.
 3. **Right to Erasure / Deletion (DPDP Sec. 12 / GDPR Art. 17):** You can permanently delete all stored preferences with a single click using the "Erase All Stored Data" button in the Options page. Uninstalling the extension also removes all local extension storage.
-4. **Right to Opt-Out (CCPA/CPRA):** We do not sell or share personal information. Usage statistics are opt-in and can be switched off at any time in Options > Usage stats. To delete the reports stored for your random ID, click **Delete my data** in Options > Usage stats (this deletes the server records and also turns usage stats off). Do this BEFORE unticking the box or uninstalling, because turning usage stats off discards the random ID needed to find the records. Records that are not deleted this way are purged automatically after 13 months.
+4. **Right to Opt-Out (CCPA/CPRA):** We do not sell personal information. Only combined totals (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, with groups of fewer than 10 installs never shown. Usage statistics are opt-in and can be switched off at any time in Options > Usage stats. To delete the reports stored for your random ID, click **Delete my data** in Options > Usage stats (this deletes the server records and also turns usage stats off). Do this BEFORE unticking the box or uninstalling, because turning usage stats off discards the random ID needed to find the records. Records that are not deleted this way are purged automatically after 13 months.
 
 ---
 
@@ -126,7 +126,7 @@ We implement defense-in-depth security controls:
 If we modify our privacy practices or introduce new features that impact data processing, we will update this document, increment the version number, and document changes in the changelog below.
 
 ### Version Changelog
-- **Unreleased (October 14, 2026):** Added optional, anonymous, opt-in usage statistics (off by default) with Options controls to turn it off and delete the data.
+- **Unreleased (October 14, 2026):** Added optional, anonymous, opt-in usage statistics (off by default) with Options controls to turn it off and delete the data. Only combined totals are published at darkmode.pshah.fun/stats.html.
 - **Version 2.0.0 (September 23, 2026):** Complete compliance rewrite. Added DPDP Act 2023 alignment, GDPR user rights workflow, eliminated website counter network calls, documented data portability and erasure controls.
 - **Version 1.0.0 (September 4, 2026):** Initial privacy policy.
 

@@ -51,7 +51,7 @@ This document provides a jurisdiction-by-jurisdiction analysis of privacy, data 
 ## 3. United Kingdom: UK GDPR & Data Protection Act 2018
 
 - **Substantive Alignment:** Follows EU GDPR principles as incorporated into UK domestic law.
-- **PECR (Privacy and Electronic Communications Regulations):** The companion website uses zero non-essential tracking cookies and zero analytics trackers; no cookie banner is legally required.
+- **PECR (Privacy and Electronic Communications Regulations):** The companion website uses no non-essential tracking cookies and no analytics scripts (it makes one cookie-free visit-count request to pshah.fun, and the stats page one GET to the public stats endpoint); the extension sends only the opt-in usage report; no cookie banner is legally required.
 
 ---
 
@@ -73,7 +73,7 @@ ThemeSwitcher is an open-source utility that:
 ### Disclosures & Safe Practices
 Even though commercial thresholds do not legally bind ThemeSwitcher, we uphold consumer rights as best practice:
 - **No Sale or Sharing of Personal Information:** We do not sell or share personal information under California Civil Code § 1798.140.
-- **Do Not Track / Global Privacy Control (GPC):** The companion website checks `navigator.doNotTrack` and operates with zero analytics regardless of browser signals.
+- **Do Not Track / Global Privacy Control (GPC):** The companion website checks `navigator.doNotTrack` and skips its visit-count request when Do Not Track is on and runs no analytics scripts regardless of browser signals; the extension sends only the opt-in usage report.
 - **Children's Privacy (COPPA):** The product does not collect online contact information from children under 13. The only persistent identifier is the random install ID used by the opt-in, off-by-default usage statistics, which is not collected from users known to be children.
 
 ---

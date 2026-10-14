@@ -222,6 +222,12 @@ await test("stats.html has required wording, no third-party script, standard chr
   assert.ok(/<h1[\s>]/.test(s));
 });
 
+await test("stats.html describes the counted fields grammatically", () => {
+  const s = read("stats.html");
+  assert.ok(!s.includes("yes/no the theme"));
+  assert.ok(s.includes("the theme in use, and yes/no flags for engines and features"));
+});
+
 await test("every other page footer links to the stats page after Privacy Policy", () => {
   const pages = [
     ...fs.readdirSync(docsDir).filter((f) => f.endsWith(".html")),

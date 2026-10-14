@@ -94,4 +94,4 @@ flowchart TD
 ### Flow 5: Companion Website
 - **Source:** Browser navigation to `https://darkmode.pshah.fun`.
 - **Delivery:** Static GitHub Pages CDN delivery over HTTPS.
-- **Egress:** **Zero.** Zero analytics scripts, zero external counter APIs, zero third-party font or tracking pixels.
+- **Egress:** No analytics scripts, no third-party counter APIs, fonts or tracking pixels. The site makes one cookie-free visit-count request to pshah.fun per browser, and the public stats page makes one GET to the developer's own stats endpoint.

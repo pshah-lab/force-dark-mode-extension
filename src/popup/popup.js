@@ -68,10 +68,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   // can never break the rest of the popup.
   initTelemetryCard(feedbackCard).catch((err) => console.warn("Usage stats card unavailable:", err));
 
-  const [tab] = await chrome.tabs.query({
-    active: true,
-    currentWindow: true,
-  });
+  // The side panel stays open across tabs, so the current tab and host are re-read by loadForTab.
+  let tab;
+  let host = "";
+  let loadSequence = 0;
 
   chrome.commands.getAll((commands) => {
     const shortcut = commands.find((c) => c.name === "toggle-dark-mode")?.shortcut;
@@ -121,45 +121,70 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  if (!tab?.url) {
-    setUnavailable();
-    return;
+  function setAvailable() {
+    button.disabled = false;
+    backgroundColorInput.disabled = false;
+    brightnessInput.disabled = false;
+    contrastInput.disabled = false;
+    sepiaInput.disabled = false;
+    resetFiltersButton.disabled = false;
+    themeSelect.disabled = false;
+    radios.forEach((radio) => {
+      radio.disabled = false;
+    });
   }
 
-  let parsedUrl;
-  try {
-    parsedUrl = new URL(tab.url);
-  } catch {
-    setUnavailable();
-    return;
-  }
+  function loadForTab(nextTab) {
+    tab = nextTab;
+    host = "";
+    userHasInteractedWithEngine = false;
+    openPdfViewerButton.hidden = true;
+    openPdfViewerButton.onclick = null;
+    const siteCssLink = document.getElementById("site-css-link");
+    if (siteCssLink) siteCssLink.hidden = true;
 
-  const isLocalFile = parsedUrl.protocol === "file:";
-  if (restrictedProtocols.has(parsedUrl.protocol) || (!parsedUrl.hostname && !isLocalFile)) {
-    setUnavailable();
-    return;
-  }
+    if (!tab?.url) {
+      setUnavailable();
+      return;
+    }
 
-  const host = isLocalFile ? "local_files" : parsedUrl.hostname;
-  site.textContent = isLocalFile ? "Local Files" : host;
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(tab.url);
+    } catch {
+      setUnavailable();
+      return;
+    }
 
-  const siteCssLink = document.getElementById("site-css-link");
-  if (siteCssLink) {
-    siteCssLink.hidden = false;
-    siteCssLink.onclick = (event) => {
-      event.preventDefault();
-      chrome.tabs.create({ url: chrome.runtime.getURL("src/options/options.html") + "#css=" + encodeURIComponent(host) });
-    };
-  }
+    const isLocalFile = parsedUrl.protocol === "file:";
+    if (restrictedProtocols.has(parsedUrl.protocol) || (!parsedUrl.hostname && !isLocalFile)) {
+      setUnavailable();
+      return;
+    }
 
-  if (isPdfUrl(parsedUrl)) {
-    openPdfViewerButton.hidden = false;
-    openPdfViewerButton.onclick = () => {
-      const viewerUrl = new URL(chrome.runtime.getURL("src/viewer/viewer.html"));
-      viewerUrl.searchParams.set("src", tab.url);
-      viewerUrl.searchParams.set("name", getNameFromUrl(parsedUrl) || "PDF document");
-      chrome.tabs.create({ url: viewerUrl.href });
-    };
+    setAvailable();
+    host = isLocalFile ? "local_files" : parsedUrl.hostname;
+    site.textContent = isLocalFile ? "Local Files" : host;
+
+    if (siteCssLink) {
+      siteCssLink.hidden = false;
+      siteCssLink.onclick = (event) => {
+        event.preventDefault();
+        chrome.tabs.create({ url: chrome.runtime.getURL("src/options/options.html") + "#css=" + encodeURIComponent(host) });
+      };
+    }
+
+    if (isPdfUrl(parsedUrl)) {
+      openPdfViewerButton.hidden = false;
+      openPdfViewerButton.onclick = () => {
+        const viewerUrl = new URL(chrome.runtime.getURL("src/viewer/viewer.html"));
+        viewerUrl.searchParams.set("src", tab.url);
+        viewerUrl.searchParams.set("name", getNameFromUrl(parsedUrl) || "PDF document");
+        chrome.tabs.create({ url: viewerUrl.href });
+      };
+    }
+
+    updateUI();
   }
 
   function updateToggleUI(
@@ -342,7 +367,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "sync") return;
-    if (!changes[host]) return;
+    if (!host || !changes[host]) return;
 
     const config = changes[host].newValue || {};
     selectTheme(config.themeId);
@@ -471,7 +496,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     sendFilterUpdate();
   };
 
-  updateUI();
+  async function refreshActiveTab() {
+    const sequence = ++loadSequence;
+    let active;
+    try {
+      [active] = await chrome.tabs.query({ active: true, currentWindow: true });
+    } catch {
+      active = undefined;
+    }
+    if (sequence !== loadSequence) return;
+    loadForTab(active);
+  }
+
+  const panelEvent = (event) => {
+    if (PanelTabEvents.shouldRefresh(event, tab?.id)) refreshActiveTab();
+  };
+  chrome.tabs.onActivated.addListener(() => panelEvent({ kind: "activated" }));
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo) =>
+    panelEvent({ kind: "updated", tabId, changeInfo })
+  );
+  chrome.windows.onFocusChanged.addListener(() => panelEvent({ kind: "focus" }));
+
+  await refreshActiveTab();
 });
 
 // Opt-in usage stats card: only when the feedback card is not showing. Nothing is sent

@@ -1,6 +1,6 @@
 # Force Dark Mode - ThemeSwitcher
 
-> Free, open-source (MIT) Chrome extension, Manifest V3, that applies dark themes to websites, PDFs and local documents. It processes pages and documents on the device; the only data that can leave it is an optional, anonymous, opt-in usage report.
+> Free, open-source (MIT) Chrome extension, Manifest V3, that applies dark themes to websites, PDFs and local documents. It processes pages and documents on the device; the only data that can leave it is a broken-site report the user starts and confirms (the site's domain, engine, theme label and version).
 
 ## Facts
 - Name: Force Dark Mode - ThemeSwitcher
@@ -23,9 +23,9 @@
 - Keyboard shortcuts: Alt+Shift+D toggles dark mode; Alt+Shift+O and Alt+Shift+V open the document viewer.
 
 ## Privacy
-- Anonymous usage statistics are off by default and sent only after opt-in (random install ID, UTC day, version, Chrome version, OS family, language, and yes/no flags for engine, built-in theme and features; never sites, URLs or content). Users can delete the data from Options > Usage stats. Only combined totals (never individual reports or IDs) are published at https://darkmode.pshah.fun/stats.html, and groups under 10 installs are never shown. Automated tests confine all network code to one file.
+- Nothing is sent unless the user presses Report this site as broken and confirms: a report has four fields (site domain, engine, theme label, extension version), no ID, and our server function does not store IP addresses. Reports are purged after 13 months. Older 2.0.x opt-in usage reports are deleted when 2.1.0 starts. Automated tests confine all network code to one file.
 - Settings are stored in `chrome.storage`; users can export them as JSON or erase them in one click.
-- This website counts visits with one cookie-free request per browser to pshah.fun. The extension sends anonymous usage statistics only if you opt in. Details: https://darkmode.pshah.fun/privacy.html
+- This website counts visits with one cookie-free request per browser to pshah.fun. The extension sends nothing unless you confirm a broken-site report. Details: https://darkmode.pshah.fun/privacy.html
 
 ## Limitations
 - Pages drawn on a canvas (for example some online document editors) can't be recolored with CSS.
@@ -37,7 +37,7 @@
 - Support: https://darkmode.pshah.fun/support.html
 - Privacy policy: https://darkmode.pshah.fun/privacy.html
 - Terms: https://darkmode.pshah.fun/terms.html
-- Usage statistics (opt-in, aggregated, groups under 10 hidden): https://darkmode.pshah.fun/stats.html
+- Usage statistics from 2.0.x (discontinued, aggregated, groups under 10 hidden): https://darkmode.pshah.fun/stats.html
 - Guide, forcing dark mode in Chrome: https://darkmode.pshah.fun/blog/how-to-force-dark-mode-chrome.html
 - Guide, dark mode for PDFs: https://darkmode.pshah.fun/blog/dark-mode-pdf-guide.html
 - Comparison with Dark Reader: https://darkmode.pshah.fun/blog/themeswitcher-vs-dark-reader.html

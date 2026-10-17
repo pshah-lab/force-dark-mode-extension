@@ -255,7 +255,7 @@ testAsync("exportSettingsJson exports sanitized JSON payload (Portability)", asy
   const exportedString = await storageModule.exportSettingsJson();
   const parsed = JSON.parse(exportedString);
 
-  assert.strictEqual(parsed.version, "2.0.1");
+  assert.strictEqual(parsed.version, "2.1.0");
   assert.ok(parsed.exportDate);
   assert.ok(parsed.settings["wikipedia.org"]);
   assert.strictEqual(parsed.settings["wikipedia.org"].engine, "css");
@@ -947,25 +947,20 @@ test("the telemetryState key is never stored in chrome.storage.sync", () => {
 });
 
 const privacyDoc = fs.readFileSync(path.join(rootDir, "PRIVACY.md"), "utf8");
-// The 2.0.x heartbeat field set, frozen: PRIVACY.md still documents it until the policy is rewritten for the
-// broken-site report (plan task 7), and older clients still send it.
-const LEGACY_HEARTBEAT_KEYS = [
-  "id", "day", "version", "env.chrome", "env.os", "env.lang", "engines.auto", "engines.css", "engines.invert",
-  "theme", "features.viewer", "features.editor", "features.customCss", "features.sitePack",
-];
-
-test("PRIVACY.md drops the zero-telemetry claim and says usage stats are off by default", () => {
+test("PRIVACY.md drops the zero-telemetry claim and says the only report is user-confirmed", () => {
   assert.ok(!privacyDoc.includes("Zero Telemetry"), "PRIVACY.md must not claim Zero Telemetry");
   assert.ok(!/zero data collection/i.test(privacyDoc), "PRIVACY.md must not claim Zero Data Collection");
-  assert.ok(privacyDoc.includes("Anonymous, opt-in usage statistics"));
-  assert.ok(privacyDoc.includes("off by default"));
-  assert.ok(privacyDoc.includes("Options"), "PRIVACY.md must say where to turn it off");
-  assert.ok(privacyDoc.includes("Delete my data"), "PRIVACY.md must name the delete control");
+  assert.ok(privacyDoc.includes("Broken-site reports"));
+  assert.ok(privacyDoc.includes("Send report"), "PRIVACY.md must name the confirmation button");
+  assert.ok(/domain/.test(privacyDoc), "PRIVACY.md must say the domain is sent");
+  assert.ok(/no install ID/i.test(privacyDoc), "PRIVACY.md must say a report carries no ID");
+  assert.ok(privacyDoc.includes("13 months"), "PRIVACY.md must state the 13-month purge rule");
   assert.ok(/does not store IP addresses/.test(privacyDoc), "PRIVACY.md must say the server function does not store IP addresses");
   assert.ok(/request logs may transiently contain/.test(privacyDoc), "PRIVACY.md must scope the IP statement to the server function");
+  assert.ok(!/anonymous/i.test(privacyDoc.split("**Older version (2.0.0):**")[0].split("## 1.")[1]), "section 1 must not call a report anonymous");
 });
 
-test("published-totals wording: policy docs say combined totals are published, groups under 10 hidden, and drop the no-sharing absolute", () => {
+test("policy docs say reports are never sold or shared, carry no ID, and name the stale-sentence guards", () => {
   const privacyHtml = fs.readFileSync(path.join(rootDir, "docs/privacy.html"), "utf8");
   const texts = {
     "PRIVACY.md": privacyDoc,
@@ -973,9 +968,12 @@ test("published-totals wording: policy docs say combined totals are published, g
     "CHROMEWEBSTORE.md": fs.readFileSync(path.join(rootDir, "CHROMEWEBSTORE.md"), "utf8"),
   };
   for (const [rel, text] of Object.entries(texts)) {
-    assert.ok(text.includes("combined totals"), `${rel} must say combined totals are published`);
-    assert.ok(text.includes("stats.html"), `${rel} must name the stats page`);
-    assert.ok(text.includes("fewer than 10"), `${rel} must say groups of fewer than 10 installs are never shown`);
+    assert.ok(/13 months/.test(text), `${rel} must state the 13-month purge rule`);
+    assert.ok(/domain/.test(text), `${rel} must say the domain is sent`);
+  }
+  for (const rel of ["PRIVACY.md", "docs/privacy.html"]) {
+    assert.ok(/never sold or shared/i.test(texts[rel]), `${rel} must say reports are never sold or shared`);
+    assert.ok(/No install ID|No ID/i.test(texts[rel]), `${rel} must say a report carries no ID`);
   }
   const all = [...Object.keys(texts), "README.md", "CHANGELOG.md", "docs/llms.txt", "backend/telemetry/README.md", "documentation/ThemeSwitcher_Privacy_Compliance_Report.md",
     ...fs.readdirSync(path.join(rootDir, "documentation/privacy")).map((f) => `documentation/privacy/${f}`)];
@@ -984,17 +982,14 @@ test("published-totals wording: policy docs say combined totals are published, g
     assert.ok(!/never (sold or )?shared with anyone else/i.test(text), `${rel} has the stale no-sharing sentence`);
     assert.ok(!/used only to understand how many people use the extension and which features matter(?!, and to publish combined totals)/.test(text), `${rel} omits that combined totals are published`);
   }
-  for (const rel of ["README.md", "documentation/ThemeSwitcher_Privacy_Compliance_Report.md", "documentation/privacy/privacy-policy.md", "CHANGELOG.md", "backend/telemetry/README.md"]) {
-    assert.ok(fs.readFileSync(path.join(rootDir, rel), "utf8").includes("combined totals"), `${rel} must mention combined totals`);
-  }
 });
 
 test("no page or doc still claims zero telemetry or that the extension sends nothing", () => {
-  const banned = [/zero[- ]telemetry/i, /sends nothing(?! to us)/i, /does not collect or transmit/i, /(?<![^.\n]*(custom css|by default|opt-in)[^.\n]*)no network calls(?![^.\n]*(custom css|by default|opt-in))/i];
+  const banned = [/zero[- ]telemetry/i, /sends nothing(?! to us| on its own| unless you)/i, /does not collect or transmit/i, /(?<![^.\n]*(custom css|by default|opt-in)[^.\n]*)no network calls(?![^.\n]*(custom css|by default|opt-in))/i];
   // The patterns must flag the stale sentences and leave the legitimate ones alone.
   for (const bad of ["zero telemetry;", "our zero-telemetry architecture", "The extension itself sends nothing.", "does not collect or transmit your personal data", "The extension itself makes no network calls; only"])
     assert.ok(banned.some((re) => re.test(bad)), `pattern set must flag: ${bad}`);
-  for (const good of ["If you click No, the extension sends nothing to us.", "Custom CSS makes no network calls.", "It makes no network calls by default."])
+  for (const good of ["If you click No, the extension sends nothing to us.", "The extension sends nothing on its own.", "It sends nothing unless you choose to report a site.", "Custom CSS makes no network calls.", "It makes no network calls by default."])
     assert.ok(!banned.some((re) => re.test(good)), `pattern set must not flag: ${good}`);
   const files = ["TERMS.md", "README.md", "PRIVACY.md", "CHROMEWEBSTORE.md", "docs/llms.txt", "tools/site-audit/README.md", "documentation/compliance/jurisdiction-matrix.md"];
   for (const dir of ["docs", "docs/blog"]) for (const f of fs.readdirSync(path.join(rootDir, dir))) if (f.endsWith(".html")) files.push(`${dir}/${f}`);
@@ -1002,43 +997,20 @@ test("no page or doc still claims zero telemetry or that the extension sends not
     const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
     for (const re of banned) assert.ok(!re.test(text), `${rel} matches banned pattern ${re}`);
   }
-  assert.ok(/opt/i.test(fs.readFileSync(path.join(rootDir, "TERMS.md"), "utf8").split("\n").find((l) => l.startsWith("Your privacy is paramount"))), "TERMS.md privacy line must mention opt-in");
+  assert.ok(/broken-site report/i.test(fs.readFileSync(path.join(rootDir, "TERMS.md"), "utf8").split("\n").find((l) => l.startsWith("Your privacy is paramount"))), "TERMS.md privacy line must mention the broken-site report");
 });
 
-test("delete guidance: Delete my data is explained with 'before', no stale retention or no-server claims", () => {
-  for (const rel of ["PRIVACY.md", "documentation/privacy/privacy-policy.md", "CHROMEWEBSTORE.md"]) {
+test("retention guidance: reports cannot be deleted individually and are purged after 13 months; no stale retention or no-server claims", () => {
+  for (const rel of ["PRIVACY.md", "CHROMEWEBSTORE.md"]) {
     const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
-    assert.ok(text.includes("Delete my data"), `${rel} must name Delete my data`);
-    assert.ok(/before/i.test(text), `${rel} must say to delete before turning off or uninstalling`);
     assert.ok(text.includes("13 months"), `${rel} must state the 13-month purge rule`);
+    assert.ok(/cannot be deleted individually/i.test(text), `${rel} must say a report cannot be deleted individually`);
   }
   for (const rel of ["PRIVACY.md", "CHROMEWEBSTORE.md", "README.md", ...fs.readdirSync(path.join(rootDir, "documentation/privacy")).map((f) => `documentation/privacy/${f}`), "documentation/ThemeSwitcher_Privacy_Compliance_Report.md"]) {
     const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
     assert.ok(!/kept until the user requests deletion/i.test(text), `${rel} has the stale retention wording`);
     assert.ok(!text.includes("0 days (no server exists)"), `${rel} claims no server exists`);
     assert.ok(!/No user data is ever sold, transferred, or shared with third parties/.test(text), `${rel} has the absolute no-sharing sentence`);
-  }
-});
-
-test("every line that mentions deleting usage data also says to do it before turning off or uninstalling", () => {
-  const files = [
-    "PRIVACY.md",
-    "documentation/privacy/privacy-policy.md",
-    "CHROMEWEBSTORE.md",
-    "README.md",
-    "documentation/privacy/user-rights.md",
-    "documentation/ThemeSwitcher_Privacy_Compliance_Report.md",
-  ];
-  const mention = /delete (all )?(of )?your data|delete my data/i;
-  for (const rel of files) {
-    const lines = fs.readFileSync(path.join(rootDir, rel), "utf8").split("\n");
-    let seen = 0;
-    lines.forEach((line, i) => {
-      if (!mention.test(line)) return;
-      seen++;
-      assert.ok(/before/i.test(line), `${rel}:${i + 1} mentions deleting data without saying 'before' on the same line: ${line.slice(0, 100)}`);
-    });
-    assert.ok(seen > 0, `${rel} must mention Delete my data`);
   }
 });
 
@@ -1051,12 +1023,12 @@ test("IP statements are scoped to the server function and never absolute", () =>
   }
 });
 
-test("PRIVACY.md lists every heartbeat field name, and exactly those", () => {
-  const keys = LEGACY_HEARTBEAT_KEYS;
+test("PRIVACY.md lists every report field name, and exactly those", () => {
+  const keys = ["site", "engine", "theme", "version"];
   const section = privacyDoc.match(/<!-- fields:start -->([\s\S]*?)<!-- fields:end -->/);
   assert.ok(section, "PRIVACY.md must delimit the field list with fields:start / fields:end markers");
   const documented = [...section[1].matchAll(/`([A-Za-z.]+)`/g)].map((m) => m[1]);
-  assert.deepStrictEqual([...documented].sort(), [...keys].sort(), "documented fields must equal the heartbeat keys");
+  assert.deepStrictEqual([...documented].sort(), [...keys].sort(), "documented fields must equal the report keys");
 });
 
 test("no document claims a telemetry host permission; the CORS design is described instead", () => {

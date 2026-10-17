@@ -45,7 +45,7 @@ ThemeSwitcher modifies the visual presentation (CSS styles and color values) of 
 
 ## 5. Privacy & Data Handling
 
-Your privacy is paramount. ThemeSwitcher operates locally, collects no browsing history, and sends anonymous usage statistics (a random install ID and yes/no usage flags) only if you opt in. Please review our [Privacy Policy](https://darkmode.pshah.fun/privacy.html) for full details on the opt-in usage statistics.
+Your privacy is paramount. ThemeSwitcher operates locally, collects no browsing history, and sends nothing unless you choose to send a broken-site report (the site's domain, engine, theme and version). Please review our [Privacy Policy](https://darkmode.pshah.fun/privacy.html) for full details.
 
 ---
 

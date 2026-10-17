@@ -6,7 +6,7 @@
     <title>Privacy Policy | Force Dark Mode - ThemeSwitcher</title>
     <meta
       name="description"
-      content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. local-first, no tracking, and anonymous usage statistics that are off unless you opt in."
+      content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. local-first, no tracking, and nothing sent unless you choose to report a broken site."
     />
     <link rel="canonical" href="https://darkmode.pshah.fun/privacy.html" />
     <meta name="robots" content="index, follow" />
@@ -21,12 +21,12 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://darkmode.pshah.fun/privacy.html" />
     <meta property="og:title" content="Privacy Policy | Force Dark Mode - ThemeSwitcher" />
-    <meta property="og:description" content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. local-first, no tracking, and anonymous usage statistics that are off unless you opt in." />
+    <meta property="og:description" content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. local-first, no tracking, and nothing sent unless you choose to report a broken site." />
     <meta property="og:image" content="https://darkmode.pshah.fun/assets/icon128.png" />
 
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="Privacy Policy | Force Dark Mode - ThemeSwitcher" />
-    <meta name="twitter:description" content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. local-first, no tracking, and anonymous usage statistics that are off unless you opt in." />
+    <meta name="twitter:description" content="Privacy Policy for ThemeSwitcher / Force Dark Mode Chrome extension. local-first, no tracking, and nothing sent unless you choose to report a broken site." />
     <meta name="twitter:image" content="https://darkmode.pshah.fun/assets/icon128.png" />
 
     <script type="application/ld+json">
@@ -135,8 +135,8 @@
         <div class="badge">Transparency First</div>
         <h1>Privacy Policy</h1>
         <div class="article-meta">
-          <span>Version 2.0.0</span> • 
-          <span>Last Updated: October 14, 2026</span> • 
+          <span>Version 2.1.0</span> • 
+          <span>Last Updated: October 17, 2026</span> • 
           <span>Effective Immediately</span>
         </div>
       </div>
@@ -146,34 +146,31 @@
           Force Dark Mode - ThemeSwitcher is engineered with an uncompromising commitment to privacy by design, local-first processing, and data minimization. This policy explains what information is processed, how it is handled, and why your data remains entirely under your control.
         </p>
 
-        <h2>1. Anonymous, Opt-In Usage Statistics</h2>
+        <h2>1. Broken-Site Reports (Only When You Send One)</h2>
         <p>
-          Usage statistics are <strong>off by default</strong>. Nothing is sent unless you click <strong>Yes</strong> on the one-time card in the extension popup or switch on <strong>Usage stats</strong> on the Options page. If you click No, or never choose, the extension sends nothing to us. (The only other network request the extension can make is when you open a web PDF in the viewer: it then downloads that PDF directly from the site that hosts it.)
+          The extension sends nothing on its own. The one thing it can send is a <strong>broken-site report that you start and confirm yourself</strong>: in the side panel, press <strong>Report this site as broken</strong>, read what will be sent, and press <strong>Send report</strong>. You are asked every time. (The only other network request the extension can make is when you open a web PDF in the viewer: it then downloads that PDF directly from the site that hosts it.)
         </p>
         <p>
-          When you opt in, the extension sends one small anonymous report per day, from the background service worker only. It says that you used the extension that day and contains exactly these fields (Options &gt; Usage stats shows an example report, with a placeholder ID, before you turn it on, and today&rsquo;s report afterwards):
+          A report is sent from the background service worker only and contains exactly these fields:
         </p>
         <ul>
-          <li><code>id</code>: a random identifier created when you opt in; it is not linked to your Google account, email or name</li>
-          <li><code>day</code>: the UTC calendar day of the report</li>
+          <li><code>site</code>: the domain of the site you are reporting, for example example.com (never the page address, path, query or anything you typed)</li>
+          <li><code>engine</code>: the engine in use (auto, css or invert)</li>
+          <li><code>theme</code>: a built-in theme name, or the word custom or default (never the name or colours of your own theme)</li>
           <li><code>version</code>: the extension version</li>
-          <li><code>env.chrome</code>: the Chrome major version number</li>
-          <li><code>env.os</code>: your operating system family (mac, windows, linux, chromeos or other)</li>
-          <li><code>env.lang</code>: your browser UI language code</li>
-          <li><code>engines.auto</code>, <code>engines.css</code>, <code>engines.invert</code>: whether each engine (Auto, CSS, Invert) was used that day (yes or no flags, not counts)</li>
-          <li><code>theme</code>: the built-in theme you used, or the word custom for your own theme</li>
-          <li><code>features.viewer</code>, <code>features.editor</code>, <code>features.customCss</code>, <code>features.sitePack</code>: whether you used the document viewer, the theme editor, custom CSS or a site pack that day (yes or no flags)</li>
         </ul>
         <p>
-          Nothing about the sites you visit, what you read or watch, the documents you open or any text you type is ever collected or sent. No hostnames, URLs, page content, custom CSS text, theme colours or file names are included.
+          The confirmation shows the domain before you send. Nothing about what you read or watch, the documents you open or any text you type is ever collected or sent. No page address, page content, custom CSS text, theme colours or file names are included.
         </p>
         <ul>
-          <li><strong>What the server stores:</strong> the random ID, the day and the fields above. Our server function does <strong>not store IP addresses</strong> (the hosting platform&rsquo;s own request logs may transiently contain them, along with the browser&rsquo;s User-Agent and Accept-Language headers).</li>
-          <li><strong>Legal basis:</strong> the random ID is treated as pseudonymous personal data, and the lawful basis is your consent, which you can withdraw at any time.</li>
-          <li><strong>Use and processors:</strong> the statistics are used only to understand how many people use the extension and which features matter, and to publish combined totals on the <a href="stats.html">usage statistics page</a> (darkmode.pshah.fun/stats.html); groups of fewer than 10 installs are never shown. They are never sold, never shared with advertisers and never used for anything unrelated. They are processed only by our hosting providers (Vercel, Supabase) on our behalf; the endpoint is operated by the developer and no analytics company is involved.</li>
-          <li><strong>Turning it off and deleting your data:</strong> to delete the data already sent, click <strong>Delete my data</strong> in Options &gt; Usage stats (this deletes the server records and also turns usage stats off). Do this <strong>before</strong> unticking the box or uninstalling, because turning usage stats off discards the random ID needed to find the records. Records that are not deleted this way are purged automatically after 13 months. If the deletion request cannot reach the server, usage stats stay off and the extension keeps the random ID only to retry the deletion until the server confirms it; the ID is then removed.</li>
+          <li><strong>No ID:</strong> a report carries no install ID, account or cookie, so reports are not linked to you or to each other. For the same reason a single report cannot be looked up or deleted afterwards.</li>
+          <li><strong>What the server stores:</strong> the four fields above plus the UTC date, with repeats counted. Our server function does <strong>not store IP addresses</strong> (the hosting platform&rsquo;s own request logs may transiently contain them, along with the browser&rsquo;s User-Agent and Accept-Language headers).</li>
+          <li><strong>Legal basis:</strong> your consent, given each time you press Send report.</li>
+          <li><strong>Use, processors and retention:</strong> reports are used only to find and fix sites that look wrong. They are never sold, never shared with advertisers and never used for anything unrelated, and are purged automatically after 13 months. They are processed only by our hosting providers (Vercel, Supabase) on our behalf; the endpoint is operated by the developer and no analytics company is involved.</li>
+          <li><strong>On your device only:</strong> the extension remembers which sites you reported today (the domain and the date) so that a second tap says &ldquo;Already reported today&rdquo;. That note never leaves your device.</li>
+          <li><strong>Older version (2.0.0):</strong> version 2.0.0 could, if you opted in, send a daily anonymous usage report tied to a random install ID. That report no longer exists. When this version starts, and if you had opted in, it asks the server to delete the data stored for your random ID and then forgets the ID; if the request fails it is retried each time the browser starts the extension. The combined totals published earlier on the <a href="stats.html">usage statistics page</a> came from those reports and are no longer updated.</li>
           <li><strong>Website visit count:</strong> this website (not the extension) counts visits with one empty request to the developer&rsquo;s own site, pshah.fun, once per browser. It sends no cookies, identifiers, page or referrer data, and is skipped when Do Not Track is on.</li>
-          <li><strong>No sale or sharing:</strong> usage statistics are never sold. Only combined totals (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, and groups of fewer than 10 installs are never shown. The hosting providers (Vercel, Supabase) process the data on our behalf. Your settings and documents are never sent to anyone.</li>
+          <li><strong>No sale or sharing:</strong> reports are never sold or shared. Your settings and documents are never sent to anyone.</li>
         </ul>
 
         <h2>2. Local Storage &amp; Chrome Sync</h2>
@@ -215,7 +212,11 @@
             </tr>
             <tr>
               <td><code>activeTab</code></td>
-              <td>Used only when you open the extension popup to inspect page luminance and apply your selected theme settings to the active tab.</td>
+              <td>Used only when you open the side panel to inspect page luminance and apply your selected theme settings to the active tab.</td>
+            </tr>
+            <tr>
+              <td><code>sidePanel</code></td>
+              <td>Shows the extension&rsquo;s controls in the browser&rsquo;s side panel instead of a popup. It gives no access to any page.</td>
             </tr>
             <tr>
               <td><code>&lt;all_urls&gt;</code> (content_scripts)</td>
@@ -230,7 +231,7 @@
         </p>
         <ul>
           <li><strong>Right to Portability (GDPR Art. 20):</strong> Export your saved site configurations as a portable JSON file at any time.</li>
-          <li><strong>Right to Erasure (DPDP Sec. 12 / GDPR Art. 17):</strong> Permanently wipe all stored domain preferences with a single click using the &ldquo;Erase All Stored Data&rdquo; button. To delete the usage statistics stored for your random ID, click &ldquo;Delete my data&rdquo; in Options &gt; Usage stats <strong>before</strong> turning usage stats off or uninstalling; records not deleted this way are purged after 13 months.</li>
+          <li><strong>Right to Erasure (DPDP Sec. 12 / GDPR Art. 17):</strong> Permanently wipe all stored domain preferences with a single click using the &ldquo;Erase All Stored Data&rdquo; button. Broken-site reports carry no ID, so they cannot be deleted individually; they are purged after 13 months. If you had opted in to the 2.0.x usage report, your data is deleted for you when this version starts.</li>
           <li><strong>Right to Non-Discrimination:</strong> We provide full functionality to all users without discrimination.</li>
         </ul>
 
@@ -297,7 +298,7 @@
       <div class="container footer-bottom">
         <div>&copy; 2026 Chameleon Labs. Force Dark Mode - ThemeSwitcher is open source under the MIT License.</div>
         <div class="footer-live-status">
-          <span>No tracking. Anonymous usage stats are opt-in.</span>
+          <span>No tracking. Nothing is sent unless you report a broken site.</span>
         </div>
       </div>
     </footer>

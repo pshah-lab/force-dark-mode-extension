@@ -59,7 +59,7 @@ PRIVATE BY DEFAULT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ThemeSwitcher is built with an uncompromising commitment to privacy:
 • No third-party analytics, tracking pixels, or advertising.
-• Optional anonymous usage statistics are OFF by default and only start if you click Yes in the popup or enable them in Options. They never include sites, URLs, page content, or documents, you can see an example report before turning them on and today's report afterwards, and can turn them off in Options. Only combined totals are published at darkmode.pshah.fun/stats.html (groups of fewer than 10 installs are never shown). To delete your data, click Delete my data in Options > Usage stats before turning it off or uninstalling (it also turns usage stats off; turning them off first discards the random ID needed to find your records, which are otherwise purged after 13 months).
+• Nothing is sent on its own. If a site looks wrong you can press Report this site as broken in the side panel: it shows exactly what will be sent (the site's domain, your engine and theme choice, and the extension version, never the page address, page content or an ID) and sends it only after you confirm, every time. Reports are used to fix sites and are deleted after 13 months.
 • Everything else runs 100% locally in your browser. The only other network request is when you open a web PDF in the viewer: it downloads that PDF directly from the site that hosts it, and nothing is sent to us.
 • No browsing history or website URLs ever leave your computer.
 • Preferences sync strictly through your personal Google Account via chrome.storage.sync.
@@ -112,10 +112,11 @@ English
 | Permission     | Type            | Detailed Plain-English Justification                                                                                                                                                                      |
 | :------------- | :-------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `storage`    | permissions     | Required to store user settings (selected engine, custom background color, viewer preferences) per domain and sync them across the user's signed-in devices using Chrome Sync with no developer servers involved. |
-| `activeTab`  | permissions     | Required only when the user opens the extension popup to inspect page colors/luminance and apply theme changes without requesting broad, persistent tab access.                                           |
+| `activeTab`  | permissions     | Required only when the user opens the side panel to inspect page colors/luminance and apply theme changes without requesting broad, persistent tab access.                                           |
+| `sidePanel`  | permissions     | Required to show the extension's controls in the browser's side panel instead of a popup. It gives no access to any page. |
 | `<all_urls>` | content_scripts | Required to inject styling rules and evaluate surface luminance on websites at`document_start` so pages render dark immediately without bright white flashes.                                           |
 
-No host permissions are requested. The optional, opt-in usage report (off by default) and the "Delete my data" request (used before turning usage stats off or uninstalling) go to the developer's own first-party endpoint, which answers CORS only for this extension's origin, so no host permission is needed.
+No host permissions are requested. The user-confirmed broken-site report (and a one-time deletion request for anyone who opted in to 2.0.0 usage statistics) goes to the developer's own first-party endpoint, which answers CORS only for this extension's origin, so no host permission is needed.
 
 ---
 
@@ -123,7 +124,7 @@ No host permissions are requested. The optional, opt-in usage report (off by def
 
 ### Data Collection
 
-**Does the extension collect user data?** Only if the user opts in: anonymous, opt-in usage statistics (off by default). The only data type declared is "User activity". Nothing else is collected.
+**Does the extension collect user data?** Only when the user presses Report this site as broken and confirms: the domain of that site, the engine and theme label in use, and the extension version. The only data type declared is "Web history" (the domain of a site the user chooses to report, with no page address, no ID and no other browsing data). Nothing else is collected.
 
 | Data Type                    | Collected? | Transmitted Off-Device? | Purpose | Shared with Third Parties? |
 | :--------------------------- | :--------- | :---------------------- | :------ | :------------------------- |
@@ -133,15 +134,15 @@ No host permissions are requested. The optional, opt-in usage report (off by def
 | Authentication info          | No         | No                      | None    | No                         |
 | Personal communications      | No         | No                      | None    | No                         |
 | Location                     | No         | No                      | None    | No                         |
-| Web history                  | No         | No                      | None    | No                         |
-| User activity                | Yes, only if the user opts in (off by default); anonymous: random ID, day, extension/Chrome version, OS family, UI language, engine/theme/feature used flags | Yes, to the developer's own endpoint (hosted on Vercel and Supabase) | Understand how many people use the extension and which features are used, and publish combined totals only at darkmode.pshah.fun/stats.html (groups of fewer than 10 installs are never shown) | No                         |
+| Web history                  | Yes, only the domain of a site the user chooses to report, and only after the user confirms each report; no page address, no ID | Yes, to the developer's own endpoint (hosted on Vercel and Supabase) | Find and fix sites that look wrong; deleted after 13 months | No |
+| User activity                | No         | No                      | None    | No                         |
 | Website content              | No         | No                      | None    | No                         |
 
 ### Data Use Certification
 
-- [X] Data is NOT sold to third parties (only combined totals, never individual reports or random IDs, are published at darkmode.pshah.fun/stats.html; groups of fewer than 10 installs are never shown)
-- [X] Usage statistics are anonymous, opt-in, and our server function does not store IP addresses (platform request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers)
-- [X] Users can delete their usage statistics with Delete my data in Options > Usage stats (do this before turning usage stats off or uninstalling, since that discards the random ID); undeleted records are purged after 13 months
+- [X] Data is NOT sold to third parties (reports are used only to fix sites; nothing is published)
+- [X] Reports contain no ID, are sent only after the user confirms each one, and our server function does not store IP addresses (platform request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers)
+- [X] Reports carry no ID so they cannot be deleted individually; they are purged after 13 months. Anyone who opted in to the 2.0.0 usage report has that data deleted when 2.1.0 starts
 - [X] Data is NOT used for purposes unrelated to the extension's core functionality
 - [X] Data is NOT used for creditworthiness or lending purposes
 
@@ -174,7 +175,7 @@ https://darkmode.pshah.fun/privacy.html
 
 | Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status    |
 | :------ | :--------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------- |
-| 2.0.1   | 2026-10-17 | Fixes opt-in usage statistics so the daily anonymous report is actually sent (2.0.0 dropped usage events). No new permissions, no host permissions, no new data fields. | Ready to upload |
+| 2.1.0   | 2026-10-17 | Side panel replaces the popup (adds the `sidePanel` permission, no host permissions); new Report this site as broken (user-confirmed, sends only the site's domain, engine, theme label and version); the 2.0.0 optional usage statistics are removed and opt-in data is deleted. | Ready to upload |
 | 2.0.0   | 2026-10-14 | Built-in themes, 20 site packs, theme editor, per-site custom CSS, import/export, engine fixes, and optional anonymous usage statistics (off by default; random ID, day, version, Chrome/OS/language, yes/no feature flags; never sites or content; data-deletion button in Options; only combined totals are published at darkmode.pshah.fun/stats.html). No new permissions and no host permissions. | Published |
 | 1.8.0   | 2026-10-12 | Added offline, read-only Excel (.xlsx) and CSV viewing to the Dark Document Viewer. No permission or manifest changes. |
 | 1.7.0   | 2026-09-29 | Added offline .docx/.pptx support to the Dark Document Viewer, a matching "page card" surface for text-based documents, brightness/contrast/sepia filter sliders, automatic scheduling, toggle/viewer keyboard shortcuts with right-click equivalents, and a permanent`test-fixtures/` sample suite. Fixed PDF Smart Dark double-processing and render-scale performance. First submission rejected 2026-09-30 for keyword spam (the same file-format list was repeated in two sections of the description); resubmitted after removing the duplication. | Published |

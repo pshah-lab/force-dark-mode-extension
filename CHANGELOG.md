@@ -11,10 +11,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.0.1] - 2026-10-17
+## [2.1.0] - 2026-10-17
 
-### Fixed
-- Opt-in usage statistics never sent a report in 2.0.0: usage events were rejected before they were counted. They are now recorded and the daily report is sent. Nothing changes for anyone who has not opted in.
+### Added
+- **Side panel**: the toolbar icon now opens the extension in the browser's side panel instead of a popup. It stays open while you browse and follows the active tab. This adds the `sidePanel` permission (no host permissions) and requires Chrome 114 or newer.
+- **Report this site as broken**: a button in the side panel. It shows exactly what will be sent (the site's domain, the engine, a theme label and the version; never the page address, content, an ID or your own theme's name) and sends it only after you press Send report, every time. Reports are used to fix sites and purged after 13 months.
+
+### Removed
+- The optional daily usage report from 2.0.0, its random install ID, the popup consent card and the Options "Usage stats" section. If you had opted in, the data stored for your ID is deleted when 2.1.0 starts and the ID is forgotten (retried at each browser start if the server cannot be reached). The public usage statistics page is no longer updated.
+
+### Changed
+- The privacy policy, store listing and website describe the broken-site report instead of usage statistics.
 
 ---
 

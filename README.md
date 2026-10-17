@@ -30,7 +30,7 @@ Unlike crude global inverters that turn photos, videos, and layouts into neon ne
 - **Per-Site Background Customizer**: Choose between pitch-black (`#000000`) for OLED power savings or midnight slate (`#0f1115`) from the popup. Surfaces and borders adapt automatically.
 - **Zero White Flashes**: Injected at `document_start` so pages render dark immediately without blinding white flashes.
 - **Instant Toggle**: Toggle themes on the fly without refreshing the page.
-- **Private by Default**: No tracking pixels or third-party analytics. Optional anonymous usage statistics are off by default, and nothing about your sites or documents is ever sent.
+- **Private by Default**: No tracking pixels or third-party analytics. Nothing is sent unless you press Report this site as broken and confirm it, and a report contains only that site's domain, the engine, the theme label and the version.
 
 ---
 
@@ -75,12 +75,12 @@ chrome.storage.sync (Preferences synced securely per domain)
 ## 🔒 Privacy & Permissions
 
 ThemeSwitcher is built with privacy by design:
-- **Opt-in anonymous usage statistics only**: Off by default; enabled only if you click Yes in the popup or turn it on in Options. It sends a random ID, the day, versions, OS family, UI language and yes/no flags for the engine, theme and features used, never sites, content or documents, and our server function does not store IP addresses. Use Delete my data in Options > Usage stats before turning it off or uninstalling to remove your records (otherwise they are purged after 13 months). You can turn it off in Options > Usage stats. Only combined totals are published at darkmode.pshah.fun/stats.html (groups of fewer than 10 installs are never shown). No Google Analytics, no tracking beacons, no third-party scripts.
+- **Broken-site reports only, and only when you send one**: nothing is sent on its own. Pressing Report this site as broken in the side panel shows exactly what will be sent (the site's domain, the engine, a theme label and the version; no page address, content, ID or account) and sends it only after you confirm, every time. Our server function does not store IP addresses, and reports are purged after 13 months. No Google Analytics, no tracking beacons, no third-party scripts.
 - **Local processing**: All theming and document rendering is executed 100% locally on your machine.
 - **Minimal Manifest V3 Permissions**:
   - `storage`: Storing domain preferences locally in Chrome Sync.
   - `activeTab`: Inspecting luminance and applying styles when the user opens the popup.
-  - No host permissions: the opt-in usage report and the Delete my data request (use it before turning usage stats off or uninstalling) reach the developer's endpoint because it answers CORS only for this extension's own origin.
+  - No host permissions: the broken-site report reaches the developer's endpoint because it answers CORS only for this extension's own origin.
   - `<all_urls>` (content_scripts): Applying dark mode at `document_start` to prevent white flashes.
 
 Read our complete [Privacy Policy](https://darkmode.pshah.fun/privacy.html) or [PRIVACY.md](PRIVACY.md).

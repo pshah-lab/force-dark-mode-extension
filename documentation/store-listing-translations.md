@@ -1,5 +1,8 @@
 # Chrome Web Store listing translations
 
+> **Needs update for 2.1.0 (owner):** every translation of the privacy bullet still describes the removed opt-in usage statistics. Replace it with the broken-site report wording from `CHROMEWEBSTORE.md` (a native speaker should review it) before submitting translated listings. The English listing is already updated.
+
+
 Prepared 2026-10-13 for the store dashboard (Store listing → language dropdown → add language). Machine-drafted from the current English listing in `CHROMEWEBSTORE.md`; have a native speaker skim each one before publishing, and keep the privacy claims identical to the English text.
 
 Updated 2026-10-14 for the opt-in usage statistics: the privacy section and short description of every language below were machine-redrafted from the current English listing. UI names ("Yes, share stats", "Delete my data", "Options > Usage stats") stay in English because the extension UI is English. These privacy sentences describe data collection, so a native speaker must check them before publishing.

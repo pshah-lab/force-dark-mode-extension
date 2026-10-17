@@ -1,14 +1,17 @@
 # Privacy Policy for ThemeSwitcher (Force Dark Mode)
 
 **Last Updated:** October 17, 2026  
-**Policy Version:** 2.1.0  
+**Policy Version:** 2.1.0 (covers versions 2.0.0 and 2.1.0)  
 
-ThemeSwitcher (Force Dark Mode) is committed to protecting your privacy through a **local-first**, **privacy-by-design** architecture. Your settings and documents stay on your device; the only data that can leave it is a broken-site report that you start and confirm yourself, described in section 1. This policy outlines our data handling practices across the extension and companion website.
+ThemeSwitcher (Force Dark Mode) is committed to protecting your privacy through a **local-first**, **privacy-by-design** architecture. Your settings and documents stay on your device; the only data that can leave it is what section 1 describes: a broken-site report that you start and confirm yourself (version 2.1.0 and later), or an optional anonymous usage report that you opt in to (version 2.0.0). This policy outlines our data handling practices across the extension and companion website.
 
 ---
 
-## 1. Broken-site reports (only when you send one)
-The extension sends nothing on its own. The one thing it can send is a **broken-site report that you start and confirm yourself**: in the side panel, press **Report this site as broken**, read what will be sent, and press **Send report**. You are asked every time. (The only other network request the extension can make is when you open a web PDF in the viewer: it then downloads that PDF directly from the site that hosts it.)
+## 1. What the extension can send
+This policy covers two versions of the extension. **Version 2.1.0 and later** can send only a broken-site report that you start and confirm yourself (section 1.1). **Version 2.0.0** can send an optional anonymous daily usage report if you opt in (section 1.2). Neither version sends anything else. Your settings and documents are never sent.
+
+### 1.1 Broken-site reports (version 2.1.0 and later)
+In version 2.1.0 and later the extension sends nothing on its own. The one thing it can send is a **broken-site report that you start and confirm yourself**: in the side panel, press **Report this site as broken**, read what will be sent, and press **Send report**. You are asked every time. (The only other network request the extension can make is when you open a web PDF in the viewer: it then downloads that PDF directly from the site that hosts it.)
 
 A report is sent from the background service worker only and contains exactly these fields:
 
@@ -23,10 +26,36 @@ The confirmation shows the domain before you send. Nothing about what you read o
 
 There is **no install ID, account or cookie** in a report, so reports are not linked to you or to each other. For the same reason a single report cannot be looked up or deleted afterwards. The server adds the UTC date and counts repeats. Our server function **does not store IP addresses** (the hosting platform's own request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers). The lawful basis is your consent, given each time you press Send report. Reports are used only to find and fix sites that look wrong; they are never sold, never shared with advertisers and never used for anything unrelated, and are purged automatically after 13 months. They are processed only by our hosting providers (Vercel, Supabase) on our behalf; the endpoint is operated by the developer (first-party) and no analytics company is involved. The extension remembers, on your device only, which sites you reported today (the domain and the date) so that a second tap says "Already reported today"; that note never leaves your device.
 
-**Older version (2.0.0):** version 2.0.0 could, if you opted in, send a daily anonymous usage report tied to a random install ID. That report no longer exists. When this version starts, and if you had opted in, it asks the server to delete the data stored for your random ID and then forgets the ID; if the request fails it is retried each time the browser starts the extension. Combined totals published earlier at darkmode.pshah.fun/stats.html came from those reports and are no longer updated.
-
 - **No Sale or Sharing:** Reports are never sold or shared. Your settings and documents are never sent to anyone.
 - **Zero Page Content Extraction:** Web page text, form entries, credentials, and cookies are never accessed or transmitted.
+
+### 1.2 Optional anonymous usage statistics (version 2.0.0 only)
+In version 2.0.0, usage statistics are **off by default**. Nothing is sent unless you click **Yes** on the one-time card in the popup or switch on **Usage stats** in the Options page. Version 2.1.0 and later do not have this report. If you click No, or never choose, the extension sends nothing to us. (The only other network request the extension can make is when you open a web PDF in the viewer: it then downloads that PDF directly from the site that hosts it.)
+
+When you opt in, the extension sends one small anonymous report per day, from the background service worker only. A report says that you used the extension on that day and contains exactly these fields (Options > Usage stats shows an example report, with a placeholder ID, before you turn it on, and today's report afterwards):
+
+<!-- legacy-fields:start -->
+- `id`: a random identifier created when you opt in; it is not linked to your Google account, email or name
+- `day`: the UTC calendar day of the report
+- `version`: the extension version
+- `env.chrome`: the Chrome major version number
+- `env.os`: your operating system family (mac, windows, linux, chromeos or other)
+- `env.lang`: your browser UI language code
+- `engines.auto`, `engines.css`, `engines.invert`: whether each engine (Auto, CSS, Invert) was used that day (yes or no flags, not counts)
+- `theme`: the built-in theme you used, or the word custom for your own theme
+- `features.viewer`, `features.editor`, `features.customCss`, `features.sitePack`: whether you used the document viewer, the theme editor, custom CSS or a site pack that day (yes or no flags)
+<!-- legacy-fields:end -->
+
+Nothing about the sites you visit, what you read or watch, the documents you open or any text you type is ever collected or sent. No hostnames, URLs, page content, custom CSS text, theme colours or file names are included.
+
+The server stores the random ID, the day and the fields above. Our server function **does not store IP addresses** (the hosting platform's own request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers). The random ID is treated as pseudonymous personal data, and the lawful basis is your consent, which you can withdraw at any time. The statistics are used only to understand how many people use the extension and which features matter, and to publish combined totals at darkmode.pshah.fun/stats.html (groups of fewer than 10 installs are never shown); they are never sold, never shared with advertisers and never used for anything unrelated, and are processed only by our hosting providers (Vercel, Supabase) on our behalf. The endpoint is operated by the developer (first-party), hosted on Vercel with a Supabase database; no analytics company is involved.
+
+**Turning it off and deleting your data:** open the Options page and go to **Usage stats**. To delete the data already sent, click **Delete my data** in Options > Usage stats (this deletes the server records and also turns usage stats off). Do this BEFORE unticking the box or uninstalling, because turning usage stats off discards the random ID needed to find the records. Records that are not deleted this way are purged automatically after 13 months. Untick the box only afterwards if you want to stop sending without deleting (unticking alone stops sending but does not delete anything). If the deletion request cannot reach the server, usage stats stay off and the extension keeps the random ID only to retry the deletion (the next time you click the button, and each time the browser starts the extension) until the server confirms it; the ID is then removed.
+
+- **No Sale or Sharing:** Usage statistics are never sold. Only combined totals (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, and groups of fewer than 10 installs are never shown. The hosting providers (Vercel, Supabase) process the data on our behalf. Your settings and documents are never sent to anyone.
+- **Zero Page Content Extraction:** Web page text, form entries, credentials, and cookies are never accessed or transmitted.
+
+**Moving to 2.1.0:** version 2.1.0 removes the usage report. When it starts, and if you had opted in, it asks the server to delete the data stored for your random ID and then forgets the ID; if the request fails it is retried each time the browser starts the extension. Combined totals published earlier at darkmode.pshah.fun/stats.html came from those reports and stop being updated as people update.
 
 ---
 
@@ -37,20 +66,20 @@ The extension uses Chrome's built-in `chrome.storage.sync` API solely to store y
 - Viewer display settings (mode, font size, contrast).
 - Global default preferences (`__global_defaults__`).
 
-These preferences are synchronized through your Google Chrome account using Google's secure synchronization infrastructure if you have Chrome sync enabled. Your preferences are never sent to any server run by the developer; the only server involved is the broken-site report endpoint described in section 1, which does not receive your preferences.
+These preferences are synchronized through your Google Chrome account using Google's secure synchronization infrastructure if you have Chrome sync enabled. Your preferences are never sent to any server run by the developer; the only server involved is the report endpoint described in section 1, which does not receive your preferences.
 
 ---
 
 ## 3. Document & PDF Viewer
-The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF documents **100% locally on your machine** using local browser APIs and bundled client-side rendering engines (PDF.js). Your documents are never uploaded, analyzed, or sent to any remote server, and they are never part of a report.
+The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF documents **100% locally on your machine** using local browser APIs and bundled client-side rendering engines (PDF.js). Your documents are never uploaded, analyzed, or sent to any remote server, and they are never part of a report or usage statistics.
 
 ---
 
 ## 4. Permissions
 - **`storage`**: Used to save your per-site preferences and viewer configuration across sessions.
-- **`activeTab`**: Used only when you open the side panel to analyze the active tab for dark-mode suitability and apply your theme selection.
-- **`sidePanel`**: Used to show the extension's controls in the browser's side panel instead of a popup. It gives no access to any page.
-- **No host permissions**: The broken-site report (section 1) and the one-time deletion request for 2.0.x opt-ins need no host permission. The developer's endpoint answers CORS only for this extension's own origin, so the background service worker can reach it without any access to the websites you visit.
+- **`activeTab`**: Used only when you open the popup (version 2.0.0) or the side panel (version 2.1.0 and later) to analyze the active tab for dark-mode suitability and apply your theme selection.
+- **`sidePanel`** (version 2.1.0 and later): Used to show the extension's controls in the browser's side panel instead of a popup. It gives no access to any page.
+- **No host permissions**: The reports in section 1 and the one-time deletion request for 2.0.0 opt-ins need no host permission. The developer's endpoint answers CORS only for this extension's own origin, so the background service worker can reach it without any access to the websites you visit.
 - **`<all_urls>` (Content Script)**: Used to inject CSS theme rules at `document_start` across sites, preventing white screen flashes.
 
 ---
@@ -58,7 +87,7 @@ The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF docu
 ## 5. User Rights & Data Control
 Under GDPR (EU), DPDP Act 2023 (India), and CCPA/CPRA (US):
 - **Right to Portability:** You can export all your saved configurations as a JSON file via the Options page.
-- **Right to Erasure:** You can erase all stored site preferences with one click in the Options page ("Erase All Stored Data") or by uninstalling the extension. Broken-site reports carry no ID, so they cannot be deleted individually; they are purged automatically after 13 months. If you had opted in to the 2.0.x usage report, your data is deleted for you when this version starts (see section 1).
+- **Right to Erasure:** You can erase all stored site preferences with one click in the Options page ("Erase All Stored Data") or by uninstalling the extension. Broken-site reports (2.1.0) carry no ID, so they cannot be deleted individually; they are purged automatically after 13 months. In version 2.0.0, click **Delete my data** in Options > Usage stats to delete the usage statistics stored for your random ID (do this BEFORE turning usage stats off or uninstalling, because turning them off discards the ID needed to find the records); records not deleted are purged after 13 months. If you opted in to the 2.0.0 usage report, updating to 2.1.0 deletes that data for you.
 
 ---
 

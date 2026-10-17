@@ -960,7 +960,11 @@ test("PRIVACY.md drops the zero-telemetry claim and says the only report is user
   assert.ok(privacyDoc.includes("13 months"), "PRIVACY.md must state the 13-month purge rule");
   assert.ok(/does not store IP addresses/.test(privacyDoc), "PRIVACY.md must say the server function does not store IP addresses");
   assert.ok(/request logs may transiently contain/.test(privacyDoc), "PRIVACY.md must scope the IP statement to the server function");
-  assert.ok(!/anonymous/i.test(privacyDoc.split("**Older version (2.0.0):**")[0].split("## 1.")[1]), "section 1 must not call a report anonymous");
+  const reportSection = privacyDoc.split("### 1.1")[1].split("### 1.2")[0];
+  assert.ok(!/anonymous/i.test(reportSection), "section 1.1 must not call a broken-site report anonymous");
+  assert.ok(/### 1\.2[^\n]*version 2\.0\.0/i.test(privacyDoc), "PRIVACY.md must still cover the published 2.0.0 usage report");
+  assert.ok(privacyDoc.includes("Delete my data"), "PRIVACY.md must still explain Delete my data for 2.0.0");
+  assert.ok(privacyDoc.includes("legacy-fields:start"), "PRIVACY.md must still list the 2.0.0 usage report fields");
 });
 
 test("policy docs say reports are never sold or shared, carry no ID, and name the stale-sentence guards", () => {
@@ -1032,6 +1036,21 @@ test("PRIVACY.md lists every report field name, and exactly those", () => {
   assert.ok(section, "PRIVACY.md must delimit the field list with fields:start / fields:end markers");
   const documented = [...section[1].matchAll(/`([A-Za-z.]+)`/g)].map((m) => m[1]);
   assert.deepStrictEqual([...documented].sort(), [...keys].sort(), "documented fields must equal the report keys");
+});
+
+test("the policy still lists exactly the 2.0.0 usage report fields, and both policy pages cover both versions", () => {
+  const legacyKeys = ["id", "day", "version", "env.chrome", "env.os", "env.lang", "engines.auto", "engines.css", "engines.invert", "theme", "features.viewer", "features.editor", "features.customCss", "features.sitePack"];
+  const section = privacyDoc.match(/<!-- legacy-fields:start -->([\s\S]*?)<!-- legacy-fields:end -->/);
+  assert.ok(section, "PRIVACY.md must delimit the 2.0.0 field list with legacy-fields markers");
+  const documented = [...section[1].matchAll(/`([A-Za-z.]+)`/g)].map((m) => m[1]);
+  assert.deepStrictEqual([...documented].sort(), [...legacyKeys].sort());
+  const html = fs.readFileSync(path.join(rootDir, "docs/privacy.html"), "utf8");
+  for (const [rel, text] of [["PRIVACY.md", privacyDoc], ["docs/privacy.html", html]]) {
+    assert.ok(/version 2\.0\.0/i.test(text) && /version 2\.1\.0/i.test(text), `${rel} must name both versions`);
+    assert.ok(/Delete my data/.test(text), `${rel} must explain Delete my data for 2.0.0`);
+    assert.ok(/Broken-Site Reports|Broken-site reports/.test(text), `${rel} must cover broken-site reports`);
+    assert.ok(/Usage Statistics|usage statistics/.test(text), `${rel} must cover the 2.0.0 usage report`);
+  }
 });
 
 test("no document claims a telemetry host permission; the CORS design is described instead", () => {

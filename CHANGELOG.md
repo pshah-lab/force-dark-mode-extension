@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1] - 2026-10-17
+
+### Fixed
+- Opt-in usage statistics never sent a report in 2.0.0: usage events were rejected before they were counted. They are now recorded and the daily report is sent. Nothing changes for anyone who has not opted in.
+
+---
+
 ## [2.0.0] - 2026-10-12
 
 2.0.0 supersedes 1.8.0, which was never separately submitted to the Chrome Web Store; the 1.8.0 section below is kept as history and its changes ship in 2.0.0.

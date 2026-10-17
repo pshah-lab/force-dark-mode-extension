@@ -4,7 +4,7 @@
 **Standard:** [Semantic Versioning 2.0.0 (SemVer)](https://semver.org/spec/v2.0.0.html)  
 **Target Platform:** Google Chrome Web Store (Manifest V3)  
 **Latest Published Version:** `2.0.0`  
-**Current Active Release:** `2.0.0`  
+**Current Active Release:** `2.0.1`  
 **Last Updated:** 2026-10-17  
 
 ---

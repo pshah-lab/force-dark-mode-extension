@@ -64,6 +64,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("feedback-rate").addEventListener("click", () => settleFeedback(FeedbackPrompt.finish));
   document.getElementById("feedback-report").addEventListener("click", () => settleFeedback(FeedbackPrompt.finish));
 
+  // One-time welcome card (best features for new installs, what is new for updates). Runs on its own so a
+  // storage failure can never break the rest of the panel.
+  initWelcomeCard().catch((err) => console.warn("Welcome card unavailable:", err));
+
   // The side panel stays open across tabs, so the current tab and host are re-read by loadForTab.
   let tab;
   let host = "";
@@ -602,3 +606,29 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await refreshActiveTab();
 });
+
+async function initWelcomeCard() {
+  const card = document.getElementById("welcome-card");
+  const key = WelcomeCard.STATE_KEY;
+  const state = await new Promise((resolve) =>
+    chrome.storage.local.get(key, (d) => resolve(d?.[key]))
+  );
+  const content = WelcomeCard.cardFor(state);
+  if (!content) return;
+  document.getElementById("welcome-title").textContent = content.title;
+  const list = document.getElementById("welcome-items");
+  list.replaceChildren();
+  for (const item of content.items) {
+    const li = document.createElement("li");
+    li.textContent = item;
+    list.append(li);
+  }
+  document.getElementById("welcome-data").textContent = content.dataNote;
+  const dismiss = document.getElementById("welcome-dismiss");
+  dismiss.textContent = content.button;
+  dismiss.onclick = () => {
+    card.hidden = true;
+    chrome.storage.local.set({ [key]: WelcomeCard.markSeen(state) });
+  };
+  card.hidden = false;
+}

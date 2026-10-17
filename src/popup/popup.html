@@ -7,6 +7,13 @@
 
   <body>
     <div class="popup">
+      <div class="welcome-card" id="welcome-card" hidden>
+        <p class="welcome-title" id="welcome-title"></p>
+        <ul class="welcome-items" id="welcome-items"></ul>
+        <p class="welcome-data" id="welcome-data"></p>
+        <button id="welcome-dismiss" type="button"></button>
+      </div>
+
       <div class="site" id="site">Loading...</div>
       <div class="recommendation" id="recommendation" hidden>
         Recommendation unavailable
@@ -102,20 +109,17 @@
       </div>
 
       <div class="popup-footer">
-        <a id="rate-link" href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke/reviews" target="_blank" rel="noopener noreferrer" class="feedback-link">
-          Rate ★
-        </a>
-        <span class="footer-sep" aria-hidden="true">·</span>
-        <a href="https://darkmode.pshah.fun/support.html#feedback" target="_blank" rel="noopener noreferrer" class="feedback-link">
-          Feedback &amp; Suggestions ↗
-        </a>
-        <span class="footer-sep" aria-hidden="true">·</span>
+        <div class="footer-actions">
+          <a id="rate-link" href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke/reviews" target="_blank" rel="noopener noreferrer" class="footer-btn footer-btn-primary">Rate ★</a>
+          <a id="feedback-link" href="https://darkmode.pshah.fun/support.html#feedback" target="_blank" rel="noopener noreferrer" class="footer-btn">Feedback &amp; Suggestions ↗</a>
+        </div>
         <a id="site-css-link" href="#" class="feedback-link" hidden>Site CSS…</a>
       </div>
     </div>
 
     <script src="feedbackPrompt.js"></script>
     <script src="reportCard.js"></script>
+    <script src="welcomeCard.js"></script>
     <script src="../shared/themeCore.js"></script>
     <script src="../shared/builtinThemes.js"></script>
     <script src="../shared/sitePacks.js"></script>

@@ -10,6 +10,7 @@ import {
 import { postJson } from "./network.js";
 import { createLegacyCleanup } from "./legacyTelemetryCleanup.js";
 import { createReportSender } from "./siteReportSender.js";
+import { buildWelcomeState, WELCOME_KEY } from "./welcomeState.js";
 
 // Version 2.0.x usage-report opt-ins: delete what the server holds for their ID, then forget it.
 // Does nothing (and sends nothing) when no such ID is stored; failures retry on the next start.
@@ -79,7 +80,11 @@ chrome.commands.onCommand.addListener((command, tab) => {
   }
 });
 
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
+  // A one-time card in the side panel: best features for new installs, what is new for updates.
+  const welcome = buildWelcomeState(details, chrome.runtime.getManifest().version);
+  if (welcome) chrome.storage.local.set({ [WELCOME_KEY]: welcome }).catch(() => {});
+
   chrome.contextMenus.create({
     id: "force-dark-mode-toggle",
     title: "Toggle Force Dark Mode",

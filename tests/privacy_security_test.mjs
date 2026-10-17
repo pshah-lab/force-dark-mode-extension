@@ -54,6 +54,8 @@ const EGRESS_SCANNED_FILES = [
   "src/popup/feedbackPrompt.js",
   "src/popup/panelTabEvents.js",
   "src/popup/tabUrl.js",
+  "src/popup/welcomeCard.js",
+  "src/background/welcomeState.js",
   "src/popup/reportCard.js",
   "src/options/options.js",
   "src/options/themeEditor.js",

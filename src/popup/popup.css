@@ -425,3 +425,90 @@ body {
   font-size: 12px;
   color: #bdc1c6;
 }
+
+/* Rate and Feedback buttons */
+.footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.footer-btn {
+  flex: 1 1 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 14px;
+  box-sizing: border-box;
+  border: 1px solid #2d3340;
+  border-radius: 8px;
+  background: #171a21;
+  color: #e8eaed;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: center;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.footer-btn:hover {
+  border-color: #8ab4f8;
+  background: #1b2030;
+}
+
+.footer-btn-primary {
+  border-color: #3b4a6b;
+  color: #8ab4f8;
+}
+
+/* One-time welcome card */
+.welcome-card {
+  padding: 12px;
+  border: 1px solid #3b4a6b;
+  border-radius: 8px;
+  background: #171d2b;
+}
+
+.welcome-card[hidden] {
+  display: none;
+}
+
+.welcome-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #e8eaed;
+}
+
+.welcome-items {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #d2d5da;
+}
+
+.welcome-items li + li {
+  margin-top: 4px;
+}
+
+.welcome-data {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #9aa0a6;
+}
+
+#welcome-dismiss {
+  min-height: 34px;
+  padding: 6px 14px;
+  border: 1px solid #3b4a6b;
+  border-radius: 6px;
+  background: #1f2a44;
+  color: #e8eaed;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}

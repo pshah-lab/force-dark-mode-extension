@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Side panel**: the toolbar icon now opens the extension in the browser's side panel instead of a popup. It stays open while you browse and follows the active tab. This adds the `sidePanel` permission (no host permissions) and requires Chrome 114 or newer.
 - **Report this site as broken**: a button in the side panel. It shows exactly what will be sent (the site's domain, the engine, a theme label and the version; never the page address, content, an ID or your own theme's name) and sends it only after you press Send report, every time. Reports are used to fix sites and purged after 13 months.
 
+- **One-time welcome card** at the top of the side panel: people who updated see what is new, people who just installed see the best features. Both say plainly what is sent (nothing, unless you confirm a broken-site report).
+- **Bigger Rate and Feedback buttons** in the side panel.
+
 ### Removed
 - The optional daily usage report from 2.0.0, its random install ID, the popup consent card and the Options "Usage stats" section. If you had opted in, the data stored for your ID is deleted when 2.1.0 starts and the ID is forgotten (retried at each browser start if the server cannot be reached). The public usage statistics page is no longer updated.
 

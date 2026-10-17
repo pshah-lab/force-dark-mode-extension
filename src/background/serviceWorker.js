@@ -9,6 +9,7 @@ import {
 } from "../shared/constants.js";
 import { postJson } from "./network.js";
 import { createLegacyCleanup } from "./legacyTelemetryCleanup.js";
+import { createReportSender } from "./siteReportSender.js";
 
 // Version 2.0.x usage-report opt-ins: delete what the server holds for their ID, then forget it.
 // Does nothing (and sends nothing) when no such ID is stored; failures retry on the next start.
@@ -26,6 +27,18 @@ createLegacyCleanup({
 // The toolbar icon opens the side panel (there is no popup). Runs on every worker start.
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
 
+// A broken-site report is sent only when the user confirms it in the side panel. The sender validates
+// everything again and remembers only which sites were reported today.
+const reportSender = createReportSender({
+  storage: {
+    get: async (key) => (await chrome.storage.local.get(key))[key],
+    set: (key, value) => chrome.storage.local.set({ [key]: value }),
+  },
+  post: postJson,
+  now: () => new Date(),
+  version: chrome.runtime.getManifest().version,
+});
+
 function getHostFromUrl(url) {
   try {
     const parsedUrl = new URL(url);
@@ -40,6 +53,11 @@ function getHostFromUrl(url) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
+  if (msg && typeof msg === "object" && msg.type === "SITE_REPORT") {
+    if (sender.tab) return;
+    reportSender.send(msg).then(sendResponse);
+    return true;
+  }
   if (!msg || typeof msg !== "object" || msg.type !== "TOGGLE") return;
 
   handleToggleMessage(msg, sender.tab?.url);

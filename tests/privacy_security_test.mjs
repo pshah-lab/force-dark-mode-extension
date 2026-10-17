@@ -46,6 +46,7 @@ console.log("1. Network Isolation & Egress Verification");
 // Single source of truth for the egress scan; the exhaustive src/ walk in section 8 reuses it.
 const EGRESS_SCANNED_FILES = [
   "src/background/serviceWorker.js",
+  "src/background/siteReportSender.js",
   "src/content/index.js",
   "src/content/themeEngine/cssOverrideEngine.js",
   "src/content/themeEngine/invertEngine.js",
@@ -528,11 +529,13 @@ const ALLOW_UNSCANNED = {};
 // endpoint URL. They are checked by the dedicated egress tests instead of the strict zero-egress patterns.
 const NETWORK_PATH = "src/background/network.js";
 const CLEANUP_PATH = "src/background/legacyTelemetryCleanup.js";
+const REPORT_PATH = "src/shared/siteReport.js";
 const EGRESS_ALLOWED = {
   [NETWORK_PATH]: "the only fetch(): JSON POST, credentials omitted, no referrer; see the dedicated egress tests",
   [CLEANUP_PATH]: "declares the delete endpoint used to erase 2.0.x usage-report data; see the dedicated egress tests",
+  [REPORT_PATH]: "declares the broken-site report endpoint and what a report may contain; see the dedicated egress tests",
 };
-const ENDPOINT_FILES = [CLEANUP_PATH];
+const ENDPOINT_FILES = [CLEANUP_PATH, REPORT_PATH];
 
 test("every src/ .js file is covered by the egress scan or an explicit allow-list", () => {
   const found = walkFiles(path.join(rootDir, "src"), ".js").map(relToRoot);
@@ -811,6 +814,7 @@ test("the network trap sandbox detects a violation (self-check)", () => {
 console.log("\n9. Opt-in Usage Statistics: Egress Confinement & Policy Text");
 
 const cleanupModule = await import("../src/background/legacyTelemetryCleanup.js");
+const reportModule = await import("../src/shared/siteReport.js");
 const srcJsFiles = () =>
   walkFiles(path.join(rootDir, "src"), ".js")
     .map(relToRoot)
@@ -871,7 +875,7 @@ test("XMLHttpRequest, WebSocket, sendBeacon, EventSource and axios appear nowher
   }
 });
 
-const ENDPOINT_URLS = [cleanupModule.DELETE_URL];
+const ENDPOINT_URLS = [cleanupModule.DELETE_URL, reportModule.REPORT_URL];
 
 test("every http(s) URL in src/ is one of the declared endpoints, and only in the endpoint files", () => {
   for (const rel of srcJsFiles()) {
@@ -890,6 +894,7 @@ test("every http(s) URL in src/ is one of the declared endpoints, and only in th
 
 test("endpoints are exactly the declared https constants, with no query or fragment", () => {
   assert.strictEqual(cleanupModule.DELETE_URL, "https://pshah.fun/api/darkmode-telemetry-delete");
+  assert.strictEqual(reportModule.REPORT_URL, "https://pshah.fun/api/darkmode-report");
   for (const url of ENDPOINT_URLS) {
     const u = new URL(url);
     assert.strictEqual(u.protocol, "https:", `${url} must be https`);

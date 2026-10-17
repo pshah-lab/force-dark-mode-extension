@@ -59,3 +59,7 @@ left join heartbeats h7  on h7.install_id  = f.install_id and h7.day  = f.first_
 left join heartbeats h30 on h30.install_id = f.install_id and h30.day = f.first_day + 30
 group by c.first_day, c.installs
 order by c.first_day;
+
+-- Owner-only. These views run with the owner's rights and are not small-group suppressed, so keep them
+-- off the public API (Supabase grants new views to anon and authenticated by default).
+revoke all on dau, wau, mau, new_vs_returning, retention from anon, authenticated;

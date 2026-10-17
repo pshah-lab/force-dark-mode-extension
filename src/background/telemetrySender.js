@@ -265,8 +265,11 @@ export function createTelemetry({
 export function handleTelemetryMessage(telemetry, msg) {
   if (!msg || typeof msg !== "object") return undefined;
   switch (msg.type) {
-    case "USAGE":
-      return telemetry.recordUsage(msg).then(() => ({ ok: true }), () => ({ ok: false }));
+    case "USAGE": {
+      // sanitizeUsage accepts exactly one key, so the routing "type" must not reach it.
+      const { type, ...usage } = msg;
+      return telemetry.recordUsage(usage).then(() => ({ ok: true }), () => ({ ok: false }));
+    }
     case "TELEMETRY_CONSENT":
       if (typeof msg.enabled !== "boolean") return Promise.resolve({ ok: false });
       return telemetry.setConsent(msg.enabled === true).then(() => ({ ok: true }), () => ({ ok: false }));

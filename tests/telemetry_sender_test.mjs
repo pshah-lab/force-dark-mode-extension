@@ -516,7 +516,19 @@ test("handleTelemetryMessage routes USAGE and replies ok", async () => {
   const p = handleTelemetryMessage(t, msg);
   assert.ok(p instanceof Promise);
   assert.deepStrictEqual(await p, { ok: true });
-  assert.deepStrictEqual(t.calls, [["usage", msg]]);
+  assert.deepStrictEqual(t.calls, [["usage", { engine: "css" }]]);
+});
+
+test("a real USAGE message from a content script or page is recorded and triggers the daily send", async () => {
+  const { t, calls } = setup();
+  await t.setConsent(true);
+  const reply = await handleTelemetryMessage(t, { type: "USAGE", engine: "css" });
+  assert.deepStrictEqual(reply, { ok: true });
+  assert.strictEqual(calls.length, 1);
+  assert.strictEqual(JSON.parse(calls[0].init.body).engines.css, true);
+  await handleTelemetryMessage(t, { type: "USAGE", feature: "viewer" });
+  const p = await t.preview();
+  assert.strictEqual(p.heartbeat.features.viewer, true);
 });
 
 test("handleTelemetryMessage consent requires a boolean", async () => {

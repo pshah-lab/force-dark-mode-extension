@@ -3,7 +3,8 @@
   "name": "Force Dark Mode - ThemeSwitcher",
   "version": "2.0.1",
   "description": "Apply smart dark mode to websites, PDFs, and documents with Auto, CSS, Invert, native dark detection, and local PDF rendering.",
-  "permissions": ["storage", "activeTab", "contextMenus"],
+  "minimum_chrome_version": "114",
+  "permissions": ["storage", "activeTab", "contextMenus", "sidePanel"],
   "background": {
     "service_worker": "src/background/serviceWorker.js",
     "type": "module"
@@ -47,8 +48,9 @@
       "run_at": "document_start"
     }
   ],
-  "action": {
-    "default_popup": "src/popup/popup.html"
+  "action": {},
+  "side_panel": {
+    "default_path": "src/popup/popup.html"
   },
   "options_ui": {
     "page": "src/options/options.html",

@@ -398,7 +398,7 @@ test("viewer.html declares the spreadsheet panel and accepts spreadsheet files",
 
 test("manifest permissions are unchanged by the spreadsheet viewer", () => {
   const manifest = JSON.parse(fs.readFileSync(path.join(rootDir, "manifest.json"), "utf8"));
-  assert.deepStrictEqual(manifest.permissions, ["storage", "activeTab", "contextMenus"]);
+  assert.deepStrictEqual(manifest.permissions, ["storage", "activeTab", "contextMenus", "sidePanel"]);
 });
 
 test("viewer.html sandboxes iframe without allow-same-origin", () => {
@@ -557,9 +557,9 @@ test("no .mjs or .cjs source files under src/ outside the vendored viewer direct
   assert.deepStrictEqual(odd, [], `Unscanned module files under src/: ${odd.join(", ")}`);
 });
 
-test("manifest permissions: storage, activeTab, contextMenus only; no host permissions of any kind", () => {
+test("manifest permissions: storage, activeTab, contextMenus, sidePanel only; no host permissions of any kind", () => {
   const manifest = readManifest();
-  assert.deepStrictEqual(manifest.permissions, ["storage", "activeTab", "contextMenus"]);
+  assert.deepStrictEqual(manifest.permissions, ["storage", "activeTab", "contextMenus", "sidePanel"]);
   // The telemetry backend answers CORS for the extension origin instead (Ruling 13), so the update
   // never triggers a new permission warning or disables the extension for existing users.
   for (const key of ["host_permissions", "optional_permissions", "optional_host_permissions", "externally_connectable"]) {

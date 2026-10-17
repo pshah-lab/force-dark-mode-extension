@@ -23,6 +23,9 @@ const telemetry = createTelemetry({
 // It does nothing (and sends nothing) unless a delete is pending; failures are swallowed.
 telemetry.retryPendingDelete().catch(() => {});
 
+// The toolbar icon opens the side panel (there is no popup). Runs on every worker start.
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+
 function getHostFromUrl(url) {
   try {
     const parsedUrl = new URL(url);

@@ -19,7 +19,7 @@ Date: 2026-10-17. Status: awaiting owner review. Replaces the opt-in daily usage
   every worker start.
 - The page stays `src/popup/popup.html` (directory name kept to avoid churn; it is now the panel page). Its
   layout becomes fluid (no fixed popup width).
-- A popup closes when focus leaves; a side panel does not. The panel must **follow the active tab**: it re-renders
+- A popup closes when focus leaves; a side panel does not. The panel must **follow the active tab**, and because Chrome hides a tab's address from an extension that only has `activeTab` once the user switches tabs, it asks the page's content script (`PAGE_INFO`) when the address is missing: it re-renders
   on `tabs.onActivated`, on `tabs.onUpdated` for the active tab (url or `status: "complete"`), and on
   `windows.onFocusChanged`. Restricted pages show the existing "Restricted page" state.
 - Keyboard shortcuts, context menus and the viewer are unchanged.
@@ -38,7 +38,7 @@ Date: 2026-10-17. Status: awaiting owner review. Replaces the opt-in daily usage
 - Payload (JSON, at most 1 KB): `{ site, engine, theme, version }`
   - `site`: the hostname only, lowercase, from `new URL(tab.url).hostname`; no port, path, query or fragment.
     Rejected when empty, longer than 253 characters, not a valid hostname, an IP address, `localhost`, a
-    `.local`/`.internal`/`.test`/`.localhost` name, or `local_files`.
+    `.local`/`.internal`/`.test`/`.localhost`/`.home.arpa`/`.lan`/`.corp`/`.intranet`/`.private` name, or `local_files`.
   - `engine`: `auto`, `css` or `invert`.
   - `theme`: a built-in theme id, `default`, or `custom` (custom names are never sent).
   - `version`: `chrome.runtime.getManifest().version`.

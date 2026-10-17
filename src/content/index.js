@@ -247,6 +247,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "ANALYZE_PAGE") {
     sendResponse(analyzePageForEngine());
   }
+
+  // The side panel stays open across tabs and Chrome hides a tab's address from it, so it asks the page.
+  // The answer goes only to the extension's own panel and is never sent anywhere else.
+  if (msg.type === "PAGE_INFO") {
+    sendResponse({ href: location.href });
+  }
 });
 
 function analyzePageForEngine() {

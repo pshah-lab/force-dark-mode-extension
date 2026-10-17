@@ -25,7 +25,8 @@ export function createLegacyCleanup({ storage, post }) {
       let ok = false;
       try {
         const res = await post(DELETE_URL, { id });
-        ok = !!(res && res.ok);
+        // A 400 means the server will never accept this ID, so retrying forever would only add noise.
+        ok = !!(res && (res.ok || res.status === 400));
       } catch (e) {
         ok = false;
       }

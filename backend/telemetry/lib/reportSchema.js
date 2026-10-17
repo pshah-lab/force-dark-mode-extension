@@ -15,7 +15,7 @@ export const BUILTIN_THEME_IDS = [
 ];
 
 const LABEL = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$/;
-const PRIVATE_SUFFIXES = [".local", ".internal", ".test", ".localhost"];
+const PRIVATE_SUFFIXES = [".local", ".internal", ".test", ".localhost", ".home.arpa", ".lan", ".corp", ".intranet", ".private"];
 const VERSION = /^\d{1,4}\.\d{1,4}\.\d{1,4}$/;
 
 function isReportableHostname(host) {

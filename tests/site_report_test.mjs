@@ -144,6 +144,27 @@ test("two concurrent sends for one site make exactly one request", async () => {
   assert.strictEqual(calls.length, 1);
 });
 
+test("a storage failure after the server accepted the report still says sent, never failed", async () => {
+  const { sender, calls } = setup();
+  const failing = createReportSender({
+    storage: { get: async () => undefined, set: async () => { throw new Error("quota"); } },
+    post: async (url, body) => { calls.push({ url, body }); return { ok: true, status: 204 }; },
+    now: () => new Date("2026-10-17T10:00:00Z"),
+    version: "2.1.0",
+  });
+  assert.strictEqual(await failing.send(MSG), "sent");
+  assert.strictEqual(calls.length, 1);
+});
+
+test("home and corporate LAN names are never reportable", () => {
+  for (const host of ["nas.home.arpa", "router.lan", "wiki.corp", "app.intranet", "files.private", "x.y.home.arpa"]) {
+    assert.strictEqual(normalizeSite(host), null, host);
+    assert.strictEqual(normalizeSite(`https://${host}/a`), null, host);
+  }
+  assert.strictEqual(normalizeSite("lan.example.com"), "lan.example.com");
+  assert.strictEqual(normalizeSite("corp.example.com"), "corp.example.com");
+});
+
 test("junk stored state is ignored and replaced", async () => {
   const { sender, map } = setup();
   const st = { sites: "nope", day: 5 };

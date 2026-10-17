@@ -68,6 +68,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let tab;
   let host = "";
   let loadSequence = 0;
+  let viewToken = 0; // bumped on every load so late replies for an earlier tab are dropped
+  let loadedView = null;
 
   chrome.commands.getAll((commands) => {
     const shortcut = commands.find((c) => c.name === "toggle-dark-mode")?.shortcut;
@@ -185,8 +187,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  function loadForTab(nextTab) {
-    tab = nextTab;
+  function askPageForUrl(tabId) {
+    return new Promise((resolve) => {
+      try {
+        chrome.tabs.sendMessage(tabId, { type: "PAGE_INFO" }, (info) => {
+          void chrome.runtime.lastError;
+          resolve(info && typeof info.href === "string" ? info.href : null);
+        });
+      } catch {
+        resolve(null);
+      }
+    });
+  }
+
+  async function loadForTab(nextTab) {
+    const token = ++viewToken;
+    const url = await TabUrl.resolveTabUrl(nextTab, askPageForUrl);
+    if (token !== viewToken) return; // a newer refresh started while the page was being asked
+    const view = { id: nextTab?.id, url };
+    // Same tab, same address: keep everything (an open report card, a "report sent" note) as it is.
+    if (TabUrl.isSameView(loadedView, view)) return;
+    loadedView = view;
+
+    tab = nextTab ? { id: nextTab.id, url } : undefined;
+    const previousHost = host;
     host = "";
     userHasInteractedWithEngine = false;
     openPdfViewerButton.hidden = true;
@@ -194,29 +218,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     const siteCssLink = document.getElementById("site-css-link");
     if (siteCssLink) siteCssLink.hidden = true;
 
-    if (!tab?.url) {
+    if (!url) {
       setUnavailable();
       return;
     }
 
     let parsedUrl;
     try {
-      parsedUrl = new URL(tab.url);
+      parsedUrl = new URL(url);
     } catch {
       setUnavailable();
       return;
     }
 
     const isLocalFile = parsedUrl.protocol === "file:";
-    if (restrictedProtocols.has(parsedUrl.protocol) || (!parsedUrl.hostname && !isLocalFile)) {
+    if (restrictedProtocols.has(parsedUrl.protocol) || (!parsedUrl.hostname && !isLocalFile) || TabUrl.isStorePage(url)) {
       setUnavailable();
       return;
     }
 
     setAvailable();
-    hideReportUi();
-    reportButton.hidden = false;
     host = isLocalFile ? "local_files" : parsedUrl.hostname;
+    // A confirmation card or result for the same site survives a reload of that site; another site starts clean.
+    if (host !== previousHost) hideReportUi();
+    reportButton.hidden = false;
     site.textContent = isLocalFile ? "Local Files" : host;
 
     if (siteCssLink) {
@@ -231,7 +256,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       openPdfViewerButton.hidden = false;
       openPdfViewerButton.onclick = () => {
         const viewerUrl = new URL(chrome.runtime.getURL("src/viewer/viewer.html"));
-        viewerUrl.searchParams.set("src", tab.url);
+        viewerUrl.searchParams.set("src", url);
         viewerUrl.searchParams.set("name", getNameFromUrl(parsedUrl) || "PDF document");
         chrome.tabs.create({ url: viewerUrl.href });
       };
@@ -328,7 +353,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    const token = viewToken;
     chrome.tabs.sendMessage(tab.id, { type: "ANALYZE_PAGE" }, (analysis) => {
+      if (token !== viewToken) return;
       if (chrome.runtime.lastError || !isValidAnalysis(analysis)) {
         showRecommendationUnavailable();
         return;
@@ -433,11 +460,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   function updateUI() {
-    chrome.storage.sync.get([host, "__customThemes"], (data) => {
-      const config = data[host] || {};
+    const token = viewToken;
+    const uiHost = host;
+    chrome.storage.sync.get([uiHost, "__customThemes"], (data) => {
+      if (token !== viewToken) return;
+      const config = data[uiHost] || {};
       fillThemeOptions(data.__customThemes);
       selectTheme(config.themeId);
-      const hasSavedConfig = Boolean(data[host]?.engine);
+      const hasSavedConfig = Boolean(data[uiHost]?.engine);
       const enabled = config.enabled === true;
       const engine = config.engine || defaultEngine;
       const backgroundColor = config.backgroundColor || defaultBackgroundColor;

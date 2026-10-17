@@ -33,9 +33,14 @@ export function createReportSender({ storage, post, now, version }) {
       if (before.sites.includes(report.site)) return "already";
       const res = await post(REPORT_URL, report);
       if (!res || !res.ok) return "failed";
-      const latest = readState(await storage.get(STATE_KEY), today);
-      if (!latest.sites.includes(report.site)) latest.sites.push(report.site);
-      await storage.set(STATE_KEY, latest);
+      // The server already has the report: failing to remember it must not make the panel say it failed.
+      try {
+        const latest = readState(await storage.get(STATE_KEY), today);
+        if (!latest.sites.includes(report.site)) latest.sites.push(report.site);
+        await storage.set(STATE_KEY, latest);
+      } catch (e) {
+        // ignore
+      }
       return "sent";
     } catch (e) {
       return "failed";

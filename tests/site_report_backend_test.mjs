@@ -63,6 +63,7 @@ test("invalid bodies are 400 and never touch the store", async () => {
     report({ site: "Docs.Example.com" }), report({ site: "localhost" }), report({ site: "10.0.0.1" }),
     report({ site: "x.example.com/path" }), report({ site: "a.example.com?token=1" }), report({ site: "https://a.example.com" }),
     report({ site: "local_files" }), report({ site: "" }), report({ site: 5 }),
+    report({ site: "nas.home.arpa" }), report({ site: "router.lan" }), report({ site: "wiki.corp" }), report({ site: "app.intranet" }), report({ site: "files.private" }),
     report({ engine: "x" }), report({ theme: "My Theme" }), report({ theme: "builtin:evil" }), report({ version: "2.1" }),
     report({ version: "2.1.0; drop table" }), null, [], "x", 5, {},
   ];
@@ -110,6 +111,7 @@ test("the backend validator matches the extension's site rules and lists", () =>
   const sites = [
     "https://Docs.Example.com:8443/a?q=1#x", "example.com", "Example.COM.", "xn--bcher-kva.example", "", " ", "a b", "local_files",
     "localhost", "127.0.0.1", "[::1]", "printer.local", "x.internal", "a.test", "foo.localhost", "intranet", "-bad.example.com",
+    "nas.home.arpa", "router.lan", "wiki.corp", "app.intranet", "files.private", "lan.example.com",
     "ex_ample.com", "https://", "file:///C:/a.pdf", "a".repeat(64) + ".com", ("a".repeat(60) + ".").repeat(5) + "com", null, 5,
   ];
   for (const s of sites) assert.strictEqual(be.normalizeSite(s), ext.normalizeSite(s), JSON.stringify(s));

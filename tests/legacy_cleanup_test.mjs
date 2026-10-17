@@ -62,6 +62,21 @@ test("a server error keeps the id so the next start retries; success then clears
   assert.strictEqual(map.has("telemetryState"), false);
 });
 
+test("a 400 means the server will never accept this id, so it is dropped instead of retried forever", async () => {
+  const { cleanup, calls, map } = setup({ telemetryState: { enabled: true, id: ID } }, [{ ok: false, status: 400 }]);
+  assert.strictEqual(await cleanup.run(), "deleted");
+  assert.strictEqual(calls.length, 1);
+  assert.strictEqual(map.has("telemetryState"), false);
+});
+
+test("other client errors (403, 404, 429) are still retried", async () => {
+  for (const status of [403, 404, 429]) {
+    const { cleanup, map } = setup({ telemetryState: { enabled: true, id: ID } }, [{ ok: false, status }]);
+    assert.strictEqual(await cleanup.run(), "retry", String(status));
+    assert.deepStrictEqual(map.get("telemetryState"), { enabled: false, pendingDeleteIds: [ID] });
+  }
+});
+
 test("a thrown network error is a retry, never an exception", async () => {
   const { cleanup, map } = setup({ telemetryState: { enabled: true, id: ID } }, [new Error("offline")]);
   assert.strictEqual(await cleanup.run(), "retry");

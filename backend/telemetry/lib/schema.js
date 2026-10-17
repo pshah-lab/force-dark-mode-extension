@@ -1,11 +1,9 @@
-// Copy of the allow-lists and validateHeartbeat from src/shared/telemetry.js.
-// The deployed project cannot import from the extension, so this file is duplicated and
-// tests/telemetry_backend_test.mjs asserts parity (deep-equal lists, same accept/reject).
-// Change both files together.
+// The 2.0.x usage heartbeat validator. The extension no longer sends heartbeats (removed in 2.1.0) but 2.0.x
+// clients still do, so this file is frozen to what the extension module accepted; tests/telemetry_backend_test.mjs
+// pins its lists and accept/reject table.
 
 export const ENGINES = ["auto", "css", "invert"];
 export const FEATURES = ["viewer", "editor", "customCss", "sitePack"];
-// Must stay in sync with src/shared/builtinThemes.js (parity test in tests/telemetry_test.mjs).
 export const BUILTIN_THEME_IDS = [
   "builtin:midnight",
   "builtin:oled",

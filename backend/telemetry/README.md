@@ -1,4 +1,17 @@
-# Opt-in usage metrics backend
+# Backend: broken-site reports (and the frozen 2.0.x usage endpoints)
+
+**Current (2.1.0+): `POST /api/darkmode-report`.** The extension sends one report only when the user confirms it:
+`{ site, engine, theme, version }`, where `site` is the domain only (no path, query or port), `theme` is a built-in
+theme id, `default` or `custom`, and nothing else. There is no install ID. Setup: run `supabase/site_reports.sql`
+(table, `report_site()` function used by the endpoint, owner-only view `top_reported_sites`), schedule its purge
+statement with pg_cron (13 months), and deploy `api/darkmode-report.js` with `lib/reportSchema.js` next to the other
+functions. `lib/reportSchema.js` is a copy of the rules in `src/shared/siteReport.js`;
+`tests/site_report_backend_test.mjs` asserts they agree, so change both together.
+
+The rest of this file describes the 2.0.x usage heartbeat. The extension no longer sends it, but 2.0.x clients still
+do and may still call the delete endpoint, so those endpoints stay deployed until they are retired.
+
+## Opt-in usage metrics backend (2.0.x, frozen)
 
 Three Vercel functions plus Supabase SQL. The `api/` and `lib/` folders must be deployed inside the
 existing Vercel project that serves `pshah.fun`: copy them into that project's `api/` and `lib/` folders

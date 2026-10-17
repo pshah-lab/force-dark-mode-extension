@@ -7,21 +7,21 @@ import {
   clampFilterValue,
   THEME_ID_PATTERN,
 } from "../shared/constants.js";
-import { createTelemetry, handleTelemetryMessage } from "./telemetrySender.js";
+import { postJson } from "./network.js";
+import { createLegacyCleanup } from "./legacyTelemetryCleanup.js";
 
-const telemetry = createTelemetry({
+// Version 2.0.x usage-report opt-ins: delete what the server holds for their ID, then forget it.
+// Does nothing (and sends nothing) when no such ID is stored; failures retry on the next start.
+createLegacyCleanup({
   storage: {
     get: async (key) => (await chrome.storage.local.get(key))[key],
     set: (key, value) => chrome.storage.local.set({ [key]: value }),
     remove: (key) => chrome.storage.local.remove(key),
   },
-  now: () => new Date(),
-  version: chrome.runtime.getManifest().version,
-  env: () => ({ userAgent: navigator.userAgent, lang: chrome.i18n.getUILanguage() }),
-});
-// A "Delete my data" request that never got a 2xx is retried once each time the worker starts.
-// It does nothing (and sends nothing) unless a delete is pending; failures are swallowed.
-telemetry.retryPendingDelete().catch(() => {});
+  post: postJson,
+})
+  .run()
+  .catch(() => {});
 
 // The toolbar icon opens the side panel (there is no popup). Runs on every worker start.
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
@@ -40,11 +40,6 @@ function getHostFromUrl(url) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
-  const telemetryReply = handleTelemetryMessage(telemetry, msg);
-  if (telemetryReply) {
-    telemetryReply.then(sendResponse);
-    return true;
-  }
   if (!msg || typeof msg !== "object" || msg.type !== "TOGGLE") return;
 
   handleToggleMessage(msg, sender.tab?.url);

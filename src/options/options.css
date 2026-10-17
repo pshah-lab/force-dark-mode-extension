@@ -656,15 +656,3 @@ input[type="range"] {
 }
 
 /* Usage stats */
-.telemetry-preview {
-  margin: 0 0 1rem;
-  padding: 0.75rem;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}

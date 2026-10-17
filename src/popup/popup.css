@@ -310,54 +310,13 @@ body {
   color: #9aa0a6;
 }
 
-.telemetry-prompt {
-  margin-top: 8px;
-  padding: 10px;
-  border: 1px solid #2d3340;
-  border-radius: 8px;
-  background: #171a21;
-}
 
-.telemetry-prompt[hidden] {
-  display: none;
-}
 
-.telemetry-prompt-title {
-  margin: 0 0 4px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #e8eaed;
-}
 
-.telemetry-prompt-text {
-  margin: 0 0 6px;
-  font-size: 11px;
-  line-height: 1.4;
-  color: #9aa0a6;
-}
 
-.telemetry-prompt-actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-}
 
-.telemetry-prompt-actions button {
-  font-size: 11px;
-  color: #8ab4f8;
-  background: none;
-  border: 0;
-  padding: 2px 0;
-  cursor: pointer;
-}
 
-.telemetry-prompt-actions button:hover {
-  text-decoration: underline;
-}
 
-.telemetry-prompt-actions #telemetry-no {
-  color: #9aa0a6;
-}
 
 .footer-sep {
   margin: 0 6px;

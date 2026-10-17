@@ -3,7 +3,15 @@ import assert from "assert";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import * as ext from "../src/shared/telemetry.js";
+// The extension no longer sends heartbeats (the module was removed in 2.1.0). 2.0.x clients still do, so the
+// backend validator is frozen to what that module accepted. These literals were taken from it.
+const FROZEN = {
+  ENGINES: ["auto", "css", "invert"],
+  FEATURES: ["viewer", "editor", "customCss", "sitePack"],
+  BUILTIN_THEME_IDS: ["builtin:midnight", "builtin:oled", "builtin:dracula", "builtin:nord", "builtin:solarized", "builtin:contrast", "builtin:dim", "builtin:sepia"],
+  OS_FAMILIES: ["mac", "windows", "linux", "chromeos", "other"],
+};
+const FROZEN_VALID = [true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false];
 import * as be from "../backend/telemetry/lib/schema.js";
 import { createHandler as createIngest } from "../backend/telemetry/api/darkmode-telemetry.js";
 import { createHandler as createDelete } from "../backend/telemetry/api/darkmode-telemetry-delete.js";
@@ -54,13 +62,13 @@ function assertCors(res, label) {
   assert.ok(!("access-control-allow-credentials" in res.headers), `${label}: no credentials`);
 }
 
-test("allow-lists are deep-equal to the extension module", () => {
+test("allow-lists equal the frozen 2.0.x lists", () => {
   for (const k of ["ENGINES", "FEATURES", "BUILTIN_THEME_IDS", "OS_FAMILIES"]) {
-    assert.deepStrictEqual(be[k], ext[k], k);
+    assert.deepStrictEqual(be[k], FROZEN[k], k);
   }
 });
 
-test("validateHeartbeat parity on a table of samples", () => {
+test("validateHeartbeat accepts and rejects exactly what the 2.0.x validator did", () => {
   const good = hb();
   const samples = [
     good, { ...good, theme: "custom" }, { ...good, theme: "github.com" }, { ...good, extra: 1 },
@@ -73,7 +81,7 @@ test("validateHeartbeat parity on a table of samples", () => {
     { ...good, features: { viewer: "yes", editor: false, customCss: false, sitePack: false } },
     null, [], "x", 5, {},
   ];
-  for (const s of samples) assert.strictEqual(be.validateHeartbeat(s), ext.validateHeartbeat(s), JSON.stringify(s));
+  samples.forEach((s, i) => assert.strictEqual(be.validateHeartbeat(s), FROZEN_VALID[i], JSON.stringify(s)));
   assert.strictEqual(be.validateHeartbeat(good), true);
 });
 

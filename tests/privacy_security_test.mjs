@@ -51,7 +51,6 @@ const EGRESS_SCANNED_FILES = [
   "src/content/themeEngine/invertEngine.js",
   "src/popup/popup.js",
   "src/popup/feedbackPrompt.js",
-  "src/popup/telemetryPrompt.js",
   "src/popup/panelTabEvents.js",
   "src/options/options.js",
   "src/options/themeEditor.js",
@@ -64,7 +63,6 @@ const EGRESS_SCANNED_FILES = [
   "src/shared/sitePacks.js",
   "src/shared/customCss.js",
   "src/shared/constants.js",
-  "src/shared/telemetry.js",
   "src/viewer/viewer.js",
   "src/viewer/parsers/docxParser.js",
   "src/viewer/parsers/pptxParser.js",
@@ -526,10 +524,15 @@ const relToRoot = (full) => path.relative(rootDir, full).split(path.sep).join("/
 // unless a file genuinely cannot be scanned.
 const WALK_EXCLUDED_PREFIXES = ["src/viewer/vendor/"];
 const ALLOW_UNSCANNED = {};
-// The one file allowed to touch the network: the opt-in usage-statistics sender. It is checked by the
-// dedicated "telemetry egress" tests instead of the strict zero-egress patterns.
-const SENDER_PATH = "src/background/telemetrySender.js";
-const EGRESS_ALLOWED = { [SENDER_PATH]: "opt-in anonymous usage statistics; see the dedicated egress tests" };
+// Files allowed to touch the network. network.js is the only one that calls fetch(); the others only declare an
+// endpoint URL. They are checked by the dedicated egress tests instead of the strict zero-egress patterns.
+const NETWORK_PATH = "src/background/network.js";
+const CLEANUP_PATH = "src/background/legacyTelemetryCleanup.js";
+const EGRESS_ALLOWED = {
+  [NETWORK_PATH]: "the only fetch(): JSON POST, credentials omitted, no referrer; see the dedicated egress tests",
+  [CLEANUP_PATH]: "declares the delete endpoint used to erase 2.0.x usage-report data; see the dedicated egress tests",
+};
+const ENDPOINT_FILES = [CLEANUP_PATH];
 
 test("every src/ .js file is covered by the egress scan or an explicit allow-list", () => {
   const found = walkFiles(path.join(rootDir, "src"), ".js").map(relToRoot);
@@ -807,8 +810,7 @@ test("the network trap sandbox detects a violation (self-check)", () => {
 // 9. Opt-in usage statistics: egress confinement and policy text
 console.log("\n9. Opt-in Usage Statistics: Egress Confinement & Policy Text");
 
-const senderModule = await import("../src/background/telemetrySender.js");
-const telemetryModule = await import("../src/shared/telemetry.js");
+const cleanupModule = await import("../src/background/legacyTelemetryCleanup.js");
 const srcJsFiles = () =>
   walkFiles(path.join(rootDir, "src"), ".js")
     .map(relToRoot)
@@ -847,18 +849,16 @@ test("stripComments keeps string contents and drops real comments", () => {
   assert.ok(!out.includes("document.y") && !out.includes("location"), "comments must be removed");
 });
 
-test("EGRESS_ALLOWED exempts exactly one file", () => {
-  assert.deepStrictEqual(Object.keys(EGRESS_ALLOWED), [SENDER_PATH]);
+test("EGRESS_ALLOWED exempts exactly the network file and the endpoint files", () => {
+  assert.deepStrictEqual(Object.keys(EGRESS_ALLOWED).sort(), [NETWORK_PATH, ...ENDPOINT_FILES].sort());
 });
 
-test("fetch is called in exactly one src file: the telemetry sender", () => {
+test("fetch is called in exactly one src file: network.js", () => {
   const withFetch = srcJsFiles().filter((rel) => /\bfetch\s*\(/.test(stripComments(fs.readFileSync(path.join(rootDir, rel), "utf8"))));
-  assert.ok(withFetch.length <= 1, `fetch( found in several files: ${withFetch.join(", ")}`);
-  const senderCode = stripComments(fs.readFileSync(path.join(rootDir, SENDER_PATH), "utf8"));
-  assert.ok(/\bfetch\b/.test(senderCode), "the sender must be where fetch lives (in code, not comments)");
+  assert.deepStrictEqual(withFetch, [NETWORK_PATH], `fetch( found in: ${withFetch.join(", ")}`);
   for (const rel of srcJsFiles()) {
-    if (rel === SENDER_PATH) continue;
-    assert.ok(!/\bfetch\b/.test(stripComments(fs.readFileSync(path.join(rootDir, rel), "utf8"))), `fetch referenced outside the sender: ${rel}`);
+    if (rel === NETWORK_PATH) continue;
+    assert.ok(!/\bfetch\b/.test(stripComments(fs.readFileSync(path.join(rootDir, rel), "utf8"))), `fetch referenced outside network.js: ${rel}`);
   }
 });
 
@@ -871,25 +871,26 @@ test("XMLHttpRequest, WebSocket, sendBeacon, EventSource and axios appear nowher
   }
 });
 
-test("every http(s) URL in src/ is one of the two sender endpoints, and only in the sender", () => {
+const ENDPOINT_URLS = [cleanupModule.DELETE_URL];
+
+test("every http(s) URL in src/ is one of the declared endpoints, and only in the endpoint files", () => {
   for (const rel of srcJsFiles()) {
     const code = fs.readFileSync(path.join(rootDir, rel), "utf8");
     const urls = code.match(/https?:\/\/[^\s"'`)]+/g) || [];
-    if (rel !== SENDER_PATH) {
+    if (!ENDPOINT_FILES.includes(rel)) {
       assert.deepStrictEqual(urls, [], `${rel} must not contain URLs`);
       continue;
     }
-    assert.ok(urls.length >= 2, "the sender must declare its endpoints");
+    assert.ok(urls.length >= 1, `${rel} must declare its endpoint`);
     for (const url of urls) {
-      assert.ok([senderModule.INGEST_URL, senderModule.DELETE_URL].includes(url), `unexpected URL in sender: ${url}`);
+      assert.ok(ENDPOINT_URLS.includes(url), `unexpected URL in ${rel}: ${url}`);
     }
   }
 });
 
-test("sender endpoints are exactly the two https constants, with no query or fragment", () => {
-  assert.strictEqual(senderModule.INGEST_URL, "https://pshah.fun/api/darkmode-telemetry");
-  assert.strictEqual(senderModule.DELETE_URL, "https://pshah.fun/api/darkmode-telemetry-delete");
-  for (const url of [senderModule.INGEST_URL, senderModule.DELETE_URL]) {
+test("endpoints are exactly the declared https constants, with no query or fragment", () => {
+  assert.strictEqual(cleanupModule.DELETE_URL, "https://pshah.fun/api/darkmode-telemetry-delete");
+  for (const url of ENDPOINT_URLS) {
     const u = new URL(url);
     assert.strictEqual(u.protocol, "https:", `${url} must be https`);
     assert.strictEqual(u.host, "pshah.fun", `${url} must be the first-party host`);
@@ -897,19 +898,20 @@ test("sender endpoints are exactly the two https constants, with no query or fra
   }
 });
 
-test("the sender omits credentials and referrer on every request (no host permission needed)", () => {
-  const code = stripComments(fs.readFileSync(path.join(rootDir, SENDER_PATH), "utf8"));
-  const fetchCalls = code.match(/fetchFn\(/g) || [];
+test("network.js omits credentials and referrer on every request (no host permission needed)", () => {
+  const code = stripComments(fs.readFileSync(path.join(rootDir, NETWORK_PATH), "utf8"));
+  const fetchCalls = code.match(/\bfetch\(/g) || [];
   const omits = code.match(/credentials:\s*"omit"/g) || [];
   const noRef = code.match(/referrerPolicy:\s*"no-referrer"/g) || [];
-  assert.ok(fetchCalls.length >= 2, "expected the ingest and delete requests");
+  assert.ok(fetchCalls.length >= 1, "expected the network file to contain the request");
   assert.strictEqual(omits.length, fetchCalls.length, "every fetch must set credentials: omit");
   assert.strictEqual(noRef.length, fetchCalls.length, "every fetch must set referrerPolicy: no-referrer");
   assert.ok(!/mode:\s*"no-cors"/.test(code), "no-cors would hide failures; the default cors mode is required");
 });
 
-test("the sender never reads tabs, location or document", () => {
-  const code = stripComments(fs.readFileSync(path.join(rootDir, SENDER_PATH), "utf8"));
+test("the network and endpoint files never read tabs, location or document", () => {
+  for (const rel of [NETWORK_PATH, ...ENDPOINT_FILES]) {
+  const code = stripComments(fs.readFileSync(path.join(rootDir, rel), "utf8"));
   for (const [pattern, label] of [
     [/\bchrome\.tabs\b/, "chrome.tabs"],
     [/\blocation\b/, "location"],
@@ -917,12 +919,13 @@ test("the sender never reads tabs, location or document", () => {
     [/\bcookies?\b/i, "cookies"],
     [/\bchrome\.history\b/, "chrome.history"],
   ]) {
-    assert.strictEqual(pattern.test(code), false, `sender must not use ${label}`);
+    assert.strictEqual(pattern.test(code), false, `${rel} must not use ${label}`);
   }
   // Raw source too (comments included): the sender should not even mention tabs, location or document access.
-  const raw = fs.readFileSync(path.join(rootDir, SENDER_PATH), "utf8");
+  const raw = fs.readFileSync(path.join(rootDir, rel), "utf8");
   for (const [pattern, label] of [[/\bchrome\.tabs\b/, "chrome.tabs"], [/\bwindow\.location\b|\bdocument\./, "window.location/document."]]) {
-    assert.strictEqual(pattern.test(raw), false, `sender source must not contain ${label}`);
+    assert.strictEqual(pattern.test(raw), false, `${rel} source must not contain ${label}`);
+  }
   }
 });
 
@@ -938,17 +941,12 @@ test("the telemetryState key is never stored in chrome.storage.sync", () => {
 });
 
 const privacyDoc = fs.readFileSync(path.join(rootDir, "PRIVACY.md"), "utf8");
-const flattenKeys = (obj, prefix = "") =>
-  Object.entries(obj).flatMap(([k, v]) =>
-    v && typeof v === "object" ? flattenKeys(v, `${prefix}${k}.`) : [`${prefix}${k}`]
-  );
-const sampleHeartbeat = () =>
-  telemetryModule.buildHeartbeat({
-    id: "123e4567-e89b-42d3-a456-426614174000",
-    version: "2.1.0",
-    tally: telemetryModule.emptyTally("2026-10-14"),
-    env: telemetryModule.buildEnv({ userAgent: "Mozilla/5.0 (Macintosh) Chrome/130.0.0.0 Safari/537.36", lang: "en-US" }),
-  });
+// The 2.0.x heartbeat field set, frozen: PRIVACY.md still documents it until the policy is rewritten for the
+// broken-site report (plan task 7), and older clients still send it.
+const LEGACY_HEARTBEAT_KEYS = [
+  "id", "day", "version", "env.chrome", "env.os", "env.lang", "engines.auto", "engines.css", "engines.invert",
+  "theme", "features.viewer", "features.editor", "features.customCss", "features.sitePack",
+];
 
 test("PRIVACY.md drops the zero-telemetry claim and says usage stats are off by default", () => {
   assert.ok(!privacyDoc.includes("Zero Telemetry"), "PRIVACY.md must not claim Zero Telemetry");
@@ -1048,8 +1046,7 @@ test("IP statements are scoped to the server function and never absolute", () =>
 });
 
 test("PRIVACY.md lists every heartbeat field name, and exactly those", () => {
-  const keys = flattenKeys(sampleHeartbeat());
-  assert.ok(keys.length === 14, "heartbeat should have its full field set");
+  const keys = LEGACY_HEARTBEAT_KEYS;
   const section = privacyDoc.match(/<!-- fields:start -->([\s\S]*?)<!-- fields:end -->/);
   assert.ok(section, "PRIVACY.md must delimit the field list with fields:start / fields:end markers");
   const documented = [...section[1].matchAll(/`([A-Za-z.]+)`/g)].map((m) => m[1]);

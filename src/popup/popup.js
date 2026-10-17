@@ -102,6 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function setUnavailable(text = "Unavailable on this page") {
     site.textContent = "Restricted page";
+    hideReportUi();
     recommendation.hidden = true;
     button.disabled = true;
     label.textContent = text;
@@ -116,6 +117,60 @@ document.addEventListener("DOMContentLoaded", async () => {
       radio.disabled = true;
     });
   }
+
+  // Broken-site report: a button, then an explicit confirmation naming the domain. Nothing is sent
+  // until "Send report" is pressed, every time.
+  const reportButton = document.getElementById("report-site");
+  const reportCardEl = document.getElementById("report-card");
+  const reportStatus = document.getElementById("report-status");
+  const reportDomain = document.getElementById("report-domain");
+  const reportSend = document.getElementById("report-send");
+  const reportCancel = document.getElementById("report-cancel");
+  document.getElementById("report-title").textContent = ReportCard.REPORT_COPY.title;
+  document.getElementById("report-body").textContent = ReportCard.REPORT_COPY.body;
+  reportSend.textContent = ReportCard.REPORT_COPY.send;
+  reportCancel.textContent = ReportCard.REPORT_COPY.cancel;
+
+  function hideReportUi() {
+    reportButton.hidden = true;
+    reportCardEl.hidden = true;
+    reportStatus.hidden = true;
+    reportStatus.textContent = "";
+    reportSend.disabled = false;
+  }
+
+  reportButton.onclick = () => {
+    if (!host) return;
+    reportDomain.textContent = host;
+    reportStatus.hidden = true;
+    reportCardEl.hidden = false;
+  };
+
+  reportCancel.onclick = () => {
+    reportCardEl.hidden = true;
+  };
+
+  reportSend.onclick = async () => {
+    if (!host) return;
+    const reportedHost = host;
+    reportSend.disabled = true;
+    let outcome;
+    try {
+      outcome = await chrome.runtime.sendMessage({
+        type: "SITE_REPORT",
+        host: reportedHost,
+        engine: getSelectedEngine(),
+        themeId: themeSelect.value,
+      });
+    } catch {
+      outcome = undefined;
+    }
+    if (reportedHost !== host) return; // the user moved to another tab while sending
+    reportCardEl.hidden = true;
+    reportSend.disabled = false;
+    reportStatus.textContent = ReportCard.outcomeMessage(outcome);
+    reportStatus.hidden = false;
+  };
 
   function setAvailable() {
     button.disabled = false;
@@ -159,6 +214,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     setAvailable();
+    hideReportUi();
+    reportButton.hidden = false;
     host = isLocalFile ? "local_files" : parsedUrl.hostname;
     site.textContent = isLocalFile ? "Local Files" : host;
 

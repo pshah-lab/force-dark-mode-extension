@@ -342,3 +342,86 @@ body {
   color: #ffffff;
   font: inherit;
 }
+
+/* Broken-site report */
+.report-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.report-btn {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #2d3340;
+  border-radius: 8px;
+  background: #171a21;
+  color: #e8eaed;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.report-btn:hover {
+  border-color: #4a5365;
+}
+
+.report-btn[hidden],
+.report-card[hidden],
+.report-status[hidden] {
+  display: none;
+}
+
+.report-card {
+  padding: 10px;
+  border: 1px solid #2d3340;
+  border-radius: 8px;
+  background: #171a21;
+}
+
+.report-card-title {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8eaed;
+}
+
+.report-card-text,
+.report-card-domain {
+  margin: 0 0 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #bdc1c6;
+}
+
+.report-card-domain strong {
+  color: #e8eaed;
+  word-break: break-all;
+}
+
+.report-card-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.report-card-actions button {
+  padding: 6px 10px;
+  border: 1px solid #2d3340;
+  border-radius: 6px;
+  background: #1f2430;
+  color: #e8eaed;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.report-card-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.report-status {
+  margin: 0;
+  font-size: 12px;
+  color: #bdc1c6;
+}

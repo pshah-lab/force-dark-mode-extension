@@ -8,22 +8,25 @@ import {
   THEME_ID_PATTERN,
 } from "../shared/constants.js";
 import { postJson } from "./network.js";
-import { createLegacyCleanup } from "./legacyTelemetryCleanup.js";
+import { createUsage } from "./usageSender.js";
+import { handleUsageMessage } from "./usageMessages.js";
 import { createReportSender } from "./siteReportSender.js";
 import { buildWelcomeState, WELCOME_KEY } from "./welcomeState.js";
 
-// Version 2.0.x usage-report opt-ins: delete what the server holds for their ID, then forget it.
-// Does nothing (and sends nothing) when no such ID is stored; failures retry on the next start.
-createLegacyCleanup({
+// The optional usage report: nothing exists or is sent until the user turns it on (side panel card or Options).
+// People who opted in on 2.0.x are asked to confirm once; until then nothing is sent. Pending deletes (from turning
+// it off while offline) are retried on every worker start.
+const usage = createUsage({
   storage: {
     get: async (key) => (await chrome.storage.local.get(key))[key],
     set: (key, value) => chrome.storage.local.set({ [key]: value }),
     remove: (key) => chrome.storage.local.remove(key),
   },
   post: postJson,
-})
-  .run()
-  .catch(() => {});
+  now: () => new Date(),
+  version: chrome.runtime.getManifest().version,
+});
+usage.retryPendingDelete().catch(() => {});
 
 // The toolbar icon opens the side panel (there is no popup). Runs on every worker start.
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
@@ -54,6 +57,11 @@ function getHostFromUrl(url) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
+  const usageReply = handleUsageMessage(usage, msg, sender);
+  if (usageReply) {
+    usageReply.then(sendResponse);
+    return true;
+  }
   if (msg && typeof msg === "object" && msg.type === "SITE_REPORT") {
     if (sender.tab) return;
     reportSender.send(msg).then(sendResponse);

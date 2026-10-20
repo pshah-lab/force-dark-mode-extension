@@ -47,6 +47,23 @@ function applyEngine(config) {
 
   // Only when an engine actually applied dark mode (not on natively dark pages).
   applyCustomCss(currentCustomCss);
+  reportDarkAppliedOnce(config);
+}
+
+// Tells the service worker that dark mode was applied on this page, once per page load. The message carries the
+// engine name only: the worker takes the site from this tab itself and keeps just a count, and only if the user
+// opted in to the usage report. A missing worker or invalidated context is ignored.
+let darkAppliedReported = false;
+
+function reportDarkAppliedOnce(config) {
+  if (darkAppliedReported) return;
+  darkAppliedReported = true;
+  try {
+    const result = chrome.runtime.sendMessage({ type: "DARK_APPLIED", engine: normalizeEngine(config?.engine) }, () => void chrome.runtime.lastError);
+    if (result && typeof result.catch === "function") result.catch(() => {});
+  } catch (error) {
+    // extension context invalidated
+  }
 }
 
 // Adds the resolved theme's palette and image dimming, and the site pack's fixes, to

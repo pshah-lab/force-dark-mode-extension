@@ -47,6 +47,7 @@ console.log("1. Network Isolation & Egress Verification");
 const EGRESS_SCANNED_FILES = [
   "src/background/serviceWorker.js",
   "src/background/siteReportSender.js",
+  "src/background/usageMessages.js",
   "src/content/index.js",
   "src/content/themeEngine/cssOverrideEngine.js",
   "src/content/themeEngine/invertEngine.js",

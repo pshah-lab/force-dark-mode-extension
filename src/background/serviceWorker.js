@@ -57,7 +57,7 @@ function getHostFromUrl(url) {
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return;
-  const usageReply = handleUsageMessage(usage, msg, sender);
+  const usageReply = handleUsageMessage(usage, msg, sender, chrome.runtime.getURL(""));
   if (usageReply) {
     usageReply.then(sendResponse);
     return true;

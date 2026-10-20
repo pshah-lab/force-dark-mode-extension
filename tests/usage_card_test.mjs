@@ -94,6 +94,17 @@ test("Options has an off-by-default toggle that sends USAGE_CONSENT and lists th
   assert.ok(/type: "USAGE_STATUS"/.test(js));
 });
 
+test("Options explains a 2.0.x opt-in that has not confirmed yet and offers to delete their data", () => {
+  const html = read("src/options/options.html");
+  assert.ok(/id="usage-legacy"[^>]*\shidden/.test(html), "the legacy note is hidden unless the worker says reconfirm");
+  const block = html.slice(html.indexOf('id="usage-legacy"'), html.indexOf("</div>", html.indexOf('id="usage-legacy"')));
+  assert.ok(/version 2\.0/.test(block) && /Nothing new is sent until you/.test(block), "must explain the 2.0 state");
+  assert.ok(/id="usage-delete-legacy"/.test(block) && /Delete my data/.test(block), "must offer Delete my data");
+  const js = read("src/options/options.js");
+  assert.ok(/consentNeeded === "reconfirm"/.test(js), "options.js must show the legacy note for reconfirm");
+  assert.ok(/usage-delete-legacy/.test(js) && /type: "USAGE_CONSENT", enabled: false/.test(js), "the button must turn the report off and delete");
+});
+
 console.log("\nUsage report card and Options toggle");
 for (const { name, fn } of queue) {
   try { await fn(); console.log(`  ✓ ${name}`); passed++; }

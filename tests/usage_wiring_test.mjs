@@ -60,6 +60,37 @@ test("USAGE_CONSENT and USAGE_STATUS are answered for extension pages only", asy
   assert.deepStrictEqual(u2.calls, []);
 });
 
+const EXT = "chrome-extension://abcdefghijklmnopabcdefghijklmnop/";
+const optionsTab = { id: "x", url: `${EXT}src/options/options.html`, tab: { id: 2, url: `${EXT}src/options/options.html` } };
+const contentScript = { id: "x", url: "https://news.example.com/a", tab: { id: 3, url: "https://news.example.com/a" } };
+
+test("the Options page (an extension page that runs in a tab) can read and change consent", async () => {
+  const u = fakeUsage();
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_CONSENT", enabled: false }, optionsTab, EXT), { ok: true, serverConfirmed: true });
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_STATUS" }, optionsTab, EXT), { enabled: false, consentNeeded: "ask" });
+  assert.deepStrictEqual(u.calls, [["consent", false], ["status"]]);
+});
+
+test("a content script still cannot read or change consent, and an extension page cannot record usage", () => {
+  const u = fakeUsage();
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_CONSENT", enabled: true }, contentScript, EXT), undefined);
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_STATUS" }, contentScript, EXT), undefined);
+  assert.strictEqual(handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, optionsTab, EXT), undefined);
+  assert.deepStrictEqual(u.calls, []);
+});
+
+test("a content script is still counted when the extension base URL is supplied", async () => {
+  const u = fakeUsage();
+  await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, contentScript, EXT);
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com" }]]);
+});
+
+test("an empty extension base URL never makes every sender look like an extension page", () => {
+  const u = fakeUsage();
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_CONSENT", enabled: true }, contentScript, ""), undefined);
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_CONSENT", enabled: true }, contentScript), undefined);
+});
+
 test("USAGE_CONSENT needs a real boolean", async () => {
   const u = fakeUsage();
   for (const bad of ["true", 1, null, undefined, {}]) {
@@ -92,7 +123,7 @@ test("the service worker builds the usage sender on postJson, retries pending de
   assert.ok(/import \{ handleUsageMessage \} from "\.\/usageMessages\.js"/.test(sw));
   assert.ok(/createUsage\(\{[\s\S]{0,400}post: postJson/.test(sw));
   assert.ok(/\.retryPendingDelete\(\)/.test(sw));
-  assert.ok(/handleUsageMessage\(usage, msg, sender\)/.test(sw));
+  assert.ok(/handleUsageMessage\(usage, msg, sender, chrome\.runtime\.getURL\(""\)\)/.test(sw));
   assert.ok(!fs.existsSync(path.join(rootDir, "src/background/legacyTelemetryCleanup.js")));
 });
 

@@ -60,8 +60,9 @@ as $$
   with params as (
     select ((now() at time zone 'utc')::date - 1) as y
   ),
+  -- 2.0.x heartbeats only: 2.1.0 usage reports (sites_darkened set) are used by the developer and never published.
   hb as (
-    select h.* from heartbeats h, params p where h.day <= p.y
+    select h.* from heartbeats h, params p where h.day <= p.y and h.sites_darkened is null
   ),
   w as (
     select hb.* from hb, params p where hb.day between p.y - 29 and p.y

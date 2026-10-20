@@ -120,6 +120,19 @@ test("usage_v2.sql makes the new shape storable and keeps the views owner-only",
   assert.ok(/revoke all on sites_distribution from anon, authenticated/.test(sql));
 });
 
+test("the public stats function counts 2.0.0 heartbeats only, never 2.1.0 usage reports", () => {
+  const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/public_stats.sql"), "utf8").toLowerCase();
+  const hb = sql.match(/hb as \(([\s\S]*?)\),\s*w as/);
+  assert.ok(hb, "the hb CTE must be found");
+  assert.ok(/h\.sites_darkened is null/.test(hb[1]), "2.1.0 rows (sites_darkened set) must be excluded from the published totals");
+});
+
+test("the README says to run usage_v2.sql before re-running public_stats.sql", () => {
+  const readme = fs.readFileSync(path.join(ROOT, "backend/telemetry/README.md"), "utf8");
+  const i = readme.indexOf("usage_v2.sql");
+  assert.ok(i > -1 && /before[^.\n]*public_stats\.sql|public_stats\.sql[^.\n]*after/i.test(readme), "order must be stated");
+});
+
 console.log("\nUsage report backend");
 for (const { name, fn } of queue) {
   try { await fn(); console.log(`  ✓ ${name}`); passed++; }

@@ -100,15 +100,41 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Optional usage report: off unless the user turns it on. The worker owns the consent state.
   const usageToggle = document.getElementById("usage-toggle");
   const usageResult = document.getElementById("usage-result");
+  const usageLegacy = document.getElementById("usage-legacy");
+  const usageDeleteLegacy = document.getElementById("usage-delete-legacy");
 
   async function refreshUsage() {
     if (!usageToggle) return;
     try {
       const status = await chrome.runtime.sendMessage({ type: "USAGE_STATUS" });
       usageToggle.checked = status?.enabled === true;
+      // A 2.0.x opt-in who has not confirmed yet: nothing new is sent, but their old data is still held.
+      if (usageLegacy) usageLegacy.hidden = !(status?.consentNeeded === "reconfirm");
     } catch (err) {
       usageToggle.checked = false;
+      if (usageLegacy) usageLegacy.hidden = true;
     }
+  }
+
+  function showUsageOffResult(res) {
+    if (!usageResult) return;
+    if (!res || res.ok !== true) usageResult.textContent = "Could not change this setting. Please try again.";
+    else if (res.serverConfirmed === false) usageResult.textContent = "Turned off. We could not reach the server to delete your data; we will try again the next time the extension starts.";
+    else if (res.serverConfirmed === true) usageResult.textContent = "Turned off, and the data we held for your ID was deleted.";
+    else usageResult.textContent = "Turned off.";
+  }
+
+  if (usageDeleteLegacy) {
+    usageDeleteLegacy.addEventListener("click", async () => {
+      let res = null;
+      try {
+        res = await chrome.runtime.sendMessage({ type: "USAGE_CONSENT", enabled: false });
+      } catch (err) {
+        res = null;
+      }
+      showUsageOffResult(res);
+      await refreshUsage();
+    });
   }
 
   if (usageToggle) {
@@ -119,12 +145,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       } catch (err) {
         res = null;
       }
-      if (usageResult) {
-        if (!res || res.ok !== true) usageResult.textContent = "Could not change this setting. Please try again.";
-        else if (usageToggle.checked) usageResult.textContent = "Usage report is on.";
-        else if (res.serverConfirmed === false) usageResult.textContent = "Turned off. We could not reach the server to delete your data; we will try again the next time the extension starts.";
-        else if (res.serverConfirmed === true) usageResult.textContent = "Turned off, and the data we held for your ID was deleted.";
-        else usageResult.textContent = "Turned off.";
+      if (usageToggle.checked) {
+        if (usageResult) usageResult.textContent = !res || res.ok !== true ? "Could not change this setting. Please try again." : "Usage report is on.";
+      } else {
+        showUsageOffResult(res);
       }
       await refreshUsage();
     });

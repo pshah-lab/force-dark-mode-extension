@@ -13,7 +13,8 @@ on in the side panel card or Options. Body: `{ id, day, version, engines: {auto,
 random install ID, `engines` says which engines were used that day and `sites` is how many sites dark mode was applied
 on (a count, never the sites). The endpoint still accepts the unchanged 2.0.x heartbeat. Setup: run
 `supabase/usage_v2.sql` (makes the 2.0.x device columns optional, adds `sites_darkened` and the owner-only view
-`sites_distribution`), then deploy the updated `api/darkmode-telemetry.js` and `lib/schema.js`. `validateUsage` in
+`sites_distribution`), then re-run `supabase/public_stats.sql` (run `usage_v2.sql` before `public_stats.sql`: the public totals
+now count 2.0.x heartbeats only and never publish 2.1.0 reports), then deploy the updated `api/darkmode-telemetry.js` and `lib/schema.js`. `validateUsage` in
 `lib/schema.js` is a copy of `validateReport` in `src/shared/usageReport.js`; `tests/usage_backend_test.mjs` asserts they
 agree, so change both together. Turning the report off calls `POST /api/darkmode-telemetry-delete`, which removes every
 row for that ID. The existing views (`dau`, `wau`, `mau`, `new_vs_returning`, `retention`) cover both report shapes.

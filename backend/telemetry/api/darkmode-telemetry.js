@@ -1,6 +1,6 @@
-// POST /api/darkmode-telemetry : validates and upserts one anonymous heartbeat (OPTIONS: CORS preflight).
+// POST /api/darkmode-telemetry : validates and upserts one opt-in usage report (the 2.0.x heartbeat or the 2.1.0 report) (OPTIONS: CORS preflight).
 // Only req.method and req.body are used. No header or network address is read or stored.
-import { validateHeartbeat } from "../lib/schema.js";
+import { validateHeartbeat, validateUsage } from "../lib/schema.js";
 import { readJsonBody, reply, isPreflight, createSupabaseClient } from "../lib/http.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -37,19 +37,33 @@ export function createHandler({ store, now = () => new Date() } = {}) {
     const body = await readJsonBody(req);
     if (!body.ok) return reply(res, body.status);
     const hb = body.value;
-    if (!validateHeartbeat(hb)) return reply(res, 400);
+    let row;
+    if (validateHeartbeat(hb)) {
+      // 2.0.x clients: unchanged.
+      row = {
+        install_id: hb.id,
+        day: hb.day,
+        version: hb.version,
+        chrome: hb.env.chrome,
+        os: hb.env.os,
+        lang: hb.env.lang,
+        engines: hb.engines,
+        theme: hb.theme,
+        features: hb.features,
+      };
+    } else if (validateUsage(hb)) {
+      // 2.1.0 opt-in usage report: only these five facts are stored.
+      row = {
+        install_id: hb.id,
+        day: hb.day,
+        version: hb.version,
+        engines: hb.engines,
+        sites_darkened: hb.sites,
+      };
+    } else {
+      return reply(res, 400);
+    }
     if (!dayWithinWindow(hb.day, now())) return reply(res, 400);
-    const row = {
-      install_id: hb.id,
-      day: hb.day,
-      version: hb.version,
-      chrome: hb.env.chrome,
-      os: hb.env.os,
-      lang: hb.env.lang,
-      engines: hb.engines,
-      theme: hb.theme,
-      features: hb.features,
-    };
     try {
       if (!lazyStore) lazyStore = await defaultStore();
       await lazyStore.upsertHeartbeat(row);

@@ -50,3 +50,19 @@ export function validateHeartbeat(obj) {
   if (!isPlainObject(features) || !sameKeys(features, FEATURES) || !allBooleans(features)) return false;
   return true;
 }
+
+// The 2.1.0 opt-in usage report: five fields only. Copy of validateReport in src/shared/usageReport.js;
+// tests/usage_backend_test.mjs asserts the two agree on every case, so change both together.
+export const MAX_SITES = 9999;
+
+export function validateUsage(obj) {
+  if (!isPlainObject(obj)) return false;
+  if (!sameKeys(obj, ["id", "day", "version", "engines", "sites"])) return false;
+  if (typeof obj.id !== "string" || !UUID_RE.test(obj.id)) return false;
+  if (typeof obj.day !== "string" || !DAY_RE.test(obj.day)) return false;
+  if (typeof obj.version !== "string" || !SEMVER_RE.test(obj.version)) return false;
+  const { engines } = obj;
+  if (!isPlainObject(engines) || !sameKeys(engines, ENGINES) || !allBooleans(engines)) return false;
+  if (!Number.isInteger(obj.sites) || obj.sites < 0 || obj.sites > MAX_SITES) return false;
+  return true;
+}

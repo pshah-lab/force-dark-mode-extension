@@ -8,6 +8,16 @@ statement with pg_cron (13 months), and deploy `api/darkmode-report.js` with `li
 functions. `lib/reportSchema.js` is a copy of the rules in `src/shared/siteReport.js`;
 `tests/site_report_backend_test.mjs` asserts they agree, so change both together.
 
+**Opt-in usage report (2.1.0): `POST /api/darkmode-telemetry`.** Sent at most once a day, only after the user turns it
+on in the side panel card or Options. Body: `{ id, day, version, engines: {auto, css, invert}, sites }` where `id` is a
+random install ID, `engines` says which engines were used that day and `sites` is how many sites dark mode was applied
+on (a count, never the sites). The endpoint still accepts the unchanged 2.0.x heartbeat. Setup: run
+`supabase/usage_v2.sql` (makes the 2.0.x device columns optional, adds `sites_darkened` and the owner-only view
+`sites_distribution`), then deploy the updated `api/darkmode-telemetry.js` and `lib/schema.js`. `validateUsage` in
+`lib/schema.js` is a copy of `validateReport` in `src/shared/usageReport.js`; `tests/usage_backend_test.mjs` asserts they
+agree, so change both together. Turning the report off calls `POST /api/darkmode-telemetry-delete`, which removes every
+row for that ID. The existing views (`dau`, `wau`, `mau`, `new_vs_returning`, `retention`) cover both report shapes.
+
 The rest of this file describes the 2.0.x usage heartbeat. The extension no longer sends it, but 2.0.x clients still
 do and may still call the delete endpoint, so those endpoints stay deployed until they are retired.
 

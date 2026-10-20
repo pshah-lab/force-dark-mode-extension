@@ -30,7 +30,7 @@ Unlike crude global inverters that turn photos, videos, and layouts into neon ne
 - **Per-Site Background Customizer**: Choose between pitch-black (`#000000`) for OLED power savings or midnight slate (`#0f1115`) from the popup. Surfaces and borders adapt automatically.
 - **Zero White Flashes**: Injected at `document_start` so pages render dark immediately without blinding white flashes.
 - **Instant Toggle**: Toggle themes on the fly without refreshing the page.
-- **Private by Default**: No tracking pixels or third-party analytics. Nothing is sent unless you press Report this site as broken and confirm it, and a report contains only that site's domain, the engine, the theme label and the version.
+- **Private by Default**: No tracking pixels or third-party analytics. Nothing is sent unless you opt in: the optional usage report is off until you turn it on, and a broken-site report is sent only after you press Report this site as broken and confirm it.
 
 ---
 
@@ -75,7 +75,7 @@ chrome.storage.sync (Preferences synced securely per domain)
 ## 🔒 Privacy & Permissions
 
 ThemeSwitcher is built with privacy by design:
-- **Broken-site reports only, and only when you send one**: nothing is sent on its own. Pressing Report this site as broken in the side panel shows exactly what will be sent (the site's domain, the engine, a theme label and the version; no page address, content, ID or account) and sends it only after you confirm, every time. Our server function does not store IP addresses, and reports are purged after 13 months. No Google Analytics, no tracking beacons, no third-party scripts.
+- **Two optional reports, both opt-in**: nothing is sent on its own. The daily usage report is off until you turn it on (side panel card or Options): it sends a random install ID, the UTC day, the version, which engines you used and how many sites dark mode was applied on (a number only), and turning it off deletes it. The broken-site report: Pressing Report this site as broken in the side panel shows exactly what will be sent (the site's domain, the engine, a theme label and the version; no page address, content, ID or account) and sends it only after you confirm, every time. Our server function does not store IP addresses, and reports are purged after 13 months. No Google Analytics, no tracking beacons, no third-party scripts.
 - **Local processing**: All theming and document rendering is executed 100% locally on your machine.
 - **Minimal Manifest V3 Permissions**:
   - `storage`: Storing domain preferences locally in Chrome Sync.

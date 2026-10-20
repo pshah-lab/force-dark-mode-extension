@@ -1,6 +1,6 @@
 # Force Dark Mode - ThemeSwitcher
 
-> Free, open-source (MIT) Chrome extension, Manifest V3, that applies dark themes to websites, PDFs and local documents. It processes pages and documents on the device; the only data that can leave it is an optional anonymous usage report (version 2.0.0, opt-in) or a broken-site report the user starts and confirms (version 2.1.0 and later).
+> Free, open-source (MIT) Chrome extension, Manifest V3, that applies dark themes to websites, PDFs and local documents. It processes pages and documents on the device; the only data that can leave it is an optional usage report (versions 2.0.0 and 2.1.0, opt-in) or a broken-site report the user starts and confirms (version 2.1.0 and later).
 
 ## Facts
 - Name: Force Dark Mode - ThemeSwitcher
@@ -23,9 +23,9 @@
 - Keyboard shortcuts: Alt+Shift+D toggles dark mode; Alt+Shift+O and Alt+Shift+V open the document viewer.
 
 ## Privacy
-- Version 2.0.0: anonymous usage statistics are off by default and sent only after opt-in (random install ID, UTC day, version, Chrome version, OS family, language, and yes/no flags for engine, built-in theme and features; never sites, URLs or content); users can delete the data from Options > Usage stats, and only combined totals (groups under 10 installs hidden) are published at https://darkmode.pshah.fun/stats.html. Version 2.1.0 and later: nothing is sent unless the user presses Report this site as broken and confirms; a report has four fields (site domain, engine, theme label, extension version), no ID, and our server function does not store IP addresses; reports are purged after 13 months and 2.0.0 opt-in data is deleted when 2.1.0 starts. Automated tests confine all network code to one file.
+- Version 2.0.0: anonymous usage statistics are off by default and sent only after opt-in (random install ID, UTC day, version, Chrome version, OS family, language, and yes/no flags for engine, built-in theme and features; never sites, URLs or content); users can delete the data from Options > Usage stats, and only combined totals (groups under 10 installs hidden) are published at https://darkmode.pshah.fun/stats.html. Version 2.1.0 and later: the usage report is off by default and sent only after the user turns it on (random install ID, UTC day, version, yes/no flags for the engines used and a count of sites dark mode was applied on; never sites, URLs or content), and turning it off deletes the data stored for the ID; a broken-site report is sent only when the user presses Report this site as broken and confirms (four fields: site domain, engine, theme label, extension version; no ID); our server function does not store IP addresses and reports are purged after 13 months. Automated tests confine all network code to one file.
 - Settings are stored in `chrome.storage`; users can export them as JSON or erase them in one click.
-- This website counts visits with one cookie-free request per browser to pshah.fun. The extension sends data only if you opt in (2.0.0 usage statistics) or confirm a broken-site report (2.1.0 and later). Details: https://darkmode.pshah.fun/privacy.html
+- This website counts visits with one cookie-free request per browser to pshah.fun. The extension sends data only if you opt in (the usage report, versions 2.0.0 and 2.1.0) or confirm a broken-site report (2.1.0 and later). Details: https://darkmode.pshah.fun/privacy.html
 
 ## Limitations
 - Pages drawn on a canvas (for example some online document editors) can't be recolored with CSS.

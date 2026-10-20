@@ -148,12 +148,12 @@
 
         <h2>1. What the Extension Can Send</h2>
         <p>
-          This policy covers two versions of the extension. <strong>Version 2.1.0 and later</strong> can send only a broken-site report that you start and confirm yourself (section 1.1). <strong>Version 2.0.0</strong> can send an optional anonymous daily usage report if you opt in (section 1.2). Neither version sends anything else. Your settings and documents are never sent.
+          This policy covers two versions of the extension. <strong>Version 2.1.0 and later</strong> can send two things, both described below: a broken-site report that you start and confirm yourself (section 1.1) and an optional daily usage report that is off unless you turn it on (section 1.2). <strong>Version 2.0.0</strong> can send an optional anonymous daily usage report if you opt in (section 1.3). Neither version sends anything else. Your settings and documents are never sent.
         </p>
 
         <h3>1.1 Broken-Site Reports (Version 2.1.0 and Later)</h3>
         <p>
-          In version 2.1.0 and later the extension sends nothing on its own. The one thing it can send is a <strong>broken-site report that you start and confirm yourself</strong>: in the side panel, press <strong>Report this site as broken</strong>, read what will be sent, and press <strong>Send report</strong>. You are asked every time. (The only other network request the extension can make is when you open a web PDF in the viewer: it then downloads that PDF directly from the site that hosts it.)
+          In version 2.1.0 and later a broken-site report is never sent on its own. It is sent only when you <strong>start and confirm it yourself</strong>: in the side panel, press <strong>Report this site as broken</strong>, read what will be sent, and press <strong>Send report</strong>. You are asked every time. (The only other network request the extension can make is when you open a web PDF in the viewer: it then downloads that PDF directly from the site that hosts it.)
         </p>
         <p>
           A report is sent from the background service worker only and contains exactly these fields:
@@ -177,9 +177,34 @@
           <li><strong>No sale or sharing:</strong> reports are never sold or shared. Your settings and documents are never sent to anyone.</li>
         </ul>
 
-        <h3>1.2 Optional Anonymous Usage Statistics (Version 2.0.0 Only)</h3>
+        <h3>1.2 Optional Usage Report (Version 2.1.0 and Later)</h3>
         <p>
-          In version 2.0.0, usage statistics are <strong>off by default</strong>. Nothing is sent unless you click <strong>Yes</strong> on the one-time card in the extension popup or switch on <strong>Usage stats</strong> on the Options page. Version 2.1.0 and later do not have this report. If you click No, or never choose, the extension sends nothing to us. (The only other network request the extension can make is when you open a web PDF in the viewer: it then downloads that PDF directly from the site that hosts it.)
+          In version 2.1.0 and later the usage report is <strong>off by default</strong>. Nothing is sent, and no random ID exists, unless you press <strong>Turn on</strong> on the one-time card in the side panel or switch on <strong>Usage report</strong> on the Options page. If you press No thanks, or never choose, the extension sends no usage report. People who opted in to the usage statistics of version 2.0.0 are asked once to confirm, because this version also counts sites; until they confirm, nothing is sent from their install.
+        </p>
+        <p>
+          When you opt in, on each day you use dark mode the extension sends a small report, from the background service worker only. The same day&rsquo;s report may be sent again, replacing the earlier one for that day, when the engines you used or the number of sites change (at most once an hour). A report contains exactly these fields:
+        </p>
+        <ul>
+          <li><code>id</code>: a random identifier created when you turn the report on; it is not linked to your Google account, email or name</li>
+          <li><code>day</code>: the UTC calendar day of the report</li>
+          <li><code>version</code>: the extension version</li>
+          <li><code>engines.auto</code>, <code>engines.css</code>, <code>engines.invert</code>: whether each engine (Auto, CSS, Invert) was used that day (yes or no flags, not counts)</li>
+          <li><code>sites</code>: how many sites dark mode was applied on that day (a number only, never which sites)</li>
+        </ul>
+        <p>
+          Nothing about which sites you visit, what you read or watch, the documents you open or any text you type is ever collected or sent. So that each site is counted once, the extension keeps on your device a daily list of numeric fingerprints (hashes) of site names, replaced each day; the list never leaves your device, and only the final number is sent.
+        </p>
+        <ul>
+          <li><strong>What the server stores:</strong> the random ID, the day and the fields above. Our server function does <strong>not store IP addresses</strong> (the hosting platform&rsquo;s own request logs may transiently contain them, along with the browser&rsquo;s User-Agent and Accept-Language headers).</li>
+          <li><strong>Legal basis:</strong> the random ID is treated as pseudonymous personal data, and the lawful basis is your consent, which you can withdraw at any time.</li>
+          <li><strong>Use, processors and retention:</strong> the reports are used only by the developer to count daily and weekly users, returning users and retention, and to see which versions are in use. Individual reports and random IDs are never published, never sold, never shared with advertisers and never used for anything unrelated, and reports are purged automatically after 13 months. They are processed only by our hosting providers (Vercel, Supabase) on our behalf; the endpoint is operated by the developer and no analytics company is involved.</li>
+          <li><strong>Turning it off and deleting your data:</strong> untick <strong>Usage report</strong> on the Options page, or press No thanks on the card if you are asked to confirm. This stops the reports, asks the server to delete every report stored for your random ID, and forgets the ID. If the deletion request cannot reach the server, the extension keeps the random ID only to retry the deletion (each time the browser starts the extension) until the server confirms it; the ID is then removed. Turning it on again creates a new random ID.</li>
+          <li><strong>No sale or sharing:</strong> usage reports are never sold or shared. Your settings and documents are never sent to anyone.</li>
+        </ul>
+
+        <h3>1.3 Optional Anonymous Usage Statistics (Version 2.0.0 Only)</h3>
+        <p>
+          In version 2.0.0, usage statistics are <strong>off by default</strong>. Nothing is sent unless you click <strong>Yes</strong> on the one-time card in the extension popup or switch on <strong>Usage stats</strong> on the Options page. Version 2.1.0 and later have their own usage report, described in section 1.2. If you click No, or never choose, the extension sends nothing to us. (The only other network request the extension can make is when you open a web PDF in the viewer: it then downloads that PDF directly from the site that hosts it.)
         </p>
         <p>
           When you opt in, the extension sends one small anonymous report per day, from the background service worker only. It says that you used the extension that day and contains exactly these fields (Options &gt; Usage stats shows an example report, with a placeholder ID, before you turn it on, and today&rsquo;s report afterwards):
@@ -206,7 +231,7 @@
           <li><strong>No sale or sharing:</strong> usage statistics are never sold. Only combined totals (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, and groups of fewer than 10 installs are never shown. The hosting providers (Vercel, Supabase) process the data on our behalf. Your settings and documents are never sent to anyone.</li>
         </ul>
         <p>
-          <strong>Moving to 2.1.0:</strong> version 2.1.0 removes the usage report. When it starts, and if you had opted in, it asks the server to delete the data stored for your random ID and then forgets the ID; if the request fails it is retried each time the browser starts the extension. The combined totals on the <a href="stats.html">usage statistics page</a> came from those reports and stop being updated as people update.
+          <strong>Moving to 2.1.0:</strong> version 2.1.0 does not send anything from a 2.0.0 opt-in until the person confirms the card described in section 1.2. If they confirm, they keep their random ID. If they decline, the extension asks the server to delete the data stored for that ID and then forgets the ID; if the request fails it is retried each time the browser starts the extension. The combined totals on the <a href="stats.html">usage statistics page</a> came from the 2.0.0 reports and stop being updated as people update.
         </p>
 
         <h2>2. Local Storage &amp; Chrome Sync</h2>

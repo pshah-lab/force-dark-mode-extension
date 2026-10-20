@@ -966,9 +966,57 @@ test("PRIVACY.md drops the zero-telemetry claim and says the only report is user
   assert.ok(/request logs may transiently contain/.test(privacyDoc), "PRIVACY.md must scope the IP statement to the server function");
   const reportSection = privacyDoc.split("### 1.1")[1].split("### 1.2")[0];
   assert.ok(!/anonymous/i.test(reportSection), "section 1.1 must not call a broken-site report anonymous");
-  assert.ok(/### 1\.2[^\n]*version 2\.0\.0/i.test(privacyDoc), "PRIVACY.md must still cover the published 2.0.0 usage report");
+  assert.ok(/### 1\.3[^\n]*version 2\.0\.0/i.test(privacyDoc), "PRIVACY.md must still cover the published 2.0.0 usage report");
   assert.ok(privacyDoc.includes("Delete my data"), "PRIVACY.md must still explain Delete my data for 2.0.0");
   assert.ok(privacyDoc.includes("legacy-fields:start"), "PRIVACY.md must still list the 2.0.0 usage report fields");
+});
+
+test("PRIVACY.md describes the 2.1.0 opt-in usage report truthfully and lists exactly its fields", () => {
+  assert.ok(/### 1\.2[^\n]*usage report[^\n]*version 2\.1\.0/i.test(privacyDoc), "section 1.2 must be the 2.1.0 usage report");
+  const section = privacyDoc.split("### 1.2")[1].split("### 1.3")[0];
+  assert.ok(/off by default/i.test(section), "must say off by default");
+  assert.ok(/Turn on/.test(section) && /Options/.test(section), "must name the card button and Options");
+  assert.ok(!/anonymous/i.test(section), "must not call the usage report anonymous");
+  assert.ok(/never sold/i.test(section) && /never published/i.test(section), "never sold, individual reports never published");
+  assert.ok(/version 2\.0\.0/.test(section) && /confirm/i.test(section), "2.0.0 opt-ins are asked to confirm");
+  assert.ok(/delete/i.test(section) && /13 months/.test(section), "deletion and the 13-month purge");
+  assert.ok(/does not store IP addresses/.test(section) && /request logs may transiently contain/.test(section) && /User-Agent/.test(section) && /Accept-Language/.test(section));
+  assert.ok(/updated|sent again/i.test(section), "must say the day's report may be sent again");
+  assert.ok(/hash/i.test(section) && /never leaves your device/i.test(section), "must describe the local site fingerprints");
+  const fields = privacyDoc.match(/<!-- usage-fields:start -->([\s\S]*?)<!-- usage-fields:end -->/);
+  assert.ok(fields, "PRIVACY.md must delimit the 2.1.0 usage fields with usage-fields markers");
+  const documented = [...fields[1].matchAll(/`([A-Za-z.]+)`/g)].map((m) => m[1]);
+  assert.deepStrictEqual([...documented].sort(), ["day", "engines.auto", "engines.css", "engines.invert", "id", "sites", "version"].sort());
+});
+
+test("the web privacy page and the store text cover the 2.1.0 usage report and declare User activity and Web history", () => {
+  const html = fs.readFileSync(path.join(rootDir, "docs/privacy.html"), "utf8");
+  assert.ok(/1\.2 Optional Usage Report \(Version 2\.1\.0 and Later\)/.test(html), "docs/privacy.html needs the 2.1.0 usage report section");
+  assert.ok(/off by default/i.test(html) && /<code>sites<\/code>/.test(html) && /<code>engines\.auto<\/code>/.test(html));
+  const cws = fs.readFileSync(path.join(rootDir, "CHROMEWEBSTORE.md"), "utf8");
+  const row = (name) => cws.split("\n").find((l) => l.startsWith(`| ${name}`)) || "";
+  assert.ok(/\|\s*Yes/.test(row("User activity")), "User activity must be declared in CHROMEWEBSTORE.md");
+  assert.ok(/\|\s*Yes/.test(row("Web history")), "Web history must be declared in CHROMEWEBSTORE.md");
+  assert.ok(/usage report/i.test(cws) && /off unless you turn it on/i.test(cws), "the store text must describe the opt-in usage report");
+});
+
+test("no public page or doc still says 2.1.0 has no usage report or sends only a broken-site report", () => {
+  const stale = [
+    /2\.1\.0 and later do not have this report/i,
+    /2\.1\.0 removes the usage report/i,
+    /Version 2\.1\.0 and later[^.\n]*can send only a broken-site report/i,
+    /Broken-site reports only, and only when you send one/i,
+    /Nothing is sent unless you press Report this site as broken and confirm it/i,
+    /Anonymous usage statistics \(version 2\.0\.0, off by default\)/i,
+    /opt in to anonymous usage statistics \(version 2\.0\.0\)/i,
+    /optional anonymous usage report \(version 2\.0\.0/i,
+  ];
+  const files = ["README.md", "PRIVACY.md", "TERMS.md", "CHROMEWEBSTORE.md", "docs/llms.txt"];
+  for (const dir of ["docs"]) for (const f of fs.readdirSync(path.join(rootDir, dir))) if (f.endsWith(".html")) files.push(`${dir}/${f}`);
+  for (const rel of files) {
+    const text = fs.readFileSync(path.join(rootDir, rel), "utf8");
+    for (const re of stale) assert.ok(!re.test(text), `${rel} still contains the stale claim ${re}`);
+  }
 });
 
 test("policy docs say reports are never sold or shared, carry no ID, and name the stale-sentence guards", () => {

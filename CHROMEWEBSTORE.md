@@ -59,9 +59,9 @@ PRIVATE BY DEFAULT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ThemeSwitcher is built with an uncompromising commitment to privacy:
 • No third-party analytics, tracking pixels, or advertising.
-• Nothing is sent on its own. If a site looks wrong you can press Report this site as broken in the side panel: it shows exactly what will be sent (the site's domain, your engine and theme choice, and the extension version, never the page address, page content or an ID) and sends it only after you confirm, every time. Reports are used to fix sites and are deleted after 13 months.
+• Nothing is sent on its own, and the usage report is off unless you turn it on (a card asks once). If you turn it on, each day you use dark mode we receive a random ID for your install (not linked to you), the date and version, which engines you used, and how many sites dark mode was applied on, a number only and never the sites; you can turn it off and delete it in Options. If a site looks wrong you can press Report this site as broken in the side panel: it shows exactly what will be sent (the site's domain, your engine and theme choice, and the extension version, never the page address, page content or an ID) and sends it only after you confirm, every time. Reports are used to fix sites and are deleted after 13 months.
 • Everything else runs 100% locally in your browser. The only other network request is when you open a web PDF in the viewer: it downloads that PDF directly from the site that hosts it, and nothing is sent to us.
-• No browsing history or website URLs ever leave your computer.
+• No browsing history is collected. A site's domain is sent only if you press Send report on a broken-site report.
 • Preferences sync strictly through your personal Google Account via chrome.storage.sync.
 • Fully open-source under the MIT License for public security auditing.
 
@@ -116,7 +116,7 @@ English
 | `sidePanel`  | permissions     | Required to show the extension's controls in the browser's side panel instead of a popup. It gives no access to any page. |
 | `<all_urls>` | content_scripts | Required to inject styling rules and evaluate surface luminance on websites at`document_start` so pages render dark immediately without bright white flashes.                                           |
 
-No host permissions are requested. The user-confirmed broken-site report (and a one-time deletion request for anyone who opted in to 2.0.0 usage statistics) goes to the developer's own first-party endpoint, which answers CORS only for this extension's origin, so no host permission is needed.
+No host permissions are requested. The user-confirmed broken-site report (and the optional usage report, with the deletion request sent when someone turns it off) goes to the developer's own first-party endpoint, which answers CORS only for this extension's origin, so no host permission is needed.
 
 ---
 
@@ -124,7 +124,7 @@ No host permissions are requested. The user-confirmed broken-site report (and a 
 
 ### Data Collection
 
-**Does the extension collect user data?** Only when the user presses Report this site as broken and confirms: the domain of that site, the engine and theme label in use, and the extension version. The only data type declared is "Web history" (the domain of a site the user chooses to report, with no page address, no ID and no other browsing data). Nothing else is collected.
+**Does the extension collect user data?** Only if the user chooses it. (1) The optional usage report, off unless the user turns it on: each day the user uses dark mode it sends a random install ID, the UTC day, the extension version, which engines were used and how many sites dark mode was applied on (a number only, never the sites). Declared as "User activity". (2) A broken-site report, only when the user presses Report this site as broken and confirms: the domain of that site, the engine and theme label in use, and the extension version. Declared as "Web history" (the domain of a site the user chooses to report, with no page address, no ID and no other browsing data). Nothing else is collected.
 
 | Data Type                    | Collected? | Transmitted Off-Device? | Purpose | Shared with Third Parties? |
 | :--------------------------- | :--------- | :---------------------- | :------ | :------------------------- |
@@ -135,14 +135,14 @@ No host permissions are requested. The user-confirmed broken-site report (and a 
 | Personal communications      | No         | No                      | None    | No                         |
 | Location                     | No         | No                      | None    | No                         |
 | Web history                  | Yes, only the domain of a site the user chooses to report, and only after the user confirms each report; no page address, no ID | Yes, to the developer's own endpoint (hosted on Vercel and Supabase) | Find and fix sites that look wrong; deleted after 13 months | No |
-| User activity                | No         | No                      | None    | No                         |
+| User activity                | Yes, only if the user turns on the usage report: a random install ID, the day, the version, which engines were used and a count of sites dark mode was applied on (never the sites) | Yes, to the developer's own endpoint (hosted on Vercel and Supabase) | Count daily and weekly users, returning users and retention; deleted when the user turns it off, otherwise after 13 months | No |
 | Website content              | No         | No                      | None    | No                         |
 
 ### Data Use Certification
 
-- [X] Data is NOT sold to third parties (reports are used only to fix sites; nothing is published)
+- [X] Data is NOT sold to third parties (reports are used only to fix sites and count users; no individual report or ID is published)
 - [X] Reports contain no ID, are sent only after the user confirms each one, and our server function does not store IP addresses (platform request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers)
-- [X] Reports carry no ID so they cannot be deleted individually; they are purged after 13 months. Anyone who opted in to the 2.0.0 usage report has that data deleted when 2.1.0 starts
+- [X] Reports carry no ID so they cannot be deleted individually; they are purged after 13 months. Usage reports carry a random ID: turning the report off deletes them, otherwise they are purged after 13 months. People who opted in on 2.0.0 are asked to confirm before anything new is sent, and their data is deleted if they decline
 - [X] Data is NOT used for purposes unrelated to the extension's core functionality
 - [X] Data is NOT used for creditworthiness or lending purposes
 
@@ -175,7 +175,7 @@ https://darkmode.pshah.fun/privacy.html
 
 | Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status    |
 | :------ | :--------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------- |
-| 2.1.0   | 2026-10-17 | Side panel replaces the popup (adds the `sidePanel` permission, no host permissions); new Report this site as broken (user-confirmed, sends only the site's domain, engine, theme label and version); the 2.0.0 optional usage statistics are removed and opt-in data is deleted. | Ready to upload |
+| 2.1.0   | 2026-10-17 | Side panel replaces the popup (adds the `sidePanel` permission, no host permissions); new Report this site as broken (user-confirmed, sends only the site's domain, engine, theme label and version); new optional usage report (off by default: random ID, day, version, engines used, count of sites darkened; deletable from Options), and 2.0.0 opt-ins are asked to confirm. | Ready to upload |
 | 2.0.0   | 2026-10-14 | Built-in themes, 20 site packs, theme editor, per-site custom CSS, import/export, engine fixes, and optional anonymous usage statistics (off by default; random ID, day, version, Chrome/OS/language, yes/no feature flags; never sites or content; data-deletion button in Options; only combined totals are published at darkmode.pshah.fun/stats.html). No new permissions and no host permissions. | Published |
 | 1.8.0   | 2026-10-12 | Added offline, read-only Excel (.xlsx) and CSV viewing to the Dark Document Viewer. No permission or manifest changes. |
 | 1.7.0   | 2026-09-29 | Added offline .docx/.pptx support to the Dark Document Viewer, a matching "page card" surface for text-based documents, brightness/contrast/sepia filter sliders, automatic scheduling, toggle/viewer keyboard shortcuts with right-click equivalents, and a permanent`test-fixtures/` sample suite. Fixed PDF Smart Dark double-processing and render-scale performance. First submission rejected 2026-09-30 for keyword spam (the same file-format list was repeated in two sections of the description); resubmitted after removing the duplication. | Published |

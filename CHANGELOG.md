@@ -19,12 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **One-time welcome card** at the top of the side panel: people who updated see what is new, people who just installed see the best features. Both say plainly what is sent (nothing, unless you confirm a broken-site report).
 - **Bigger Rate and Feedback buttons** in the side panel.
-
-### Removed
-- The optional daily usage report from 2.0.0, its random install ID, the popup consent card and the Options "Usage stats" section. If you had opted in, the data stored for your ID is deleted when 2.1.0 starts and the ID is forgotten (retried at each browser start if the server cannot be reached). The public usage statistics page is no longer updated.
+- **Optional daily usage report**, off by default. A one-time card in the side panel asks; the same switch lives in Options > Usage report. When on, each day you use dark mode it sends a random install ID, the UTC day, the version, which engines you used and how many sites dark mode was applied on (a number only, never the sites); the day's report may be updated as the numbers change. Turning it off deletes what the server holds for your ID. People who opted in to the 2.0.0 usage statistics are asked once to confirm, because of the site count; until they do, nothing is sent. Fixed: the 2.0.0 heartbeat never actually sent its usage events.
 
 ### Changed
-- The privacy policy, store listing and website describe the broken-site report instead of usage statistics.
+- The Options "Usage stats" section, its example preview and the Delete my data button are replaced by one Usage report switch. The popup consent card is replaced by the side panel card. The public usage statistics page is no longer updated.
+- The privacy policy, store listing and website describe both opt-in reports (usage and broken-site).
 
 ---
 

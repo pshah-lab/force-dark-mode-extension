@@ -4,7 +4,7 @@
   const STATE_KEY = "welcomeState";
 
   const DATA_NOTE =
-    "Nothing is sent unless you press Report this site as broken. Then we get only the site's domain, the engine and theme you use, and the extension version, and only after you confirm.";
+    "Nothing is sent unless you turn on the usage report or press Report this site as broken. A broken-site report sends only the site's domain, the engine and theme you use, and the extension version, and only after you confirm.";
 
   const WELCOME_COPY = {
     whatsnew: {
@@ -13,7 +13,7 @@
       items: [
         "Side panel: the controls now open beside the page and follow the tab you are on.",
         "Report this site as broken: if a site looks wrong, press the button to tell us.",
-        "The optional daily usage report from version 2.0 is removed, and any data it sent is deleted.",
+        "Optional usage report: off unless you turn it on. You are asked once, and you can change it in Options.",
       ],
       dataNote: DATA_NOTE,
       button: "Got it",

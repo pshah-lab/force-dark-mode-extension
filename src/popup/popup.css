@@ -501,6 +501,18 @@ body {
   color: #9aa0a6;
 }
 
+.usage-card[hidden] {
+  display: none;
+}
+
+.usage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#usage-yes,
+#usage-no,
 #welcome-dismiss {
   min-height: 34px;
   padding: 6px 14px;

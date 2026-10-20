@@ -65,15 +65,15 @@ test("what's new names the real changes and says exactly what is sent", () => {
   const text = [card.title, ...card.items, card.dataNote].join(" ");
   assert.ok(/side panel/i.test(text));
   assert.ok(/Report this site as broken/.test(text));
-  assert.ok(/usage/i.test(text) && /removed|gone|no longer/i.test(text), "must say the old usage report is gone");
-  assert.ok(/domain/.test(card.dataNote) && /Nothing is sent/.test(card.dataNote));
+  assert.ok(/usage report/i.test(text) && /optional/i.test(text) && /off unless you turn it on/i.test(text), "must say the usage report is optional and off unless turned on");
+  assert.ok(/domain/.test(card.dataNote) && /Nothing is sent unless you turn on the usage report or press Report this site as broken/.test(card.dataNote));
 });
 
 test("best features for new users names features that exist, with the same data note", () => {
   const card = cardFor({ kind: "new", version: "2.1.0", seen: false });
   const text = card.items.join(" ");
   for (const word of ["theme", "site pack", "PDF", "Alt+Shift+D"]) assert.ok(text.toLowerCase().includes(word.toLowerCase()), `must mention ${word}`);
-  assert.ok(/domain/.test(card.dataNote) && /Nothing is sent/.test(card.dataNote));
+  assert.ok(/domain/.test(card.dataNote) && /Nothing is sent unless you turn on the usage report/.test(card.dataNote));
   assert.strictEqual(card.dataNote, cardFor({ kind: "update", version: "2.1.0", seen: false }).dataNote);
 });
 

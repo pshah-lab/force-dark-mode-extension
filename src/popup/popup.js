@@ -66,7 +66,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // One-time welcome card (best features for new installs, what is new for updates). Runs on its own so a
   // storage failure can never break the rest of the panel.
-  initWelcomeCard().catch((err) => console.warn("Welcome card unavailable:", err));
+  initWelcomeCard()
+    .then(() => initUsageCard())
+    .catch((err) => console.warn("Side panel cards unavailable:", err));
 
   // The side panel stays open across tabs, so the current tab and host are re-read by loadForTab.
   let tab;
@@ -607,6 +609,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   await refreshActiveTab();
 });
 
+// Resolves when no welcome card is showing (immediately, or once it is dismissed), so the usage card never
+// stacks on top of it.
 async function initWelcomeCard() {
   const card = document.getElementById("welcome-card");
   const key = WelcomeCard.STATE_KEY;
@@ -626,9 +630,47 @@ async function initWelcomeCard() {
   document.getElementById("welcome-data").textContent = content.dataNote;
   const dismiss = document.getElementById("welcome-dismiss");
   dismiss.textContent = content.button;
-  dismiss.onclick = () => {
+  await new Promise((resolve) => {
+    dismiss.onclick = () => {
+      card.hidden = true;
+      chrome.storage.local.set({ [key]: WelcomeCard.markSeen(state) });
+      resolve();
+    };
+    card.hidden = false;
+  });
+}
+
+// One-time consent card for the optional usage report. The worker decides whether one is needed; both buttons
+// answer it and the card never comes back.
+async function initUsageCard() {
+  let status;
+  try {
+    status = await chrome.runtime.sendMessage({ type: "USAGE_STATUS" });
+  } catch (err) {
+    return;
+  }
+  const content = UsageCard.cardFor(status?.consentNeeded);
+  if (!content) return;
+  const card = document.getElementById("usage-card");
+  document.getElementById("usage-title").textContent = content.title;
+  document.getElementById("usage-intro").textContent = content.intro;
+  const list = document.getElementById("usage-items");
+  list.replaceChildren();
+  for (const item of content.items) {
+    const li = document.createElement("li");
+    li.textContent = item;
+    list.append(li);
+  }
+  document.getElementById("usage-note").textContent = content.note;
+  const yes = document.getElementById("usage-yes");
+  const no = document.getElementById("usage-no");
+  yes.textContent = content.yes;
+  no.textContent = content.no;
+  const answer = (enabled) => {
     card.hidden = true;
-    chrome.storage.local.set({ [key]: WelcomeCard.markSeen(state) });
+    chrome.runtime.sendMessage(enabled ? { type: "USAGE_CONSENT", enabled: true } : { type: "USAGE_CONSENT", enabled: false }).catch(() => {});
   };
+  yes.onclick = () => answer(true);
+  no.onclick = () => answer(false);
   card.hidden = false;
 }

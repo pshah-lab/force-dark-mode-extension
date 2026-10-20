@@ -228,12 +228,34 @@
       </div>
     </section>
 
+    <!-- Usage report (opt-in, off by default) -->
+    <section class="card" id="usage-card-options">
+      <h2>Usage report</h2>
+      <p class="card-desc">Off unless you turn it on. If you do, each day you use dark mode we receive the items below, and the day's report may be updated as the numbers change.</p>
+
+      <ul class="subtext">
+        <li>A random ID for this install, not linked to your name or account.</li>
+        <li>The date and the extension version.</li>
+        <li>Which engines you used that day (Auto, CSS, Invert).</li>
+        <li>How many sites dark mode was applied on that day. A number only, never the sites.</li>
+      </ul>
+      <p class="subtext">We never receive the sites you visit, page content, or anything you type. Turning this off stops reports and deletes what we hold for your ID.</p>
+
+      <div class="field">
+        <label class="checkbox-label" for="usage-toggle">
+          <input id="usage-toggle" type="checkbox" />
+          <span>Send the daily usage report</span>
+        </label>
+      </div>
+      <p class="subtext" id="usage-result" role="status" aria-live="polite"></p>
+    </section>
+
     <!-- Privacy & Data Management Card -->
     <section class="card">
       <div class="card-badge">Privacy by Design</div>
       <h2>Privacy & Data Management</h2>
       <p class="card-desc">
-        ThemeSwitcher is local-first. All preferences are stored strictly inside your browser profile via <code>chrome.storage.sync</code>. No browsing history, page contents, or documents ever leave your device. The only thing the extension ever sends is a broken-site report that you start yourself and confirm each time (see the privacy policy).
+        ThemeSwitcher is local-first. All preferences are stored strictly inside your browser profile via <code>chrome.storage.sync</code>. No browsing history, page contents, or documents ever leave your device. The only things the extension can send are the optional usage report above (off unless you turn it on) and a broken-site report that you start yourself and confirm each time (see the privacy policy).
       </p>
 
       <div class="data-stats">

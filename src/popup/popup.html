@@ -14,6 +14,17 @@
         <button id="welcome-dismiss" type="button"></button>
       </div>
 
+      <div class="welcome-card usage-card" id="usage-card" hidden>
+        <p class="welcome-title" id="usage-title"></p>
+        <p class="welcome-data" id="usage-intro"></p>
+        <ul class="welcome-items" id="usage-items"></ul>
+        <p class="welcome-data" id="usage-note"></p>
+        <div class="usage-actions">
+          <button id="usage-yes" type="button"></button>
+          <button id="usage-no" type="button"></button>
+        </div>
+      </div>
+
       <div class="site" id="site">Loading...</div>
       <div class="recommendation" id="recommendation" hidden>
         Recommendation unavailable
@@ -120,6 +131,7 @@
     <script src="feedbackPrompt.js"></script>
     <script src="reportCard.js"></script>
     <script src="welcomeCard.js"></script>
+    <script src="usageCard.js"></script>
     <script src="../shared/themeCore.js"></script>
     <script src="../shared/builtinThemes.js"></script>
     <script src="../shared/sitePacks.js"></script>

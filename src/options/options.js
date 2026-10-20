@@ -97,6 +97,40 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // "My themes" and "Sites with custom CSS" re-read storage after an import or an erase.
+  // Optional usage report: off unless the user turns it on. The worker owns the consent state.
+  const usageToggle = document.getElementById("usage-toggle");
+  const usageResult = document.getElementById("usage-result");
+
+  async function refreshUsage() {
+    if (!usageToggle) return;
+    try {
+      const status = await chrome.runtime.sendMessage({ type: "USAGE_STATUS" });
+      usageToggle.checked = status?.enabled === true;
+    } catch (err) {
+      usageToggle.checked = false;
+    }
+  }
+
+  if (usageToggle) {
+    usageToggle.addEventListener("change", async () => {
+      let res = null;
+      try {
+        res = await chrome.runtime.sendMessage({ type: "USAGE_CONSENT", enabled: usageToggle.checked });
+      } catch (err) {
+        res = null;
+      }
+      if (usageResult) {
+        if (!res || res.ok !== true) usageResult.textContent = "Could not change this setting. Please try again.";
+        else if (usageToggle.checked) usageResult.textContent = "Usage report is on.";
+        else if (res.serverConfirmed === false) usageResult.textContent = "Turned off. We could not reach the server to delete your data; we will try again the next time the extension starts.";
+        else if (res.serverConfirmed === true) usageResult.textContent = "Turned off, and the data we held for your ID was deleted.";
+        else usageResult.textContent = "Turned off.";
+      }
+      await refreshUsage();
+    });
+    await refreshUsage();
+  }
+
   async function refreshEditors() {
     try {
       await Promise.all([themeEditor?.refresh(), cssEditor?.refresh()]);

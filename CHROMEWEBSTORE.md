@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Force Dark Mode - ThemeSwitcher
 
-> Last Updated: 2026-09-30
+> Last Updated: 2026-10-21
 
 ---
 
@@ -38,9 +38,11 @@ KEY FEATURES
 
 ✦ Local Document & PDF Reader: Open online and local PDFs, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), CSV, Markdown (.md), TXT, and RTF files in a built-in dark reader. PDFs render through bundled PDF.js with saturation-aware canvas pixel conversion—diagrams and text stay crisp without uploading confidential files to external servers.
 
-✦ Per-Site Custom Background Colors: Choose between pitch black (#000000) for OLED displays or a soft midnight slate (#0f1115) from the popup. Surfaces and borders adapt automatically to guarantee WCAG AA contrast.
+✦ Per-Site Custom Background Colors: Choose between pitch black (#000000) for OLED displays or a soft midnight slate (#0f1115) from the side panel. Surfaces and borders adapt automatically to guarantee WCAG AA contrast.
 
 ✦ Zero White Flashes: Applied at document_start before the DOM renders to protect your eyes from blinding white flashes between page navigations.
+
+✦ Side Panel: Click the toolbar icon to open the controls beside the page. The panel stays open while you switch tabs and follows the site you are on.
 
 ✦ Instant Toggle: Switch dark mode on or off instantly with a single click—no page reloads required.
 
@@ -49,19 +51,21 @@ KEY FEATURES
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 HOW TO USE IT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. Click the ThemeSwitcher icon in your browser toolbar on any website.
+1. Click the ThemeSwitcher icon in your browser toolbar on any website to open the side panel.
 2. Toggle dark mode on or off with a single click.
 3. Switch between Auto, CSS, or Invert engines, or pick a custom background color for the current domain.
-4. Click "Open file viewer" (or press Alt+Shift+O) to open any supported document in dark mode—see Key Features above for the full format list.
+4. Click "Open file viewer" in the side panel (or press Alt+Shift+O) to open any supported document in dark mode—see Key Features above for the full format list.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PRIVATE BY DEFAULT
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ThemeSwitcher is built with an uncompromising commitment to privacy:
 • No third-party analytics, tracking pixels, or advertising.
-• Nothing is sent on its own, and the usage report is off unless you turn it on (a card asks once). If you turn it on, each day you use dark mode we receive a random ID for your install (not linked to you), the date and version, which engines you used, and how many sites dark mode was applied on, a number only and never the sites; you can turn it off and delete it in Options. If a site looks wrong you can press Report this site as broken in the side panel: it shows exactly what will be sent (the site's domain, your engine and theme choice, and the extension version, never the page address, page content or an ID) and sends it only after you confirm, every time. Reports are used to fix sites and are deleted after 13 months.
+• Nothing is sent on its own. There are two optional reports, and you decide on both.
+• Daily usage report: off unless you turn it on (a card asks once, and you can change it any time in Options). If you turn it on, each day you use dark mode we receive a random ID for your install (not linked to you), the date and extension version, which engines you used, and how many sites dark mode was applied on, a number only and never which sites. Turning it off deletes what we hold for your ID.
+• Report this site as broken: a button in the side panel. It shows exactly what will be sent (the site's domain, your engine and theme choice, and the extension version, never the page address, page content or an ID) and sends it only after you confirm, every time. These reports are used to fix sites and are deleted after 13 months.
 • Everything else runs 100% locally in your browser. The only other network request is when you open a web PDF in the viewer: it downloads that PDF directly from the site that hosts it, and nothing is sent to us.
-• No browsing history is collected. A site's domain is sent only if you press Send report on a broken-site report.
+• No browsing history is collected, and page content and documents are never sent.
 • Preferences sync strictly through your personal Google Account via chrome.storage.sync.
 • Fully open-source under the MIT License for public security auditing.
 

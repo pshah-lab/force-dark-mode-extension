@@ -1,6 +1,6 @@
 # Chrome Web Store Listing — Force Dark Mode - ThemeSwitcher
 
-> Last Updated: 2026-10-21
+> Last Updated: 2026-10-21 (description trimmed after the keyword-spam rejection, reference Yellow Argon)
 
 ---
 
@@ -36,7 +36,7 @@ KEY FEATURES
 
 ✦ Smart Invert Engine: Protected color inversion with re-inversion for media, perfect for complex graphics-heavy pages and specialized web applications.
 
-✦ Local Document & PDF Reader: Open online and local PDFs, Word (.docx), PowerPoint (.pptx), Excel (.xlsx), CSV, Markdown (.md), TXT, and RTF files in a built-in dark reader. PDFs render through bundled PDF.js with saturation-aware canvas pixel conversion—diagrams and text stay crisp without uploading confidential files to external servers.
+✦ Local Document & PDF Reader: Read PDFs and everyday documents (Office files, spreadsheets, Markdown and plain text) in a built-in dark reader. PDFs render through bundled PDF.js with saturation-aware canvas pixel conversion—diagrams and text stay crisp without uploading confidential files to external servers.
 
 ✦ Per-Site Custom Background Colors: Choose between pitch black (#000000) for OLED displays or a soft midnight slate (#0f1115) from the side panel. Surfaces and borders adapt automatically to guarantee WCAG AA contrast.
 
@@ -54,7 +54,7 @@ HOW TO USE IT
 1. Click the ThemeSwitcher icon in your browser toolbar on any website to open the side panel.
 2. Toggle dark mode on or off with a single click.
 3. Switch between Auto, CSS, or Invert engines, or pick a custom background color for the current domain.
-4. Click "Open file viewer" in the side panel (or press Alt+Shift+O) to open any supported document in dark mode—see Key Features above for the full format list.
+4. Click "Open file viewer" in the side panel (or press Alt+Shift+O) to open a PDF or document from your computer in dark mode.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PRIVATE BY DEFAULT

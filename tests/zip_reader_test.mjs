@@ -1,5 +1,7 @@
 // tests/zip_reader_test.mjs
 import assert from "assert";
+import fs from "fs";
+import { fileURLToPath } from "url";
 import { listZipEntryNames, readZipEntryText, readZipEntryTextOrNull } from "../src/shared/zipReader.js";
 
 console.log("=========================================");
@@ -247,6 +249,197 @@ await test("readZipEntryTextOrNull still propagates ENCRYPTED", async () => {
   ]);
   const error = await readZipEntryTextOrNull(zip, "s.xml").catch((e) => e);
   assert.strictEqual(error.code, "ENCRYPTED");
+});
+
+// ---- Decompression-amplification hardening (overlapping entries, archive budget) ----
+
+// Hostile archive: ONE small deflate stream, many central-directory entries that all
+// point at its local header (the "zip quine"/overlap amplification shape).
+async function buildSharedStreamZip(names, rawData) {
+  const enc = new TextEncoder();
+  const compressed = await deflateRaw(rawData);
+  const firstName = enc.encode(names[0]);
+  const local = new Uint8Array(30 + firstName.length);
+  writeUint32(local, 0, 0x04034b50);
+  writeUint16(local, 4, 20);
+  writeUint16(local, 8, 8);
+  writeUint32(local, 18, compressed.length);
+  writeUint32(local, 22, rawData.length);
+  writeUint16(local, 26, firstName.length);
+  local.set(firstName, 30);
+
+  const parts = [local, compressed];
+  let offset = local.length + compressed.length;
+  const centralStart = offset;
+  for (const name of names) {
+    const nameBytes = enc.encode(name);
+    const central = new Uint8Array(46 + nameBytes.length);
+    writeUint32(central, 0, 0x02014b50);
+    writeUint16(central, 4, 20);
+    writeUint16(central, 6, 20);
+    writeUint16(central, 10, 8);
+    writeUint32(central, 20, compressed.length);
+    writeUint32(central, 24, rawData.length);
+    writeUint16(central, 28, nameBytes.length);
+    writeUint32(central, 42, 0); // every entry shares the one local header at offset 0
+    central.set(nameBytes, 46);
+    parts.push(central);
+    offset += central.length;
+  }
+  const eocd = new Uint8Array(22);
+  writeUint32(eocd, 0, 0x06054b50);
+  writeUint16(eocd, 8, names.length);
+  writeUint16(eocd, 10, names.length);
+  writeUint32(eocd, 12, offset - centralStart);
+  writeUint32(eocd, 16, centralStart);
+  parts.push(eocd);
+
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+  let pos = 0;
+  for (const p of parts) {
+    out.set(p, pos);
+    pos += p.length;
+  }
+  return out;
+}
+
+function eocdCentralOffset(zip) {
+  const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+  return view.getUint32(zip.length - 22 + 16, true);
+}
+
+await test("an archive whose entries share one local header is rejected as OVERLAPPING_ENTRIES", async () => {
+  const names = Array.from({ length: 50 }, (_, i) => `ppt/slides/slide${i + 1}.xml`);
+  const zip = await buildSharedStreamZip(names, enc.encode("a".repeat(100000)));
+  const listError = await listZipEntryNames(zip).catch((e) => e);
+  assert.ok(listError instanceof Error, "listing should reject");
+  assert.strictEqual(listError.code, "OVERLAPPING_ENTRIES");
+  const readError = await readZipEntryText(zip, "ppt/slides/slide7.xml").catch((e) => e);
+  assert.strictEqual(readError.code, "OVERLAPPING_ENTRIES");
+});
+
+await test("readZipEntryTextOrNull does not swallow OVERLAPPING_ENTRIES", async () => {
+  const names = ["ppt/slides/slide1.xml", "ppt/slides/slide2.xml"];
+  const zip = await buildSharedStreamZip(names, enc.encode("a".repeat(1000)));
+  const error = await readZipEntryTextOrNull(zip, "ppt/slides/slide1.xml").catch((e) => e);
+  assert.strictEqual(error.code, "OVERLAPPING_ENTRIES");
+});
+
+await test("an entry whose claimed data range covers the next entry is rejected as OVERLAPPING_ENTRIES", async () => {
+  const zip = await buildZip([
+    { name: "a.xml", data: enc.encode("a".repeat(200)), method: 0 },
+    { name: "b.xml", data: enc.encode("b".repeat(200)), method: 0 },
+  ]);
+  // Inflate a.xml's claimed compressedSize so its data range runs over b.xml's local header.
+  writeUint32(zip, eocdCentralOffset(zip) + 20, 400);
+  const error = await listZipEntryNames(zip).catch((e) => e);
+  assert.strictEqual(error.code, "OVERLAPPING_ENTRIES");
+});
+
+await test("adjacent, non-overlapping entries (including empty ones) are still accepted", async () => {
+  const zip = await buildZip([
+    { name: "dir/", data: new Uint8Array(0), method: 0 },
+    { name: "a.xml", data: enc.encode("alpha"), method: 8 },
+    { name: "empty.xml", data: new Uint8Array(0), method: 0 },
+    { name: "b.xml", data: enc.encode("beta"), method: 0 },
+  ]);
+  assert.deepStrictEqual(await listZipEntryNames(zip), ["dir/", "a.xml", "empty.xml", "b.xml"]);
+  assert.strictEqual(await readZipEntryText(zip, "a.xml"), "alpha");
+  assert.strictEqual(await readZipEntryText(zip, "b.xml"), "beta");
+});
+
+await test("decompressed output is capped per archive: a later read hits the cumulative budget (TOO_LARGE)", async () => {
+  const zip = await buildZip([
+    { name: "one.xml", data: enc.encode("a".repeat(1000)), method: 8 },
+    { name: "two.xml", data: enc.encode("b".repeat(1000)), method: 8 },
+    { name: "three.xml", data: enc.encode("c".repeat(1000)), method: 8 },
+  ]);
+  const options = { maxTotalSize: 2500 };
+  assert.strictEqual(await readZipEntryText(zip, "one.xml", options), "a".repeat(1000));
+  assert.strictEqual(await readZipEntryText(zip, "two.xml", options), "b".repeat(1000));
+  const error = await readZipEntryText(zip, "three.xml", options).catch((e) => e);
+  assert.ok(error instanceof Error, "third read should exceed the budget");
+  assert.strictEqual(error.code, "TOO_LARGE");
+  assert.strictEqual(error.partialText, "c".repeat(500));
+});
+
+await test("once the archive budget is spent every further read is TOO_LARGE with no output", async () => {
+  const zip = await buildZip([
+    { name: "one.xml", data: enc.encode("a".repeat(1000)), method: 8 },
+    { name: "two.xml", data: enc.encode("b".repeat(10)), method: 8 },
+    { name: "three.xml", data: enc.encode("c".repeat(10)), method: 0 },
+  ]);
+  const options = { maxTotalSize: 1000 };
+  assert.strictEqual(await readZipEntryText(zip, "one.xml", options), "a".repeat(1000));
+  for (const name of ["two.xml", "three.xml", "two.xml"]) {
+    const error = await readZipEntryText(zip, name, options).catch((e) => e);
+    assert.strictEqual(error.code, "TOO_LARGE", name);
+    assert.strictEqual(error.partialText, "", name);
+  }
+  assert.strictEqual(await readZipEntryTextOrNull(zip, "two.xml", options), null);
+});
+
+await test("re-reading the same entry is charged against the archive budget", async () => {
+  const zip = await buildZip([{ name: "a.xml", data: enc.encode("a".repeat(600)), method: 8 }]);
+  const options = { maxTotalSize: 1000 };
+  assert.strictEqual(await readZipEntryText(zip, "a.xml", options), "a".repeat(600));
+  const error = await readZipEntryText(zip, "a.xml", options).catch((e) => e);
+  assert.strictEqual(error.code, "TOO_LARGE");
+  assert.strictEqual(error.partialText, "a".repeat(400));
+});
+
+await test("the decompression budget is per archive, not global", async () => {
+  const entries = [{ name: "a.xml", data: enc.encode("a".repeat(800)), method: 8 }];
+  const options = { maxTotalSize: 1000 };
+  const first = await buildZip(entries);
+  const second = await buildZip(entries);
+  assert.strictEqual(await readZipEntryText(first, "a.xml", options), "a".repeat(800));
+  assert.strictEqual(await readZipEntryText(second, "a.xml", options), "a".repeat(800));
+});
+
+await test("the default per-archive budget is far above any real document", async () => {
+  const zip = await buildZip([{ name: "big.xml", data: enc.encode("x".repeat(2_000_000)), method: 8 }]);
+  for (let i = 0; i < 5; i += 1) {
+    assert.strictEqual((await readZipEntryText(zip, "big.xml")).length, 2_000_000);
+  }
+});
+
+await test("the central directory is parsed once per archive, not once per read", async () => {
+  const entries = Array.from({ length: 200 }, (_, i) => ({ name: `e${i}.xml`, data: enc.encode("x"), method: 0 }));
+  const zip = await buildZip(entries);
+  const RealTextDecoder = globalThis.TextDecoder;
+  let constructed = 0;
+  globalThis.TextDecoder = class extends RealTextDecoder {
+    constructor(...args) {
+      super(...args);
+      constructed += 1;
+    }
+  };
+  try {
+    for (let i = 0; i < 50; i += 1) {
+      await readZipEntryText(zip, "missing.xml");
+    }
+    await listZipEntryNames(zip);
+  } finally {
+    globalThis.TextDecoder = RealTextDecoder;
+  }
+  // One parse (about 200 names) is allowed; 51 parses would be about 10,000.
+  assert.ok(constructed < 1000, `central directory re-parsed on every call (${constructed} decoders)`);
+});
+
+await test("the repository's sample .docx/.pptx/.xlsx fixtures still list and read in full", async () => {
+  const fixtures = fileURLToPath(new URL("../test-fixtures/", import.meta.url));
+  for (const file of ["sample.docx", "sample.pptx", "sample.xlsx"]) {
+    const bytes = new Uint8Array(fs.readFileSync(fixtures + file));
+    const names = await listZipEntryNames(bytes);
+    assert.ok(names.length > 0, file);
+    let readable = 0;
+    for (const name of names) {
+      const text = await readZipEntryText(bytes, name);
+      if (text !== null) readable += 1;
+    }
+    assert.ok(readable > 0, `${file} has no readable entries`);
+  }
 });
 
 console.log("\n=========================================");

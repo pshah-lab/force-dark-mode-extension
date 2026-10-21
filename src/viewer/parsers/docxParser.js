@@ -8,24 +8,39 @@ function decodeXmlEntities(text) {
   });
 }
 
+// Returns the next `<open ...>...closeTag` span of xml at or after openRegex.lastIndex
+// (openRegex must be global), or null. Linear: one regex scan for the opener and one
+// indexOf for the closer. A missing closer ends the scan, since no later opener can
+// have one either; a lazy `[\s\S]*?` regex would rescan to the end from every opener.
+function nextElement(xml, openRegex, closeTag) {
+  const open = openRegex.exec(xml);
+  if (open === null) return null;
+  const end = xml.indexOf(closeTag, openRegex.lastIndex);
+  if (end === -1) return null;
+  openRegex.lastIndex = end + closeTag.length;
+  return xml.slice(open.index, openRegex.lastIndex);
+}
+
 function extractRuns(paragraphXml) {
   const runs = [];
-  const runRegex = /<w:r[ >][\s\S]*?<\/w:r>/g;
-  let runMatch;
+  const runRegex = /<w:r[ >]/g;
+  let runXml;
 
-  while ((runMatch = runRegex.exec(paragraphXml)) !== null) {
-    const runXml = runMatch[0];
-    const rPrMatch = runXml.match(/<w:rPr[ >][\s\S]*?<\/w:rPr>/);
-    const rPrXml = rPrMatch ? rPrMatch[0] : "";
+  while ((runXml = nextElement(paragraphXml, runRegex, "</w:r>")) !== null) {
+    const rPrXml = nextElement(runXml, /<w:rPr[ >]/g, "</w:rPr>") ?? "";
 
-    const bold = /<w:b\b(?![^>]*w:val="(0|false)")[^>]*\/?>/.test(rPrXml);
-    const italic = /<w:i\b(?![^>]*w:val="(0|false)")[^>]*\/?>/.test(rPrXml);
+    // Attribute text stops at '<' as well as '>' so a tag that is never closed
+    // cannot make these scans run on to the end of the run.
+    const bold = /<w:b\b(?![^<>]*w:val="(0|false)")[^<>]*\/?>/.test(rPrXml);
+    const italic = /<w:i\b(?![^<>]*w:val="(0|false)")[^<>]*\/?>/.test(rPrXml);
 
     let text = "";
-    const textRegex = /<w:t(?:\s[^>]*)?>([\s\S]*?)<\/w:t>/g;
-    let textMatch;
-    while ((textMatch = textRegex.exec(runXml)) !== null) {
-      text += decodeXmlEntities(textMatch[1]);
+    const textRegex = /<w:t(?:\s[^<>]*)?>/g;
+    while (textRegex.exec(runXml) !== null) {
+      const end = runXml.indexOf("</w:t>", textRegex.lastIndex);
+      if (end === -1) break;
+      text += decodeXmlEntities(runXml.slice(textRegex.lastIndex, end));
+      textRegex.lastIndex = end + 6;
     }
 
     if (text) runs.push({ text, bold, italic });
@@ -36,21 +51,19 @@ function extractRuns(paragraphXml) {
 
 export function parseDocxDocument(xmlText) {
   const blocks = [];
-  const paragraphRegex = /<w:p[ >][\s\S]*?<\/w:p>/g;
-  let match;
+  const paragraphRegex = /<w:p[ >]/g;
+  let paragraphXml;
   let truncated = false;
 
-  while ((match = paragraphRegex.exec(xmlText)) !== null) {
+  while ((paragraphXml = nextElement(xmlText, paragraphRegex, "</w:p>")) !== null) {
     if (blocks.length >= MAX_DOCX_PARAGRAPHS) {
       truncated = true;
       break;
     }
 
-    const paragraphXml = match[0];
-    const pPrMatch = paragraphXml.match(/<w:pPr[ >][\s\S]*?<\/w:pPr>/);
-    const pPrXml = pPrMatch ? pPrMatch[0] : "";
+    const pPrXml = nextElement(paragraphXml, /<w:pPr[ >]/g, "</w:pPr>") ?? "";
 
-    const headingMatch = pPrXml.match(/<w:pStyle[^>]*w:val="(Heading[1-3]|Title)"/);
+    const headingMatch = pPrXml.match(/<w:pStyle[^<>]*w:val="(Heading[1-3]|Title)"/);
     const isListItem = /<w:numPr[ >]/.test(pPrXml);
     const runs = extractRuns(paragraphXml);
 

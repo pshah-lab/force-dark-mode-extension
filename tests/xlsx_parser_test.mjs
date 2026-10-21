@@ -413,6 +413,29 @@ await test("hostile XML: still parses normal attributes, shared strings and phon
   assert.deepStrictEqual(r.sheets[0].rows[0].map((c) => c.text), ["base", ""]);
 });
 
+// A numFmt formatCode full of unterminated '[' / '[$' tags, applied to thousands of numeric cells, must cost
+// about what the same code without the brackets costs.
+for (const code of ["[".repeat(255), "[$".repeat(127)]) {
+  await test(`hostile XML stays linear: ${JSON.stringify(code.slice(0, 2))} formatCode across 10000 numeric cells`, async () => {
+    const rows = Array.from({ length: 2500 }, (_, r) => `<row r="${r + 1}">${[0, 1, 2, 3].map((c) => `<c r="${"ABCD"[c]}${r + 1}" s="0"><v>${r + c + 0.5}</v></c>`).join("")}</row>`).join("");
+    const withCode = (formatCode) => {
+      const styles = `<styleSheet ${NS}><numFmts count="1"><numFmt numFmtId="164" formatCode="${formatCode}"/></numFmts><cellXfs count="1"><xf numFmtId="164"/></cellXfs></styleSheet>`;
+      return wbWith(sheetXml(rows), { "xl/styles.xml": styles });
+    };
+    const hostile = withCode(code);
+    const benign = withCode(code.replaceAll("[", "x"));
+    await timed(hostile);
+    await timed(benign);
+    let hostileMs = Infinity;
+    let benignMs = Infinity;
+    for (let rep = 0; rep < 3; rep++) {
+      hostileMs = Math.min(hostileMs, await timed(hostile));
+      benignMs = Math.min(benignMs, await timed(benign));
+    }
+    assert.ok(hostileMs < benignMs * 1.6 + 20, `hostile ${hostileMs.toFixed(1)}ms vs benign ${benignMs.toFixed(1)}ms`);
+  });
+}
+
 await test("clamps column widths to 0-255", async () => {
   const r = await one(
     sheetXml(

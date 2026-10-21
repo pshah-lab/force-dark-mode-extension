@@ -75,6 +75,43 @@ await test("parsePptxPresentation caps slide count at 500 and marks it truncated
   assert.strictEqual(truncated, true);
 });
 
+// Hostile-XML timing regressions: each input is a few hundred KB of repeated
+// unterminated markup that made the old lazy regexes quadratic.
+const budget = 1000;
+const timed = (xml) => {
+  const t0 = performance.now();
+  parsePptxSlideXml(xml);
+  return performance.now() - t0;
+};
+
+await test("hostile XML stays linear: unterminated <a:p>", () => {
+  assert.ok(timed("<a:p>".repeat(60000)) < budget);
+});
+
+await test("hostile XML stays linear: unterminated <a:r> inside a paragraph", () => {
+  assert.ok(timed("<a:p>" + "<a:r>".repeat(60000) + "</a:p>") < budget);
+});
+
+await test("hostile XML stays linear: unterminated <a:t> inside a run", () => {
+  assert.ok(timed("<a:p><a:r>" + "<a:t>".repeat(60000) + "</a:r></a:p>") < budget);
+});
+
+await test("hostile XML stays linear: <a:t with attributes but no closing '>'", () => {
+  assert.ok(timed("<a:p><a:r>" + "<a:t ".repeat(60000) + "</a:r></a:p>") < budget);
+});
+
+await test("hostile XML: still parses normal paragraphs, runs and text around unterminated markup", () => {
+  const blocks = parsePptxSlideXml(
+    `<a:p><a:r><a:rPr b="1"/><a:t>one</a:t><a:t xml:space="preserve"> two</a:t></a:r></a:p>` +
+      `<a:p/><a:pPr><a:r><a:t>ignored</a:t></a:r></a:pPr>` +
+      `<a:p><a:r><a:t>last</a:t></a:r></a:p><a:p><a:r><a:t>never closed</a:t></a:r>`
+  );
+  assert.deepStrictEqual(blocks, [
+    { runs: [{ text: "one two", bold: true, italic: false }] },
+    { runs: [{ text: "last", bold: false, italic: false }] },
+  ]);
+});
+
 console.log("\n=========================================");
 console.log(`🎉 Pptx Parser Results: ${passed} passed, ${failed} failed`);
 console.log("=========================================\n");

@@ -23,55 +23,31 @@ Apply smart dark mode to websites, PDFs, and local docs with Auto detection, cus
 **Detailed Description** [REQUIRED]
 
 ```
-Force Dark Mode - ThemeSwitcher transforms websites, PDFs, and local documents into a soothing, eye-friendly dark theme with intelligent engine selection and customizable color palettes.
+Force Dark Mode - ThemeSwitcher turns websites, PDFs, and local documents dark without breaking photos, videos, or page layouts. It checks each page and picks the best method automatically.
 
-Unlike simple global inverters that break photos, video thumbnails, and page layouts, ThemeSwitcher analyzes each webpage's structure and luminance to apply the optimal dark strategy automatically.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 KEY FEATURES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✦ Intelligent Auto Engine: Dynamically samples page elements, luminance, and media density. If a site natively supports dark mode (such as YouTube or GitHub in night mode), ThemeSwitcher automatically respects it and avoids double inversion.
+✦ Auto Engine: picks the right method for each page and leaves sites that already have a dark theme alone.
+✦ CSS Engine: recolors backgrounds, text, forms, and borders while keeping images, videos, and canvas untouched.
+✦ Invert Engine: protected inversion for graphics-heavy pages and web apps.
+✦ Document Reader: read PDFs and everyday documents in a built-in dark reader. Files are processed on your device.
+✦ Per-Site Settings: choose a theme, background color, brightness, contrast, and sepia for each site.
+✦ No White Flashes: dark mode is applied as the page starts loading.
+✦ Side Panel: click the toolbar icon to open the controls beside the page. It stays open and follows the site you are on.
+✦ Shortcuts: Alt+Shift+D toggles dark mode, Alt+Shift+O opens the document viewer, and the right-click menu does both.
 
-✦ Layout-Safe CSS Engine: Recolors backgrounds, typography, forms, and borders using mathematical contrast calculations while preserving images, videos, and canvas elements. Black brand logos on dark backgrounds are automatically detected and inverted for clarity.
-
-✦ Smart Invert Engine: Protected color inversion with re-inversion for media, perfect for complex graphics-heavy pages and specialized web applications.
-
-✦ Local Document & PDF Reader: Read PDFs and everyday documents (Office files, spreadsheets, Markdown and plain text) in a built-in dark reader. PDFs render through bundled PDF.js with saturation-aware canvas pixel conversion—diagrams and text stay crisp without uploading confidential files to external servers.
-
-✦ Per-Site Custom Background Colors: Choose between pitch black (#000000) for OLED displays or a soft midnight slate (#0f1115) from the side panel. Surfaces and borders adapt automatically to guarantee WCAG AA contrast.
-
-✦ Zero White Flashes: Applied at document_start before the DOM renders to protect your eyes from blinding white flashes between page navigations.
-
-✦ Side Panel: Click the toolbar icon to open the controls beside the page. The panel stays open while you switch tabs and follows the site you are on.
-
-✦ Instant Toggle: Switch dark mode on or off instantly with a single click—no page reloads required.
-
-✦ Keyboard Shortcuts & Right-Click Menu: Toggle dark mode (Alt+Shift+D), open the document viewer (Alt+Shift+O), or open the current PDF tab directly in the dark viewer (Alt+Shift+V)—each also available from the right-click menu.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 HOW TO USE IT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-1. Click the ThemeSwitcher icon in your browser toolbar on any website to open the side panel.
-2. Toggle dark mode on or off with a single click.
-3. Switch between Auto, CSS, or Invert engines, or pick a custom background color for the current domain.
-4. Click "Open file viewer" in the side panel (or press Alt+Shift+O) to open a PDF or document from your computer in dark mode.
+1. Click the toolbar icon to open the side panel.
+2. Turn dark mode on or off and pick an engine, theme, or background for the site.
+3. Click "Open file viewer" (or press Alt+Shift+O) to read a PDF or document in dark mode.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PRIVATE BY DEFAULT
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ThemeSwitcher is built with an uncompromising commitment to privacy:
-• No third-party analytics, tracking pixels, or advertising.
-• Nothing is sent on its own. There are two optional reports, and you decide on both.
-• Daily usage report: off unless you turn it on (a card asks once, and you can change it any time in Options). If you turn it on, each day you use dark mode we receive a random ID for your install (not linked to you), the date and extension version, which engines you used, and how many sites dark mode was applied on, a number only and never which sites. Turning it off deletes what we hold for your ID.
-• Report this site as broken: a button in the side panel. It shows exactly what will be sent (the site's domain, your engine and theme choice, and the extension version, never the page address, page content or an ID) and sends it only after you confirm, every time. These reports are used to fix sites and are deleted after 13 months.
-• Everything else runs 100% locally in your browser. The only other network request is when you open a web PDF in the viewer: it downloads that PDF directly from the site that hosts it, and nothing is sent to us.
-• No browsing history is collected, and page content and documents are never sent.
-• Preferences sync strictly through your personal Google Account via chrome.storage.sync.
-• Fully open-source under the MIT License for public security auditing.
+PRIVACY
+• No third-party analytics, tracking pixels, or advertising. Settings sync through your Google Account (chrome.storage.sync). Open source (MIT).
+• Nothing is sent on its own. There are two optional reports, and you decide on both:
+• Daily usage report: off unless you turn it on (a card asks once, and you can change it any time in Options). If you turn it on, each day you use dark mode we receive a random install ID (not linked to you), the date and extension version, which engines you used, and how many sites dark mode was applied on, a number only and never which sites. Turning it off deletes it.
+• Report this site as broken: a button in the side panel. It shows exactly what will be sent (the site's domain, your engine and theme choice, and the extension version, never the page address or content) and sends it only after you confirm. These reports are deleted after 13 months.
+• Everything else runs locally. The only other network request is when you open a web PDF in the viewer: it downloads straight from the site that hosts it, and nothing is sent to us.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-SUPPORT & RESOURCES
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SUPPORT
 Website: https://darkmode.pshah.fun/
 Support & Feedback: https://darkmode.pshah.fun/support.html
 Help & Guides: https://darkmode.pshah.fun/how-it-works.html

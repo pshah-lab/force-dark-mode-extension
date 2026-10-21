@@ -112,6 +112,12 @@ await test("hostile XML: still parses normal paragraphs, runs and text around un
   ]);
 });
 
+await test("out-of-range numeric entities decode to U+FFFD instead of throwing", () => {
+  const xml = `<p:sld><a:p><a:r><a:t>a&#99999999;b&#55296;c&#65;</a:t></a:r></a:p></p:sld>`;
+  const blocks = parsePptxSlideXml(xml);
+  assert.strictEqual(blocks[0].runs.map((r) => r.text).join(""), "a\uFFFDb\uFFFDcA");
+});
+
 console.log("\n=========================================");
 console.log(`🎉 Pptx Parser Results: ${passed} passed, ${failed} failed`);
 console.log("=========================================\n");

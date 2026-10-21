@@ -2,9 +2,14 @@ const MAX_PPTX_SLIDES = 500;
 const SLIDE_ENTRY_PATTERN = /^ppt\/slides\/slide(\d+)\.xml$/;
 const XML_NAMED_ENTITIES = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'" };
 
+// Out-of-range or surrogate code points would make String.fromCodePoint throw.
+function safeCodePoint(n) {
+  return n > 0x10ffff || (n >= 0xd800 && n <= 0xdfff) ? "\uFFFD" : String.fromCodePoint(n);
+}
+
 function decodeXmlEntities(text) {
   return text.replace(/&(#(\d+)|amp|lt|gt|quot|apos);/g, (match, _entity, numeric) => {
-    if (numeric) return String.fromCodePoint(Number(numeric));
+    if (numeric) return safeCodePoint(Number(numeric));
     return XML_NAMED_ENTITIES[match.slice(1, -1)] ?? match;
   });
 }

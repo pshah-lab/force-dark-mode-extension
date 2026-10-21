@@ -152,6 +152,12 @@ test("honours italic, bold-off and several <w:t> elements in one run", () => {
   ]);
 });
 
+test("out-of-range numeric entities decode to U+FFFD instead of throwing", () => {
+  const xml = `<w:p><w:r><w:t>a&#99999999;b&#55296;c&#65;</w:t></w:r></w:p>`;
+  const { blocks } = parseDocxDocument(xml);
+  assert.strictEqual(blocks[0].runs.map((r) => r.text).join(""), "a\uFFFDb\uFFFDcA");
+});
+
 console.log("\n=========================================");
 console.log(`🎉 Docx Parser Results: ${passed} passed, ${failed} failed`);
 console.log("=========================================\n");

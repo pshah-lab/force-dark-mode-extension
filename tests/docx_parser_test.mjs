@@ -83,6 +83,75 @@ test("caps output at 2000 paragraphs and marks it truncated", () => {
   assert.strictEqual(truncated, true);
 });
 
+// Hostile-XML timing regressions: each input is a few hundred KB of repeated
+// unterminated markup that made the old lazy regexes quadratic.
+const budget = 1000;
+const timed = (xml) => {
+  const t0 = performance.now();
+  parseDocxDocument(xml);
+  return performance.now() - t0;
+};
+const wrapRun = (inner) => `<w:p><w:r>${inner}</w:r></w:p>`;
+
+test("hostile XML stays linear: unterminated <w:p>", () => {
+  assert.ok(timed("<w:p>".repeat(40000)) < budget);
+});
+
+test("hostile XML stays linear: unterminated <w:r> inside a paragraph", () => {
+  assert.ok(timed("<w:p>" + "<w:r>".repeat(40000) + "</w:p>") < budget);
+});
+
+test("hostile XML stays linear: unterminated <w:pPr> inside a paragraph", () => {
+  assert.ok(timed("<w:p>" + "<w:pPr>".repeat(60000) + "<w:r><w:t>x</w:t></w:r></w:p>") < budget);
+});
+
+test("hostile XML stays linear: unterminated <w:rPr> inside a run", () => {
+  assert.ok(timed(wrapRun("<w:rPr>".repeat(60000) + "<w:t>x</w:t>")) < budget);
+});
+
+test("hostile XML stays linear: unterminated <w:t> inside a run", () => {
+  assert.ok(timed(wrapRun("<w:t>".repeat(60000))) < budget);
+});
+
+test("hostile XML stays linear: <w:t with no closing '>'", () => {
+  assert.ok(timed(wrapRun("<w:t ".repeat(60000))) < budget);
+});
+
+test("hostile XML stays linear: <w:pStyle with no closing '>'", () => {
+  assert.ok(timed("<w:p><w:pPr>" + "<w:pStyle ".repeat(30000) + "</w:pPr><w:r><w:t>x</w:t></w:r></w:p>") < budget);
+});
+
+test("hostile XML stays linear: repeated <w:b / <w:i with no closing '>'", () => {
+  for (const tag of ["w:b", "w:i"]) {
+    const rPr = "<w:rPr>" + `<${tag} `.repeat(60000) + 'w:val="0"' + "</w:rPr>";
+    assert.ok(timed(wrapRun(rPr + "<w:t>x</w:t>")) < budget, tag);
+  }
+});
+
+test("hostile XML: content before an unterminated tail is still parsed", () => {
+  const xml = `<w:p><w:r><w:t>kept</w:t></w:r></w:p><w:p><w:r><w:t>cut off`;
+  const { blocks } = parseDocxDocument(xml);
+  assert.deepStrictEqual(blocks, [{ type: "paragraph", runs: [{ text: "kept", bold: false, italic: false }] }]);
+});
+
+test("hostile XML: valid runs around an unterminated <w:t> keep their text", () => {
+  const xml = `<w:p><w:r><w:t>one</w:t></w:r><w:r><w:t>two</w:t></w:r></w:p>`;
+  const { blocks } = parseDocxDocument(xml);
+  assert.deepStrictEqual(blocks[0].runs.map((run) => run.text), ["one", "two"]);
+});
+
+test("honours italic, bold-off and several <w:t> elements in one run", () => {
+  const xml = `<w:p>
+    <w:r><w:rPr><w:b w:val="false"/><w:i/></w:rPr><w:t>a</w:t><w:t xml:space="preserve">b</w:t></w:r>
+    <w:r><w:rPr><w:bCs/><w:b w:val="0"/><w:b/></w:rPr><w:t>c</w:t></w:r>
+  </w:p>`;
+  const { blocks } = parseDocxDocument(xml);
+  assert.deepStrictEqual(blocks[0].runs, [
+    { text: "ab", bold: false, italic: true },
+    { text: "c", bold: true, italic: false },
+  ]);
+});
+
 console.log("\n=========================================");
 console.log(`🎉 Docx Parser Results: ${passed} passed, ${failed} failed`);
 console.log("=========================================\n");

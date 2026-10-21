@@ -76,11 +76,43 @@ function splitSections(code) {
   return out;
 }
 
+// True when `tag` (the text between [ and ]) is an elapsed marker: one or more of the same h, m or s.
+function isElapsedTag(tag) {
+  const first = tag.charAt(0).toLowerCase();
+  if (first !== "h" && first !== "m" && first !== "s") return false;
+  for (let i = 1; i < tag.length; i++) if (tag.charAt(i).toLowerCase() !== first) return false;
+  return true;
+}
+
 // Remove colour/condition/locale tags; keep [h] [m] [s] elapsed markers and [$X-loc] currency text.
+// Linear scan: every "[" is resolved with a single indexOf("]"), and an unterminated "[" ends the scan
+// (it and everything after it stay literal), so a hostile code cannot make this quadratic.
 function cleanTags(section) {
-  return section
-    .replace(/\[\$([^\]-]*)(?:-[^\]]*)?\]/g, (_, sym) => (sym ? `"${sym}"` : ""))
-    .replace(/\[(?!(?:h+|m+|s+)\])[^\]]*\]/gi, "");
+  let out = "";
+  let i = 0;
+  while (i < section.length) {
+    const open = section.indexOf("[$", i);
+    const close = open === -1 ? -1 : section.indexOf("]", open + 2);
+    if (close === -1) break;
+    const tag = section.slice(open + 2, close);
+    const dash = tag.indexOf("-");
+    const sym = dash === -1 ? tag : tag.slice(0, dash);
+    out += section.slice(i, open) + (sym ? `"${sym}"` : "");
+    i = close + 1;
+  }
+  const stage1 = out + section.slice(i);
+
+  out = "";
+  i = 0;
+  while (i < stage1.length) {
+    const open = stage1.indexOf("[", i);
+    const close = open === -1 ? -1 : stage1.indexOf("]", open + 1);
+    if (close === -1) break;
+    const tag = stage1.slice(open + 1, close);
+    out += stage1.slice(i, open) + (isElapsedTag(tag) ? `[${tag}]` : "");
+    i = close + 1;
+  }
+  return out + stage1.slice(i);
 }
 
 function stripLiterals(section) {
@@ -240,10 +272,14 @@ function formatDateSection(section, serial, date1904) {
   return out;
 }
 
+// Excel itself rejects number formats longer than 255 characters; the code comes from untrusted styles.xml.
+const MAX_FORMAT_CODE_LENGTH = 255;
+
 export function formatCellValue(value, formatCode, opts = {}) {
   try {
     if (typeof value !== "number" || !Number.isFinite(value)) return String(value);
     const code = formatCode == null ? "General" : String(formatCode);
+    if (code.length > MAX_FORMAT_CODE_LENGTH) return formatGeneral(value);
     if (code.trim() === "" || /^general$/i.test(code.trim())) return formatGeneral(value);
 
     const sections = splitSections(code);

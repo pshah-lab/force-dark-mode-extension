@@ -127,6 +127,77 @@ await test("quoted text is not a date token", () => {
   assert.strictEqual(formatCellValue(45000, "yyyy \"day\""), "2023 day");
 });
 
+// Bracket tags: colours, conditions and locale are dropped, [$sym-loc] keeps its symbol, [h]/[m]/[s] stay.
+await test("bracket tags: strips colour/condition/locale tags and keeps currency text", () => {
+  assert.strictEqual(formatCellValue(1234.5, "[$\u20ac-407]#,##0.00"), "\u20ac1,234.50");
+  assert.strictEqual(formatCellValue(1234.5, "[$USD]#,##0"), "USD1,235");
+  assert.strictEqual(formatCellValue(1234.5, "[$-409]#,##0"), "1,235");
+  assert.strictEqual(formatCellValue(1234.5, "[$]#,##0"), "1,235");
+  assert.strictEqual(formatCellValue(1234.5, "[Blue][>100]#,##0"), "1,235");
+  assert.strictEqual(formatCellValue(45000, "[$-F800]dddd, mmmm dd, yyyy"), "Wednesday, March 15, 2023");
+});
+
+await test("bracket tags: elapsed markers survive, case-insensitively", () => {
+  assert.strictEqual(formatCellValue(1.5, "[h]:mm:ss"), "36:00:00");
+  assert.strictEqual(formatCellValue(1.5, "[HH]:MM:SS"), "36:00:00");
+  assert.strictEqual(formatCellValue(1.5 + 30 / 1440, "[hh]:[mm]"), "36:2190");
+  assert.strictEqual(formatCellValue(90 / 1440, "[mm]:ss"), "90:00");
+  assert.strictEqual(formatCellValue(1.5, "[Red][h]:mm"), "36:00");
+});
+
+await test("bracket tags: an unterminated [ is literal text", () => {
+  assert.strictEqual(formatCellValue(12, "0[abc"), "12[abc");
+  assert.strictEqual(formatCellValue(12, "0[$abc"), "12[$abc");
+  assert.strictEqual(formatCellValue(12, "[Red]0[x"), "12[x");
+  assert.strictEqual(formatCellValue(12, "[$X]0[$Z"), "X12[$Z");
+});
+
+// Format-code length cap (Excel's own limit is 255): longer codes are not interpreted.
+await test("format code over 255 characters falls back to General", () => {
+  assert.strictEqual(formatCellValue(1234.5, "0.00" + "x".repeat(300)), "1234.5");
+  assert.strictEqual(formatCellValue(45000, "yyyy-mm-dd" + " ".repeat(300)), "45000");
+});
+
+await test("format code of exactly 255 characters is still interpreted", () => {
+  const code = "0.00" + "\"" + "x".repeat(249) + "\"";
+  assert.strictEqual(code.length, 255);
+  assert.strictEqual(formatCellValue(3.14159, code), "3.14" + "x".repeat(249));
+});
+
+// Hostile formatCode regressions: a 255-character code (the largest accepted) of unterminated '[' / '[$'
+// tags used to cost several times a benign code of the same length in every numeric cell, and one workbook
+// can hold millions of cells. Each hostile code is timed against the same code with its '[' swapped for a
+// neutral letter (identical length and tokenising work, no brackets); the ratio keeps the test machine-independent.
+const HOSTILE_CODES = [
+  "[".repeat(255),
+  "[$".repeat(127),
+  "[$-".repeat(85),
+  "[h".repeat(127),
+  "[$[".repeat(85),
+  "0[".repeat(127),
+];
+const timeCells = (code, cells) => {
+  const t0 = performance.now();
+  for (let i = 0; i < cells; i++) formatCellValue(i + 0.5, code);
+  return performance.now() - t0;
+};
+for (const code of HOSTILE_CODES) {
+  await test(`hostile format code costs no more per cell than a benign one: ${JSON.stringify(code.slice(0, 8))}... (${code.length} chars)`, () => {
+    assert.ok(code.length <= 255);
+    const benign = code.replaceAll("[", "x");
+    const cells = 4000;
+    timeCells(code, cells);
+    timeCells(benign, cells);
+    let hostileMs = Infinity;
+    let benignMs = Infinity;
+    for (let rep = 0; rep < 5; rep++) {
+      hostileMs = Math.min(hostileMs, timeCells(code, cells));
+      benignMs = Math.min(benignMs, timeCells(benign, cells));
+    }
+    assert.ok(hostileMs < benignMs * 1.6 + 5, `hostile ${hostileMs.toFixed(1)}ms vs benign ${benignMs.toFixed(1)}ms for ${cells} cells`);
+  });
+}
+
 console.log("\n=========================================");
 console.log(`🎉 Number Format Results: ${passed} passed, ${failed} failed`);
 console.log("=========================================\n");

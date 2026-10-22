@@ -1,9 +1,10 @@
 # ThemeSwitcher Privacy, Security & National/International Compliance Report
 
 **Product:** Force Dark Mode - ThemeSwitcher  
-**Version:** 1.6.1  
+**Version:** 2.1.0 (Policy Version 2.1.0, covers 2.0.0 and 2.1.0)  
 **Manifest Version:** 3  
 **Audit Date:** September 23, 2026  
+**Last Updated:** October 17, 2026  
 **Auditor / Roles:** Application Security Engineer, Privacy Engineer, Chrome Web Store Specialist  
 **Status:** Technical Controls Implemented to Support Identified Requirements (Subject to Qualified Legal Review)  
 
@@ -16,8 +17,8 @@ ThemeSwitcher (Force Dark Mode) is a client-side browser extension and companion
 This comprehensive audit evaluated ThemeSwitcher against national and international data protection standards, including India’s **Digital Personal Data Protection Act, 2023 (DPDP Act)**, the European Union's **General Data Protection Regulation (EU GDPR)**, the **UK GDPR / PECR**, **US State Privacy Laws (CCPA/CPRA)**, and the **Chrome Web Store Developer Program Policies**.
 
 ### Key Findings & Implemented Controls:
-- **100% Local-First Architecture:** The extension runs inside the user's browser sandbox. Settings, themes, custom CSS and documents never leave the device. The only network traffic is the optional, anonymous, opt-in usage report (off by default) to a first-party endpoint hosted on Vercel with a Supabase database.
-- **Opt-in Telemetry Only & Zero Cookies:** The extension contains zero tracking pixels, third-party analytics SDKs, or remote error trackers. First-party usage statistics are opt-in, off by default, anonymous (random ID, day, versions, OS family, UI language, yes/no usage flags), handled by a server function that does not store IP addresses (the hosting platform's request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers), and can be turned off in Options > Usage stats; only combined totals (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, with groups of fewer than 10 installs never shown; Delete my data there removes the records but should be used before turning stats off or uninstalling. All third-party counter network requests on the companion website were eliminated.
+- **100% Local-First Architecture:** The extension runs inside the user's browser sandbox. Settings, themes, custom CSS and documents never leave the device. The only data that can leave the device is (a) from version 2.1.0, a broken-site report that the user starts and confirms every time (`site` domain only, `engine`, `theme`, `version`; no ID; purged after 13 months), and (b) an optional usage report that is off by default (2.1.0: random `id`, `day`, `version`, engine flags, `sites` count; 2.0.0: the fields in PRIVACY.md), both sent to a first-party endpoint hosted on Vercel with a Supabase database. The only other network request is downloading a web PDF from its host when opened in the viewer.
+- **Opt-in Telemetry Only & Zero Cookies:** The extension contains zero tracking pixels, third-party analytics SDKs, or remote error trackers. First-party usage reports are opt-in, off by default and pseudonymous (2.1.0: random ID, day, version, engine flags, site count; 2.0.0: random ID, day, versions, OS family, UI language, yes/no usage flags), and broken-site reports carry no ID. Both are handled by a server function that does not store IP addresses (the hosting platform's request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers), and the 2.1.0 usage report can be turned off in Options (which deletes its server records). Reports are never sold or shared and are purged after 13 months. Only combined totals from the 2.0.0 reports (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, with groups of fewer than 10 installs never shown; in 2.0.0, Delete my data in Options > Usage stats removes the records but should be used before turning stats off or uninstalling. All third-party counter network requests on the companion website were eliminated.
 - **Data Minimization:** Runtime message passing was hardened to transmit strictly sanitized domain hostnames (`host`), preventing URL path and query parameter leakage.
 - **Self-Service User Rights:** A dedicated "Privacy & Data Management" center was introduced in the Options page, giving users autonomous control to export settings (GDPR Art. 20 Portability) and erase all stored preferences (DPDP Sec. 12 / GDPR Art. 17 Erasure) with one click.
 - **Security Hardening:** Fallback iframe sandboxing was tightened to remove `allow-same-origin`, and the document viewer was refactored to eliminate all `innerHTML` usage in favor of safe DOM node creation.
@@ -43,6 +44,10 @@ ThemeSwitcher operates across three distinct operational boundaries:
 | **DI-4** | Global Defaults Config | Options page | Fallback preferences | `chrome.storage.sync` | User-managed | None | Legitimate Interest |
 | **DI-5** | Viewer Display Settings | Viewer inputs | Zoom, contrast, font size | `chrome.storage.sync` | User-managed | None | Legitimate Interest |
 | **DI-6** | In-Memory Style Tokens | DOM styles | Contrast calculation | Ephemeral RAM | Discarded in ms | None | Technical Necessity |
+| **DI-7** | Usage Statistics Report, 2.0.0 only (opt-in): random ID, day, version, Chrome major version, OS family, UI language, yes/no flags | Service worker | Count users and features; combined totals published | Local `chrome.storage.local`; remote first-party database | 13 months; Delete my data | First-party endpoint (Vercel, Supabase) | Consent |
+| **DI-8** | Broken-Site Report, 2.1.0+ (user-confirmed each time): `site` (domain only), `engine`, `theme`, `version`; no ID | Service worker | Find and fix sites that look wrong | Remote first-party database only | 13 months; cannot be deleted individually (no ID) | First-party endpoint (Vercel, Supabase) | Consent, each time |
+| **DI-9** | Usage Report, 2.1.0+ (opt-in): random `id`, `day`, `version`, `engines.*`, `sites` count | Service worker | Count daily and weekly users, retention, versions | Local `chrome.storage.local`; remote first-party database | 13 months; turning the report off deletes the records | First-party endpoint (Vercel, Supabase) | Consent |
+| **DI-10** | Local notes: domains reported today; daily list of hashes of site names | Service worker | "Already reported today"; count each site once | `chrome.storage.local`, never sent | Today / replaced each day | None | Consent / Service Fulfillment |
 
 ---
 
@@ -58,7 +63,7 @@ ThemeSwitcher operates across three distinct operational boundaries:
                                                             (Encrypted User Google Sync)
 ```
 
-1. **No Page Data Leaves the Client:** No URLs, page contents, form fields, passwords, or cookies ever leave the client. The only outbound request is the opt-in anonymous usage report (and the request made by Delete my data, used before turning stats off or uninstalling), sent by the service worker alone to `https://pshah.fun/api/darkmode-telemetry` (or `-delete`); automated tests confine `fetch` to that one file. No host permission is involved: the endpoint answers CORS only for the extension's own origin.
+1. **No Page Data Leaves the Client:** No page URLs or paths, page contents, form fields, passwords, or cookies ever leave the client. The only domain that can be sent is the one in a broken-site report the user confirms. The outbound requests are the user-confirmed broken-site report (`https://pshah.fun/api/darkmode-report`), the opt-in usage report (`https://pshah.fun/api/darkmode-telemetry`) and its deletion request (`-delete`, made when the 2.1.0 report is turned off or by Delete my data in 2.0.0), sent by the service worker alone; automated tests confine network requests to those sender files. No host permission is involved: the endpoint answers CORS only for the extension's own origin.
 2. **Local Sync:** `chrome.storage.sync` synchronizes directly through the user's signed-in Google account without passing through any intermediate proxy.
 
 ---
@@ -68,10 +73,10 @@ ThemeSwitcher operates across three distinct operational boundaries:
 | Permission | Scope | Justification & Need | Risk Assessment | Mitigation |
 | ---------- | ----- | -------------------- | --------------- | ---------- |
 | `storage` | Extension permissions | Persists per-site rules across sessions. Essential for core utility. | Low | Key sanitization (`isSafeKey`) prevents prototype pollution. |
-| `activeTab` | Extension permissions | Inspects active tab on popup click to calculate luminance and toggle theme. | Low | Only granted upon explicit user click; terminates on navigation. |
+| `activeTab` | Extension permissions | Inspects active tab when the popup (2.0.0) or side panel (2.1.0+) is opened to calculate luminance and toggle theme. | Low | Only granted upon explicit user click; terminates on navigation. |
 | `<all_urls>` | `content_scripts.matches` | Injects CSS rules at `document_start` to eliminate blinding white screen flashes. | Medium | Script runs in isolated world; zero network calls; zero text reading. |
 
-No host permissions are declared. The opt-in usage report and the Delete my data request (used before turning stats off or uninstalling) reach the developer's endpoint because it answers CORS only for the extension's own origin; only `telemetrySender.js` uses the network, and it is off by default.
+No host permissions are declared. The reports and deletion request reach the developer's endpoint because it answers CORS only for the extension's own origin. Version 2.1.0 also declares `sidePanel`, which shows the controls in the side panel and gives no access to any page.
 
 ---
 
@@ -87,7 +92,7 @@ No host permissions are declared. The opt-in usage report and the Delete my data
 
 ## 7. Privacy Audit
 
-- **Tracking & Telemetry:** Verified 0 third-party analytics SDKs, 0 tracking pixels, and 0 crash reporters. First-party usage statistics exist but are opt-in and off by default.
+- **Tracking & Telemetry:** Verified 0 third-party analytics SDKs, 0 tracking pixels, and 0 crash reporters. First-party reports exist: the usage report is opt-in and off by default, and the broken-site report is sent only when the user confirms it.
 - **Zero Tracking Cookies:** Both extension and companion website operate with 0 cookies.
 - **Website Network Cleanliness:** Removed all external API calls (`abacus`, `countapi`) from `website/js/main.js`. Companion site is 100% static and private.
 - **Do Not Track:** Respects `navigator.doNotTrack` and Global Privacy Control.
@@ -108,10 +113,10 @@ No host permissions are declared. The opt-in usage report and the Delete my data
 ## 9. EU/EEA Compliance Assessment (GDPR)
 
 - **Territorial Scope (Art. 3):** Applicable via availability on CWS in the EEA.
-- **Lawful Basis (Art. 6):** Art. 6(1)(b) (Performance of contract/request) and Art. 6(1)(f) (Legitimate interest) for local settings; Art. 6(1)(a) (Consent) for the opt-in usage statistics.
-- **Data Minimization (Art. 5(1)(c)):** Local settings are minimized to site hostname keys; the opt-in usage report is limited to a random ID, day, versions, OS family, UI language and yes/no flags.
+- **Lawful Basis (Art. 6):** Art. 6(1)(b) (Performance of contract/request) and Art. 6(1)(f) (Legitimate interest) for local settings; Art. 6(1)(a) (Consent) for the broken-site report (each time) and the opt-in usage reports.
+- **Data Minimization (Art. 5(1)(c)):** Local settings are minimized to site hostname keys; the broken-site report is limited to domain, engine, theme and version, and the usage report to (2.1.0) a random ID, day, version, engine flags and a site count, or (2.0.0) a random ID, day, versions, OS family, UI language and yes/no flags.
 - **Data Subject Rights (Arts. 15–21):** Access (Options view), Erasure (Options wipe button), Portability (JSON export button).
-- **International Transfers (Chapter V):** None for local data. Opt-in usage statistics are processed on Vercel and Supabase infrastructure in regions selected by the developer and not fixed in this document (see section 14). The random ID is treated as pseudonymous personal data under consent (Art. 6(1)(a)).
+- **International Transfers (Chapter V):** None for local data. Reports are processed on Vercel and Supabase infrastructure in regions selected by the developer and not fixed in this document (see section 14). The random ID is treated as pseudonymous personal data under consent (Art. 6(1)(a)).
 
 ---
 
@@ -126,7 +131,7 @@ No host permissions are declared. The opt-in usage report and the Delete my data
 
 - **Commercial Thresholds:** Below revenue ($25M) and consumer volume thresholds.
 - **Consumer Disclosures:** Explicit certification that personal information is **NOT sold and NOT shared**.
-- **COPPA Compliance:** Without usage statistics enabled, no personal data is collected from children under 13; the optional usage ID is pseudonymous and not collected from users known to be children.
+- **COPPA Compliance:** Without a usage report enabled, no personal data is collected from children under 13 (a broken-site report carries no ID); the optional usage ID is pseudonymous and not collected from users known to be children.
 
 ---
 
@@ -148,14 +153,14 @@ No host permissions are declared. The opt-in usage report and the Delete my data
 
 ## 14. Third-Party Vendor Assessment
 
-- **Processors:** No analytics or marketing processors. The first-party opt-in usage endpoint is hosted on Vercel Inc. with a Supabase database, acting as infrastructure only. Processing locations: Vercel and Supabase regions selected by the developer; not fixed in this document.
+- **Processors:** No analytics or marketing processors. The first-party endpoints for the broken-site report and the opt-in usage reports are hosted on Vercel Inc. with a Supabase database, acting as infrastructure only. Processing locations: Vercel and Supabase regions selected by the developer; not fixed in this document.
 - Platform providers: Google LLC (Chrome Sync) and GitHub Inc. (Static hosting).
 
 ---
 
 ## 15. Data Retention
 
-- **Server-Side Retention:** 0 days when the user never opts in. For users who opt in to usage statistics, records are purged automatically after 13 months, or earlier through Delete my data (to be used before turning usage stats off or uninstalling, since that discards the random ID).
+- **Server-Side Retention:** Nothing is stored for users who neither opt in nor send a broken-site report. Broken-site reports (no ID, so not individually deletable) and usage reports are purged automatically after 13 months. The 2.1.0 usage report is deleted earlier by turning it off in Options; in 2.0.0 use Delete my data before turning usage stats off or uninstalling, since that discards the random ID.
 - **Client-Side Retention:** Retained locally until user erases data or uninstalls the extension.
 
 ---
@@ -164,7 +169,7 @@ No host permissions are declared. The opt-in usage report and the Delete my data
 
 Users exercise rights directly in the extension without submitting identification documents:
 - **Export Settings:** Options -> Export Settings (JSON).
-- **Erase All Data:** Options -> Erase All Stored Data.
+- **Erase All Data:** Options -> Erase All Stored Data. Turn off Usage report (2.1.0) to delete its server records; broken-site reports carry no ID and are purged after 13 months.
 - **Grievances:** Email to `pshah.lab@gmail.com`.
 
 ---
@@ -185,9 +190,9 @@ Comprehensive STRIDE and Privacy threat model completed in `docs/security/threat
 ## 19. Compliance Matrix
 
 18 major compliance requirements evaluated:
-- **16 GREEN (Implemented & Verified)**
-- **1 YELLOW (Draft Terms of Service requiring qualified counsel review)**
-- **1 GRAY (Formal DPO not applicable)**
+- **14 GREEN (Implemented & Verified)**
+- **2 YELLOW (Draft Terms of Service requiring qualified counsel review; cross-border handling of reports on Vercel and Supabase in developer-selected regions)**
+- **2 GRAY (Formal DPO and formal DPIA not applicable)**
 - **0 RED Gaps**
 
 ---
@@ -259,9 +264,9 @@ Comprehensive STRIDE and Privacy threat model completed in `docs/security/threat
 
 ## 24. Release Checklist
 
-- [x] No unnecessary permissions requested (`storage`, `activeTab`, `contextMenus`, `<all_urls>` content script; no host permissions, since the usage-statistics endpoint answers CORS for the extension origin).
+- [x] No unnecessary permissions requested (`storage`, `activeTab`, `contextMenus`, `<all_urls>` content script; `sidePanel` in 2.1.0; no host permissions, since the report endpoints answer CORS for the extension origin).
 - [x] No server secrets or API keys in client code.
-- [x] Outbound network requests confined to the single opt-in usage-statistics sender (`src/background/telemetrySender.js`); zero elsewhere in extension code.
+- [x] Outbound requests to the developer's endpoints confined to the background senders (`src/background/usageSender.js`, `src/background/siteReportSender.js`); the only other request is a web PDF download from its host in the viewer.
 - [x] Zero third-party telemetry or trackers on companion website.
 - [x] Strict Content Security Policy implemented (`script-src 'self'; object-src 'none'`).
 - [x] Safe DOM node creation; zero `innerHTML` in extension.

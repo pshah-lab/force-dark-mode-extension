@@ -1,6 +1,7 @@
 # ThemeSwitcher Privacy Impact Assessment (PIA / DPIA)
 
 **Evaluation Date:** September 23, 2026  
+**Last Updated:** October 17, 2026 (Policy Version 2.1.0)  
 **Frameworks:** GDPR Article 35 (Data Protection Impact Assessment) & EDPB Guidelines on DPIAs (wp248rev.01)  
 
 ---
@@ -21,9 +22,9 @@ The EDPB provides nine criteria to determine whether processing is "likely to re
 | --------- | -------------------------------- | --------------- |
 | **1. Evaluation or scoring (Profiling)** | ThemeSwitcher does not evaluate or score individuals. | :x: No |
 | **2. Automated decision-making with legal effect** | Zero automated decisions affecting user legal status. | :x: No |
-| **3. Systematic monitoring** | ThemeSwitcher does not monitor user browsing behavior or track users across sites. | :x: No |
+| **3. Systematic monitoring** | ThemeSwitcher does not monitor user browsing behavior or track users across sites. The 2.1.0 usage report sends only a count of sites (never which sites), is off by default, and a broken-site report is sent only when the user confirms it. | :x: No |
 | **4. Sensitive data or data of highly personal nature** | ThemeSwitcher never collects special categories of data (GDPR Art. 9/10), passwords, financial details, or biometric data. | :x: No |
-| **5. Data processed on a large scale** | While the extension has thousands of users, processing is 100% decentralized and local on client machines. | :x: No |
+| **5. Data processed on a large scale** | While the extension has thousands of users, processing is decentralized and local on client machines; the only server-side data are the opt-in usage reports and the user-confirmed broken-site reports, kept for at most 13 months. | :x: No |
 | **6. Matching or combining datasets** | ThemeSwitcher does not match or combine datasets with any third party. | :x: No |
 | **7. Data concerning vulnerable subjects (Children)** | The product is a general accessibility utility not targeting children. | :x: No |
 | **8. Innovative use or applying new tech solutions** | Standard browser CSS custom property injection and HTML5 canvas rendering. | :x: No |
@@ -38,6 +39,6 @@ Because **zero of the nine high-risk criteria** are met, formal regulatory submi
 
 To maintain a low-risk posture throughout the application lifecycle:
 1. **Decentralized Local Storage:** Preferences are stored exclusively in `chrome.storage.sync`.
-2. **No Egress:** Content scripts do not send network requests; zero data leaves the client sandbox.
-3. **One-Click Erasure:** Users can erase all stored preferences immediately via the Options page.
+2. **Minimal Egress:** Content scripts do not send network requests. The background service worker alone sends the user-confirmed broken-site report (domain, engine, theme, version; no ID) and the opt-in usage report (off by default); neither includes page content, documents or typed text. The server function does not store IP addresses.
+3. **One-Click Erasure:** Users can erase all stored preferences immediately via the Options page, and turning off the 2.1.0 usage report deletes its server records. Reports are purged automatically after 13 months.
 4. **Transparent Governance:** All source code and architectural models are openly auditable on GitHub.

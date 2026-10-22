@@ -1,6 +1,7 @@
 # Chrome Web Store Developer Program Policy Compliance Audit
 
 **Audit Date:** September 23, 2026  
+**Last Updated:** October 17, 2026 (Policy Version 2.1.0)  
 **Extension Name:** Force Dark Mode - ThemeSwitcher  
 **Manifest Version:** 3  
 **Status:** Certified Compliant with Chrome Web Store Developer Program Policies  
@@ -28,6 +29,7 @@
 | ------------------- | -------------- | -------------------------------- | --------------------- | ----------------------------- |
 | `storage` | `manifest.json:permissions` | Required to save user's dark mode preferences (enabled state, engine, background color) per website and global defaults across browser sessions. | In-memory variables only | In-memory storage loses user preferences upon tab or browser close, breaking core functionality. |
 | `activeTab` | `manifest.json:permissions` | Grants temporary active tab inspection when the user clicks the extension popup, allowing immediate page recoloring and luminance checks. | `<all_urls>` host permission | `activeTab` is significantly more privacy-preserving than broad host permissions because it only activates on user click. |
+| `sidePanel` (version 2.1.0 and later) | `manifest.json:permissions` | Shows the extension's controls in the browser's side panel instead of a popup. It gives no access to any page. | Keeping the popup | The side panel hosts the broken-site report and usage report controls alongside the theme controls. |
 | `<all_urls>` | `manifest.json:content_scripts.matches` | Required to inject CSS override rules at `document_start` across arbitrary user-visited websites before initial DOM rendering. | Injection on user click via `activeTab` | Without `document_start` injection via content script matching `<all_urls>`, websites render as bright white before turning dark, causing severe white flash ("flashbang effect") that defeats dark mode utility. |
 
 ---
@@ -53,6 +55,8 @@
 
 In the Chrome Web Store Developer Dashboard, the developer certifies:
 - **No Sale of User Data:** ThemeSwitcher does not sell user data to third parties.
-- **No Use for Unrelated Purposes:** Preferences are used solely for theme rendering.
+- **Data the extension can send:** (a) from version 2.1.0, a broken-site report that the user starts and confirms every time (domain only, engine, theme as a built-in name or custom or default, version; no ID; purged after 13 months); (b) an optional usage report that is off by default (2.1.0: random ID, UTC day, version, engine flags, count of sites; 2.0.0: the fields listed in PRIVACY.md). Consent is the lawful basis. Both go to a first-party endpoint hosted on Vercel and Supabase, with no analytics company involved. The server function does not store IP addresses. The only other network request is downloading a web PDF from its host when it is opened in the viewer.
+- **No host permissions:** the endpoint answers CORS only for the extension's own origin, so the background service worker reaches it without any host permission.
+- **No Use for Unrelated Purposes:** Preferences are used solely for theme rendering. Broken-site reports are used only to find and fix sites that look wrong; usage reports only to count users, retention and versions in use.
 - **No Creditworthiness / Lending Use:** Not applicable.
 - **No Third-Party Advertising:** ThemeSwitcher contains zero advertisements.

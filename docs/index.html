@@ -3,10 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Dark Mode Extension for Chrome | Force Dark Mode - ThemeSwitcher</title>
+    <title>Dark Mode Extension for Chrome &amp; PDFs | Force Dark Mode</title>
     <meta
       name="description"
-      content="Apply smart, layout-safe dark mode to websites, PDFs, and local documents. Features intelligent Auto detection, custom CSS palettes, and no tracking."
+      content="Force Dark Mode – ThemeSwitcher darkens any website, PDF and local document in Chrome. Free, open source, no white flash, and nothing is sent unless you opt in."
     />
     <link rel="canonical" href="https://darkmode.pshah.fun/" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -17,21 +17,26 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://darkmode.pshah.fun/" />
-    <meta property="og:title" content="Dark Mode Extension for Chrome | Force Dark Mode - ThemeSwitcher" />
+    <meta property="og:site_name" content="Force Dark Mode – ThemeSwitcher" />
+    <meta property="og:title" content="Dark Mode Extension for Chrome &amp; PDFs | Force Dark Mode" />
     <meta
       property="og:description"
-      content="Transform websites, documents, and PDFs into a soothing dark theme. Intelligent engine selection, customizable palettes, and privacy by default."
+      content="Darken any website, PDF and local document in Chrome. Free, open source, private by default."
     />
-    <meta property="og:image" content="https://darkmode.pshah.fun/assets/icon128.png" />
+    <meta property="og:image" content="https://darkmode.pshah.fun/assets/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="YouTube in its light theme beside the same page darkened by Force Dark Mode – ThemeSwitcher" />
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Dark Mode Extension for Chrome | Force Dark Mode - ThemeSwitcher" />
+    <meta name="twitter:title" content="Dark Mode Extension for Chrome &amp; PDFs | Force Dark Mode" />
     <meta
       name="twitter:description"
-      content="Intelligent dark mode for websites and PDFs. private by default, zero white flashes, customizable palettes."
+      content="Darken any website, PDF and local document in Chrome. Free, open source, private by default."
     />
-    <meta name="twitter:image" content="https://darkmode.pshah.fun/assets/icon128.png" />
+    <meta name="twitter:image" content="https://darkmode.pshah.fun/assets/og-image.jpg" />
+    <meta name="twitter:image:alt" content="YouTube in its light theme beside the same page darkened by Force Dark Mode – ThemeSwitcher" />
 
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
@@ -50,7 +55,7 @@
             "@id": "https://darkmode.pshah.fun/#software",
             "name": "Force Dark Mode - ThemeSwitcher",
             "operatingSystem": "Chrome, Chromium, Edge, Brave, Opera",
-            "applicationCategory": "BrowserExtension",
+            "applicationCategory": "BrowserApplication",
             "applicationSubCategory": "AccessibilityApplication",
             "description": "Smart dark mode browser extension for websites, PDFs, and local documents with Auto, CSS, and Invert engines.",
             "offers": {
@@ -59,7 +64,9 @@
               "priceCurrency": "USD"
             },
             "url": "https://darkmode.pshah.fun/",
-            "softwareVersion": "2.0.0",
+            "downloadUrl": "https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke",
+            "image": "https://darkmode.pshah.fun/assets/og-image.jpg",
+            "softwareVersion": "2.1.0",
             "license": "https://opensource.org/licenses/MIT",
             "author": { "@id": "https://pshah.fun/#person" },
             "publisher": { "@id": "https://darkmode.pshah.fun/#organization" }
@@ -127,6 +134,22 @@
                 "acceptedAnswer": {
                   "@type": "Answer",
                   "text": "Yes. ThemeSwitcher includes a built-in Dark Document Viewer that renders PDF files locally using PDF.js and saturation-aware pixel conversion."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does ThemeSwitcher work on Google Docs?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "Not on the document itself. Google Docs draws the page on a canvas, and no CSS-based dark mode can recolor canvas content. The toolbars and menus around it do darken."
+                }
+              },
+              {
+                "@type": "Question",
+                "name": "Does ThemeSwitcher work in Edge, Brave or Opera?",
+                "acceptedAnswer": {
+                  "@type": "Answer",
+                  "text": "It is built for Chrome, and Chromium-based browsers that install from the Chrome Web Store can use it too. In Microsoft Edge, turn on \"Allow extensions from other stores\" first."
                 }
               }
             ]
@@ -258,7 +281,7 @@
           </h1>
 
           <p class="hero-subtitle">
-            Transform every website, document, and local PDF into an eye-friendly, customizable dark theme.
+            Force Dark Mode – ThemeSwitcher is a free, open-source Chrome extension that turns every website, document, and local PDF into an eye-friendly, customizable dark theme.
             Powered by layout-safe CSS recoloring, native dark detection, and no tracking.
           </p>
 
@@ -289,7 +312,7 @@
           <div class="hero-pills">
             <div class="pill-item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-success)" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>No browsing data collected</span>
+              <span>Private by default</span>
             </div>
             <div class="pill-item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-success)" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -424,7 +447,7 @@
         <div class="container">
           <div style="text-align: center; max-width: 720px; margin: 0 auto 4rem;">
             <div class="hero-badge" style="margin-bottom: 1rem;">Engineered for Visual Perfection</div>
-            <h2 id="bento-heading">Six Pillars of Superior Dark Browsing</h2>
+            <h2 id="bento-heading">Features of the Force Dark Mode extension</h2>
             <p>
               Traditional inverters treat the web like static images, breaking modern web apps and blinding you on page loads. ThemeSwitcher is built for the modern web.
             </p>
@@ -462,7 +485,7 @@
                 </div>
                 <h3>Offline Dark PDF Reader</h3>
                 <p>
-                  Reads both local files and web PDF tabs with bundled PDF.js. Saturation-aware pixel conversion darkens paper margins while keeping charts vibrant.
+                  Reads both local files and web PDF tabs with bundled PDF.js. Saturation-aware pixel conversion darkens paper margins while keeping charts vibrant. See <a href="blog/dark-mode-pdf-guide.html">how the dark PDF reader works</a>.
                 </p>
               </div>
               <div class="bento-visual-preview pdf-mock-page">
@@ -624,8 +647,8 @@
         <div class="container">
           <div style="text-align: center; max-width: 720px; margin: 0 auto 3.5rem;">
             <div class="hero-badge" style="margin-bottom: 1rem;">Factual Matrix</div>
-            <h2 id="comparison-heading">Why Choose ThemeSwitcher?</h2>
-            <p>An honest, technical comparison between ThemeSwitcher, browser experimental flags, and traditional inverters.</p>
+            <h2 id="comparison-heading">ThemeSwitcher vs other dark mode extensions</h2>
+            <p>An honest, technical comparison between ThemeSwitcher, browser experimental flags, and traditional inverters. For extension-to-extension detail, read the <a href="blog/themeswitcher-vs-dark-reader.html">full comparison with Dark Reader</a>.</p>
           </div>
 
           <div class="table-glass-wrap">
@@ -748,6 +771,26 @@
                 When you open a PDF or click "Open PDF in dark viewer" in the popup, ThemeSwitcher opens the document in an offline reader powered by local PDF.js. It converts pixels using a saturation-aware algorithm that preserves colors in charts and illustrations while darkening white page backgrounds.
               </div>
             </div>
+
+            <div class="faq-item">
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>Does ThemeSwitcher work on Google Docs?</span>
+                <span class="faq-icon" aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                Not on the document itself. Google Docs draws the page on a canvas, and no CSS-based dark mode can recolor canvas content. The toolbars and menus around it do darken.
+              </div>
+            </div>
+
+            <div class="faq-item">
+              <button class="faq-question" type="button" aria-expanded="false">
+                <span>Does ThemeSwitcher work in Edge, Brave or Opera?</span>
+                <span class="faq-icon" aria-hidden="true">+</span>
+              </button>
+              <div class="faq-answer" hidden>
+                It is built for Chrome, and Chromium-based browsers that install from the Chrome Web Store can use it too. In Microsoft Edge, turn on “Allow extensions from other stores” first.
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -758,7 +801,7 @@
       <section class="container trends-section" aria-labelledby="trends-heading" style="padding: 2rem 0 5rem;">
         <div style="text-align: center; max-width: 720px; margin: 0 auto 3rem;">
           <div class="hero-badge" style="margin-bottom: 1rem;">Independent Analytics</div>
-          <h2 id="trends-heading">Verified Community Adoption</h2>
+          <h2 id="trends-heading">How many people use Force Dark Mode?</h2>
           <p>
             1,270+ weekly users on the Chrome Web Store (developer dashboard, September 2026). Install trends below are tracked independently by Chrome-Stats.
           </p>

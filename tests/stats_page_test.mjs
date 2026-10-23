@@ -216,7 +216,7 @@ await test("stats.html has required wording, no third-party script, standard chr
   assert.ok(/30 days/.test(s) && /once an hour/.test(s));
   assert.ok(/href="privacy\.html[^"]*"/.test(s));
   const scripts = [...s.matchAll(/<script\b[^>]*\bsrc="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepStrictEqual(scripts.sort(), ["js/main.js", "js/stats.js"]);
+  assert.deepStrictEqual(scripts.sort(), ["js/clarity-consent.js", "js/main.js", "js/stats.js"]);
   assert.ok(!/https?:\/\/pshah\.fun\/api/.test(s), "URL only in stats.js");
   assert.ok(s.includes('class="site-header"') && s.includes('class="site-footer"'));
   assert.ok(/<h1[\s>]/.test(s));

@@ -11,6 +11,12 @@
       "port": 3000
     },
     {
+      "name": "site",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd /Users/pshah/Documents/force-dark-mode-extension/docs && exec /Users/pshah/.pyenv/versions/3.13.15/bin/python3 -m http.server 8080"],
+      "port": 8080
+    },
+    {
       "name": "convert-preview",
       "runtimeExecutable": "npm",
       "runtimeArgs": [

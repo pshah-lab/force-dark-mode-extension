@@ -151,6 +151,11 @@ test("only docs/js/stats.js may reference the usage statistics endpoint, and not
       continue;
     }
     assert.ok(!src.includes("darkmode-stats"), `docs/js/${f} must not reference the stats endpoint`);
+    if (f === "clarity-consent.js") {
+      // The one consent-gated third-party script on the website; see the consent test below.
+      assert.deepStrictEqual(urls, ["https://www.clarity.ms/tag/"], "clarity-consent.js may contain exactly the Clarity tag URL");
+      continue;
+    }
     for (const url of urls) {
       assert.ok(
         url.startsWith("https://pshah.fun/api/darkmode-visit") || url.startsWith("https://chromewebstore.google.com/"),
@@ -158,6 +163,17 @@ test("only docs/js/stats.js may reference the usage statistics endpoint, and not
       );
     }
   }
+});
+
+test("Clarity loads only after consent, and never on Do Not Track or non-production hosts", () => {
+  const src = fs.readFileSync(path.join(rootDir, "docs/js/clarity-consent.js"), "utf8");
+  const calls = src.match(/loadClarity\(\)/g) || [];
+  // One call on the stored "granted" choice, one inside the Accept handler; the definition is `function loadClarity()`.
+  assert.strictEqual(calls.length, 3, "loadClarity must be defined once and called only from the granted paths");
+  assert.ok(/if \(choice === "granted"\) loadClarity\(\)/.test(src), "stored consent must be checked before loading");
+  assert.ok(/button\("Accept", true, \(\) => \{ write\("granted"\); bar\.remove\(\); loadClarity\(\); \}\)/.test(src), "Accept must record consent before loading");
+  assert.ok(src.includes('navigator.doNotTrack === "1"'), "Do Not Track must skip Clarity");
+  assert.ok(src.includes('location.hostname !== "darkmode.pshah.fun"'), "Clarity must be limited to the production host");
 });
 
 // 2. Data Minimization & Leakage Protection

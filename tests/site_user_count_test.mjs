@@ -20,7 +20,8 @@ const html = read("index.html");
 const SRC = read("js/user-count.js");
 
 function run(response) {
-  const nodes = [{ textContent: "3,900+" }, { textContent: "3,900+" }];
+  const mk = (kind) => ({ textContent: kind === "weekly" ? "1,700+" : "3,900+", getAttribute: () => kind });
+  const nodes = [mk("weekly"), mk("total")];
   const ctx = {
     document: { querySelectorAll: () => ({ length: nodes.length, forEach: (f) => nodes.forEach(f) }) },
     fetch: () => Promise.resolve(response),
@@ -29,33 +30,38 @@ function run(response) {
   return new Promise((r) => setTimeout(() => r(nodes.map((n) => n.textContent)), 10));
 }
 
-await test("users.json has a positive number, a label and an ISO date", () => {
-  assert.ok(Number.isInteger(data.users) && data.users > 0);
-  assert.match(data.label, /^[0-9][0-9,.]*[kK]?\+?$/);
+const roundDown = (n) => (Math.floor(n / 100) * 100).toLocaleString("en-US") + "+";
+
+await test("users.json has total and weekly counts, labels and an ISO date", () => {
+  for (const k of ["total", "weekly"]) {
+    assert.ok(Number.isInteger(data[k]) && data[k] > 0, k);
+    assert.match(data[k + "Label"], /^[0-9][0-9,.]*[kK]?\+?$/);
+  }
+  assert.ok(data.total >= data.weekly, "total users cannot be fewer than weekly users");
   assert.match(data.asOf, /^\d{4}-\d{2}-\d{2}$/);
 });
 
-await test("label matches the number (rounded down to the hundred, with +)", () => {
-  const expected = (Math.floor(data.users / 100) * 100).toLocaleString("en-US") + "+";
-  assert.strictEqual(data.label, expected);
+await test("labels match the numbers (rounded down to the hundred, with +)", () => {
+  assert.strictEqual(data.totalLabel, roundDown(data.total));
+  assert.strictEqual(data.weeklyLabel, roundDown(data.weekly));
 });
 
-await test("every fallback in index.html equals the label, so the page is right before the fetch", () => {
-  const fallbacks = [...html.matchAll(/<span data-user-count>([^<]*)<\/span>/g)].map((m) => m[1]);
-  assert.ok(fallbacks.length >= 2);
-  for (const f of fallbacks) assert.strictEqual(f, data.label);
+await test("every fallback in index.html equals its label, so the page is right before the fetch", () => {
+  const found = [...html.matchAll(/<span data-user-count="(total|weekly)">([^<]*)<\/span>/g)];
+  assert.ok(found.some((m) => m[1] === "total") && found.some((m) => m[1] === "weekly"));
+  for (const [, kind, text] of found) assert.strictEqual(text, data[kind + "Label"]);
 });
 
 await test("index.html loads user-count.js", () => assert.match(html, /<script src="js\/user-count\.js"><\/script>/));
 
-await test("script writes the label from users.json", async () => {
-  const out = await run({ ok: true, json: () => Promise.resolve({ label: "4,100+" }) });
-  assert.deepStrictEqual(out, ["4,100+", "4,100+"]);
+await test("script writes each label from users.json", async () => {
+  const out = await run({ ok: true, json: () => Promise.resolve({ weeklyLabel: "2,100+", totalLabel: "4,100+" }) });
+  assert.deepStrictEqual(out, ["2,100+", "4,100+"]);
 });
 
 await test("script ignores a failed response or a malformed label", async () => {
-  assert.deepStrictEqual(await run({ ok: false }), ["3,900+", "3,900+"]);
-  assert.deepStrictEqual(await run({ ok: true, json: () => Promise.resolve({ label: "<img src=x>" }) }), ["3,900+", "3,900+"]);
+  assert.deepStrictEqual(await run({ ok: false }), ["1,700+", "3,900+"]);
+  assert.deepStrictEqual(await run({ ok: true, json: () => Promise.resolve({ weeklyLabel: "<img src=x>", totalLabel: 5 }) }), ["1,700+", "3,900+"]);
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

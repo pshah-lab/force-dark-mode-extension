@@ -1,5 +1,7 @@
 {
-  "users": 3900,
-  "label": "3,900+",
+  "total": 3900,
+  "totalLabel": "3,900+",
+  "weekly": 1700,
+  "weeklyLabel": "1,700+",
   "asOf": "2026-10-21"
 }

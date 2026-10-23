@@ -10,7 +10,6 @@
 - Users: 1,380+ weekly users (Chrome Web Store developer dashboard, 10 October 2026)
 - Website: https://darkmode.pshah.fun/
 - Chrome Web Store: https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke
-- Source code: https://github.com/pshah-lab/force-dark-mode-extension
 - Maker: Chameleon Labs, founded by Pratham Shah (https://pshah.fun)
 
 ## What it does

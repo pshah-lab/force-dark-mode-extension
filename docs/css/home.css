@@ -1,0 +1,223 @@
+/* ==========================================================================
+   ThemeSwitcher — "Lights out" redesign layer. Loaded after style.css.
+   Ink (dark) + paper (light) are the only two surfaces; lichen is the one accent.
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  --ink: #0b1016;
+  --ink-2: #121a23;
+  --ink-3: #1a2430;
+  --paper: #eef0f1;
+  --paper-ink: #12181f;
+  --lichen: #86d7a3;
+  --lichen-deep: #5fb67f;
+  --muted: #98a6b5;
+
+  --bg-deep: var(--ink);
+  --bg-base: var(--ink);
+  --bg-surface: var(--ink-2);
+  --bg-surface-elevated: var(--ink-3);
+  --text-primary: #eef2f5;
+  --text-secondary: var(--muted);
+  --accent-primary: var(--lichen);
+  --accent-primary-hover: #a4e4bb;
+  --accent-cyan: var(--lichen);
+  --accent-cyan-glow: rgba(134, 215, 163, 0.2);
+  --accent-indigo-glow: rgba(134, 215, 163, 0.18);
+  --border-glow: rgba(134, 215, 163, 0.35);
+  --font-sans: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Hanken Grotesk', sans-serif;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+body { background: var(--ink); font-family: var(--font-sans); }
+h1, h2, h3, .logo-product { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+/* Buttons: one solid accent, dark text */
+.btn-primary, .btn-primary:visited {
+  background: var(--lichen);
+  color: var(--ink);
+  border: 0;
+  box-shadow: none;
+  font-weight: 700;
+}
+.btn-primary:hover { background: var(--accent-primary-hover); color: var(--ink); transform: none; }
+.btn:focus-visible, a:focus-visible, button:focus-visible { outline: 3px solid var(--lichen); outline-offset: 3px; }
+.btn-secondary { background: transparent; border: 1px solid rgba(255,255,255,.28); color: var(--text-primary); }
+.btn-secondary:hover { border-color: var(--lichen); background: transparent; }
+
+/* Old eyebrow chips are decoration; hide them on the sections we kept */
+.comparison-section .hero-badge, .faq-section .hero-badge, .trends-section .hero-badge { display: none; }
+.comparison-section h2, .faq-section h2, .trends-section h2 { font-size: clamp(1.9rem, 4vw, 2.8rem); }
+
+/* ---------- Hero: the headline is the demo ---------- */
+.lo-hero { background: var(--ink); }
+.lo-split {
+  --split: 50%;
+  position: relative;
+  min-height: min(68vh, 560px);
+  overflow: hidden;
+  touch-action: pan-y;
+  cursor: ew-resize;
+  user-select: none;
+}
+.lo-side {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+}
+.lo-side .container { width: 100%; }
+.lo-side--light { background: var(--paper); color: var(--paper-ink); }
+.lo-side--dark { background: var(--ink); color: var(--text-primary); clip-path: inset(0 0 0 var(--split)); }
+.lo-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: clamp(2.8rem, 9.5vw, 8.2rem);
+  line-height: 0.94;
+  letter-spacing: -0.045em;
+  margin: 0;
+  max-width: 14ch;
+  padding-top: calc(var(--header-height, 74px) * 0.6);
+}
+.lo-side--dark .lo-title { color: #f4f7f9; }
+.lo-note {
+  position: absolute;
+  bottom: 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.lo-note--l { left: 1.25rem; color: #4a5560; }
+.lo-note--r { right: 1.25rem; color: var(--lichen); }
+.lo-handle {
+  position: absolute;
+  top: 0; bottom: 0;
+  left: var(--split);
+  width: 44px;
+  margin-left: -22px;
+  display: flex;
+  justify-content: center;
+  outline: none;
+}
+.lo-handle::before { content: ''; width: 2px; background: var(--lichen); }
+.lo-handle::after {
+  content: '\2194';
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 44px; height: 44px; border-radius: 50%;
+  background: var(--lichen); color: var(--ink);
+  display: grid; place-items: center; font-weight: 800; font-size: 1.15rem;
+}
+.lo-handle:focus-visible::after { outline: 3px solid #fff; outline-offset: 2px; }
+
+.lo-intro { padding: 3rem 0 4.5rem; }
+.lo-intro .container { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 2rem 4rem; align-items: end; }
+.lo-sub { font-size: clamp(1.1rem, 1.7vw, 1.35rem); line-height: 1.55; color: #c9d3dc; max-width: 46ch; margin: 0; }
+.lo-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1.75rem; }
+.lo-facts { margin: 0; padding: 0; list-style: none; display: grid; gap: 0.7rem; color: var(--muted); font-size: 1rem; }
+.lo-facts strong { color: var(--text-primary); font-weight: 600; }
+.lo-facts li { padding-left: 1rem; border-left: 2px solid var(--lichen); }
+
+/* ---------- Features: editorial list, no cards ---------- */
+.lo-features { padding: 5.5rem 0; background: var(--ink-2); }
+.lo-features .container { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 3rem 5rem; }
+.lo-features h2 { font-size: clamp(2rem, 4.2vw, 3.4rem); line-height: 1.02; margin: 0 0 1.25rem; position: sticky; top: 6.5rem; }
+.lo-lead { color: #c3cdd7; font-size: 1.1rem; line-height: 1.6; max-width: 40ch; }
+.lo-feature-list { display: grid; gap: 2.75rem; }
+.lo-feature h3 { font-size: 1.5rem; margin: 0 0 0.5rem; }
+.lo-feature p { margin: 0; color: #b4c0cc; line-height: 1.65; max-width: 60ch; }
+.lo-feature code { background: var(--ink-3); padding: 0.1em 0.4em; border-radius: 4px; font-size: 0.9em; }
+
+/* ---------- Gallery ---------- */
+.lo-gallery { padding: 5.5rem 0; }
+.lo-gallery h2 { font-size: clamp(2rem, 4.2vw, 3.4rem); line-height: 1.02; margin: 0 0 1rem; max-width: 18ch; }
+.lo-tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 2rem 0 1.5rem; }
+.lo-tab {
+  font: inherit; font-weight: 600; cursor: pointer;
+  background: transparent; color: var(--text-primary);
+  border: 1px solid rgba(255,255,255,.22); border-radius: 999px; padding: 0.55rem 1.1rem;
+}
+.lo-tab[aria-selected="true"] { background: var(--lichen); color: var(--ink); border-color: var(--lichen); }
+.lo-panel[hidden] { display: none; }
+.lo-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.lo-pair figure { margin: 0; }
+.lo-pair img { width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid rgba(255,255,255,.12); }
+.lo-pair figcaption { margin-top: 0.6rem; font-weight: 600; color: var(--muted); }
+.lo-engine { margin-top: 1rem; color: var(--muted); }
+
+/* ---------- Closing CTA: the paper slab ---------- */
+.lo-cta { background: var(--paper); color: var(--paper-ink); padding: 6rem 0; margin-top: 5rem; }
+.lo-cta h2 { font-size: clamp(2.4rem, 7vw, 5.5rem); line-height: 0.96; letter-spacing: -0.04em; margin: 0 0 1.25rem; max-width: 14ch; }
+.lo-cta p { font-size: 1.2rem; max-width: 46ch; color: #36424e; margin: 0 0 2rem; }
+.lo-cta .btn-primary { background: var(--paper-ink); color: var(--paper); }
+.lo-cta .btn-primary:hover { background: #26323d; color: #fff; }
+
+@media (max-width: 860px) {
+  .lo-intro .container, .lo-features .container { grid-template-columns: 1fr; }
+  .lo-features h2 { position: static; }
+  .lo-pair { grid-template-columns: 1fr; }
+  .lo-split { min-height: 420px; }
+}
+@media (prefers-reduced-motion: reduce) { .lo-split * { transition: none !important; } }
+
+/* Beat global h1/h2 colors */
+.lo-side--light .lo-title { color: var(--paper-ink); -webkit-text-fill-color: var(--paper-ink); background: none; }
+.lo-side--dark .lo-title { -webkit-text-fill-color: #f4f7f9; }
+.lo-cta h2 { color: var(--paper-ink); -webkit-text-fill-color: var(--paper-ink); background: none; }
+.lo-note { z-index: 1; }
+
+/* Drop the old ambient glow mesh and indigo gradients */
+body::before, body::after { display: none; }
+.logo-icon-wrapper { background: var(--ink-3); box-shadow: none; }
+.cta-banner { background: var(--ink-2); border: 1px solid rgba(255,255,255,.12); }
+.cta-banner::before, .cta-banner::after { display: none; }
+.stats-bar-fill { background: var(--lichen); }
+
+/* Left-align the kept sections' intros to match the new layout */
+.comparison-section .container > div:first-child,
+.faq-section .container > div:first-child,
+.trends-section > div:first-child { text-align: left !important; margin-left: 0 !important; max-width: 60ch !important; }
+.trends-section > div:nth-child(2) { justify-content: flex-start !important; }
+
+/* Keep the header on one line between phone and desktop widths */
+.nav-link { white-space: nowrap; }
+@media (min-width: 769px) and (max-width: 1100px) {
+  .logo-parent, .logo-divider { display: none; }
+  .nav-menu { gap: 0.15rem; }
+  .nav-link { padding-inline: 0.5rem; font-size: 0.9rem; }
+  .nav-cta .btn { padding-inline: 0.9rem; }
+}
+
+/* Each hero layer needs its own stacking context so .container's z-index can't leak across layers */
+.lo-side--light { z-index: 1; }
+.lo-side--dark { z-index: 2; }
+.lo-handle { z-index: 3; }
+.lo-note { z-index: auto; }
+
+/* ---------- Files: document compare ---------- */
+.lo-files { padding: 5.5rem 0; background: var(--ink-2); }
+.lo-files .container { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 3rem 5rem; align-items: center; }
+.lo-files h2 { font-size: clamp(2rem, 4.2vw, 3.4rem); line-height: 1.02; margin: 0 0 1.25rem; }
+.lo-filelist { list-style: none; padding: 0; margin: 1.5rem 0; display: grid; gap: 0.8rem; color: #b4c0cc; line-height: 1.55; }
+.lo-filelist li { padding-left: 1rem; border-left: 2px solid var(--lichen); }
+.lo-filelist strong { color: var(--text-primary); font-weight: 600; }
+.lo-files a { color: var(--lichen); }
+
+.lo-compare { --split: 50%; position: relative; aspect-ratio: 4 / 4.6; border-radius: 10px; overflow: hidden; cursor: ew-resize; user-select: none; touch-action: pan-y; border: 1px solid rgba(255,255,255,.14); }
+.lo-compare-side { position: absolute; inset: 0; display: grid; place-items: center; padding: 6%; }
+.lo-compare-light { background: #c9ced3; z-index: 1; }
+.lo-compare-dark { background: #07090c; z-index: 2; clip-path: inset(0 0 0 var(--split)); }
+.lo-compare .lo-handle { z-index: 3; left: var(--split); }
+.lo-doc { width: 100%; height: 100%; padding: 8% 9%; border-radius: 4px; display: flex; flex-direction: column; gap: 0.9rem; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.lo-compare-light .lo-doc { background: #fff; color: #1b2128; }
+.lo-compare-dark .lo-doc { background: #161b22; color: #e6ebf0; box-shadow: none; }
+.lo-doc-top { display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; opacity: .75; }
+.lo-doc-h { font-size: clamp(1.2rem, 2.4vw, 1.7rem); margin: 0; color: inherit; -webkit-text-fill-color: currentColor; background: none; }
+.lo-doc-p { margin: 0; font-size: clamp(0.78rem, 1.15vw, 0.95rem); line-height: 1.6; color: inherit; opacity: .85; }
+.lo-doc-chart { flex: 1; min-height: 80px; display: flex; align-items: flex-end; gap: 6%; padding: 0 4%; border-bottom: 2px solid currentColor; opacity: 1; }
+.lo-doc-chart span { flex: 1; border-radius: 3px 3px 0 0; }
+.lo-compare-dark .lo-doc-chart { border-color: #5b6673; }
+
+@media (max-width: 860px) { .lo-files .container { grid-template-columns: 1fr; } .lo-compare { aspect-ratio: 4 / 5; } }

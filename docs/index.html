@@ -44,6 +44,7 @@
 
     <!-- Styles -->
     <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/home.css" />
 
     <!-- Structured Data (Schema.org JSON-LD) -->
     <script type="application/ld+json">
@@ -242,94 +243,34 @@
 
     <!-- Main Content -->
     <main id="main-content">
-      <!-- Hero Section -->
-      <section class="hero" aria-labelledby="hero-heading">
-        <div class="hero-maximalist-blobs" aria-hidden="true">
-          <span class="hero-blob-1"></span>
-          <span class="hero-blob-2"></span>
-          <span class="hero-blob-3"></span>
+      <!-- Hero -->
+      <section class="lo-hero" aria-labelledby="hero-heading">
+        <div class="lo-split">
+          <div class="lo-side lo-side--light">
+            <div class="container"><h1 id="hero-heading" class="lo-title">Dark mode for every page you read.</h1></div>
+            <span class="lo-note lo-note--l">Before</span>
+          </div>
+          <div class="lo-side lo-side--dark" aria-hidden="true">
+            <div class="container"><p class="lo-title">Dark mode for every page you read.</p></div>
+            <span class="lo-note lo-note--r">With ThemeSwitcher</span>
+          </div>
+          <div class="lo-handle" role="slider" tabindex="0" aria-label="Compare light and dark" aria-valuemin="4" aria-valuemax="96" aria-valuenow="50"></div>
         </div>
-
-        <div class="hero-mascot-float" aria-hidden="true">
-          <svg viewBox="0 0 200 160" class="chameleon-mark-icon chameleon-mark--hero">
-            <path d="M20 120 C -10 120, -10 80, 20 80 C 45 80, 45 105, 25 105 C 12 105, 12 92, 25 92" stroke="currentColor" stroke-width="10" stroke-linecap="round" fill="none"></path>
-            <ellipse cx="95" cy="90" rx="55" ry="38" fill="currentColor"></ellipse>
-            <path d="M60 58 L68 46 L76 58 M84 55 L92 42 L100 55 M108 55 L116 44 L124 55" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
-            <ellipse cx="150" cy="75" rx="28" ry="24" fill="currentColor"></ellipse>
-            <circle cx="158" cy="65" r="10" fill="#fff"></circle>
-            <circle cx="160" cy="63" r="4.5" fill="#0b0e14"></circle>
-            <path d="M70 118 C 65 130, 55 132, 48 128" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"></path>
-            <path d="M120 122 C 122 134, 132 138, 140 134" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"></path>
-          </svg>
-        </div>
-
-        <div class="container hero-content">
-          <div class="vision-tagline">
-            <span aria-hidden="true">🦎</span>
-            <span><strong>Chameleon Labs:</strong> every file, exactly how you want it. Starting with your browser.</span>
-          </div>
-
-          <div class="hero-badge-group">
-            <div class="hero-badge">
-              <span class="live-pulse" aria-hidden="true"></span>
-              <span>Manifest V3 • No Tracking • Open Source</span>
+        <div class="lo-intro">
+          <div class="container">
+            <div>
+              <p class="lo-sub">ThemeSwitcher darkens websites, PDFs and local documents in Chrome. Text stays readable, photos keep their colors, and sites that already have a dark theme are left alone.</p>
+              <div class="lo-actions">
+                <a href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke" class="btn btn-primary btn-lg btn-chrome-store" id="heroCwsBtn" rel="noopener noreferrer" target="_blank"><span>Add to Chrome, free</span></a>
+                <a href="#demo-section" class="btn btn-secondary btn-lg"><span>Try the demo</span></a>
+              </div>
             </div>
-          </div>
-
-          <h1 id="hero-heading" class="hero-title">
-            The Intelligent <span class="gradient-text">Dark Mode Extension</span> for Chrome
-          </h1>
-
-          <p class="hero-subtitle">
-            Force Dark Mode – ThemeSwitcher is a free, open-source Chrome extension that turns every website, document, and local PDF into an eye-friendly, customizable dark theme.
-            Powered by layout-safe CSS recoloring, native dark detection, and no tracking.
-          </p>
-
-          <div class="hero-actions">
-            <a
-              href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke"
-              class="btn btn-primary btn-lg btn-chrome-store"
-              id="heroCwsBtn"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="10"></circle>
-                <circle cx="12" cy="12" r="4"></circle>
-                <line x1="21.17" y1="8" x2="12" y2="8"></line>
-                <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
-                <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
-              </svg>
-              <span>Add to Chrome — It’s Free</span>
-            </a>
-
-            <a href="#demo-section" class="btn btn-secondary btn-lg">
-              <span>Interactive Demo</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>
-            </a>
-          </div>
-
-          <div class="hero-pills">
-            <div class="pill-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-success)" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Private by default</span>
-            </div>
-            <div class="pill-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-success)" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>No white flashes</span>
-            </div>
-            <div class="pill-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-success)" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Built-in PDF reader</span>
-            </div>
-            <div class="pill-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-success)" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>Open source MIT</span>
-            </div>
-            <div class="pill-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-success)" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>1,270+ weekly users</span>
-            </div>
+            <ul class="lo-facts">
+              <li><strong><span data-user-count>3,900+</span> weekly users</strong> on the Chrome Web Store</li>
+              <li><strong>Free and open source</strong> under the MIT license</li>
+              <li><strong>Private by default.</strong> Nothing is sent unless you opt in</li>
+              <li><strong>No white flash</strong> when a page loads</li>
+            </ul>
           </div>
         </div>
       </section>
@@ -440,205 +381,96 @@
         </div>
       </section>
 
-      <!-- ==========================================================================
-           Bento Grid Features Section
-           ========================================================================== -->
-      <section class="bento-section" aria-labelledby="bento-heading">
+      <!-- Features -->
+      <section class="lo-features" aria-labelledby="bento-heading">
         <div class="container">
-          <div style="text-align: center; max-width: 720px; margin: 0 auto 4rem;">
-            <div class="hero-badge" style="margin-bottom: 1rem;">Engineered for Visual Perfection</div>
-            <h2 id="bento-heading">Features of the Force Dark Mode extension</h2>
-            <p>
-              Traditional inverters treat the web like static images, breaking modern web apps and blinding you on page loads. ThemeSwitcher is built for the modern web.
-            </p>
+          <div>
+            <h2 id="bento-heading">Built to darken pages without breaking them</h2>
+            <p class="lo-lead">Simple color inverters turn photos into negatives and flash white on every load. ThemeSwitcher recolors the page the way its designer would have.</p>
           </div>
-
-          <div class="bento-grid">
-            <!-- Bento 1: Auto Engine (Col 8) -->
-            <article class="bento-card col-8">
-              <div>
-                <div class="bento-icon-badge" aria-hidden="true">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>
-                </div>
-                <h3>Intelligent Auto Engine &amp; Native Dark Detection</h3>
-                <p>
-                  On page load, ThemeSwitcher samples visible DOM elements, computes background luminance, and distinguishes between text-dense articles and media-dense layouts. If a website natively features an active dark theme (such as YouTube, GitHub, or Reddit in dark mode), ThemeSwitcher steps aside automatically—preventing double inversion glitches.
-                </p>
-              </div>
-              <div class="bento-visual-preview" style="display: flex; gap: 1rem; align-items: center; justify-content: space-around; flex-wrap: wrap;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-family: var(--font-mono); color: var(--text-secondary);">
-                  <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-success);"></span>
-                  <span>YouTube Dark → Native Preserved</span>
-                </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-family: var(--font-mono); color: var(--text-secondary);">
-                  <span style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-cyan);"></span>
-                  <span>Wikipedia → CSS Engine Recolor</span>
-                </div>
-              </div>
-            </article>
-
-            <!-- Bento 2: Local PDF Reader (Col 4) -->
-            <article class="bento-card col-4">
-              <div>
-                <div class="bento-icon-badge" aria-hidden="true">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-                </div>
-                <h3>Offline Dark PDF Reader</h3>
-                <p>
-                  Reads both local files and web PDF tabs with bundled PDF.js. Saturation-aware pixel conversion darkens paper margins while keeping charts vibrant. See <a href="blog/dark-mode-pdf-guide.html">how the dark PDF reader works</a>.
-                </p>
-              </div>
-              <div class="bento-visual-preview pdf-mock-page">
-                <div class="pdf-mock-header"></div>
-                <div class="pdf-mock-line"></div>
-                <div class="pdf-mock-line" style="width: 70%;"></div>
-                <div class="pdf-mock-chart">
-                  <div class="chart-bar" style="height: 40px; background: #6366f1;"></div>
-                  <div class="chart-bar" style="height: 65px; background: #38bdf8;"></div>
-                  <div class="chart-bar" style="height: 50px; background: #10b981;"></div>
-                  <div class="chart-bar" style="height: 75px; background: #f59e0b;"></div>
-                </div>
-              </div>
-            </article>
-
-            <!-- Bento 3: Custom Color Palettes (Col 4) -->
-            <article class="bento-card col-4">
-              <div>
-                <div class="bento-icon-badge" aria-hidden="true">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                </div>
-                <h3>Custom Hex Palettes</h3>
-                <p>
-                  Prefer pure pitch black (<code>#000000</code>) for OLED battery efficiency or a soft charcoal slate (<code>#0f1115</code>)? Pick your base color; contrast variables calculate automatically. Eight built-in themes, a theme editor and per-site custom CSS are also available.
-                </p>
-              </div>
-              <div class="bento-visual-preview" style="display: flex; gap: 0.75rem; justify-content: center;">
-                <span style="width: 32px; height: 32px; border-radius: 50%; background: #000000; border: 2px solid var(--border-hover);" title="OLED Pure Black"></span>
-                <span style="width: 32px; height: 32px; border-radius: 50%; background: #0f1115; border: 2px solid var(--accent-cyan);" title="Midnight Slate"></span>
-                <span style="width: 32px; height: 32px; border-radius: 50%; background: #1e1e2e; border: 2px solid var(--border-hover);" title="Deep Mocha"></span>
-                <span style="width: 32px; height: 32px; border-radius: 50%; background: #0b1d28; border: 2px solid var(--border-hover);" title="Nordic Cyan"></span>
-              </div>
-            </article>
-
-            <!-- Bento 4: Zero White Flashes (Col 4) -->
-            <article class="bento-card col-4">
-              <div>
-                <div class="bento-icon-badge" aria-hidden="true">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
-                </div>
-                <h3>Zero White Flashes</h3>
-                <p>
-                  Injected at <code>document_start</code> before first paint. Background root variables bind immediately so you never suffer blinding white flashes when opening tabs.
-                </p>
-              </div>
-              <div class="bento-visual-preview" style="font-family: var(--font-mono); font-size: 0.8rem; color: #8ab4f8;">
-                &lt;html data-force-dark-mode="css"&gt;<br />
-                &nbsp;&nbsp;--force-dark-bg: #0f1115;<br />
-                &nbsp;&nbsp;color-scheme: dark !important;
-              </div>
-            </article>
-
-            <!-- Bento 5: 100% Offline & Private (Col 4) -->
-            <article class="bento-card col-4">
-              <div>
-                <div class="bento-icon-badge" aria-hidden="true">
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                </div>
-                <h3>Private by Default</h3>
-                <p>
-                  No third-party analytics. No tracking pixels. Nothing is sent unless you opt in or confirm a report. All settings sync purely through your personal Google Account via <code>chrome.storage.sync</code>.
-                </p>
-              </div>
-              <div class="bento-visual-preview" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: var(--accent-success); font-weight: 600; font-size: 0.88rem;">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                <span>No Tracking</span>
-              </div>
-            </article>
+          <div class="lo-feature-list">
+            <article class="lo-feature"><h3>It knows when a site is already dark</h3><p>On load, the Auto engine samples the page and picks the right approach for articles, apps and media-heavy layouts. If a site has its own dark theme, like YouTube or GitHub, it stays untouched.</p></article>
+            <article class="lo-feature"><h3>Dark PDFs, offline</h3><p>Open local files and web PDFs in a reader built on bundled PDF.js. Paper margins go dark while charts keep their colors. <a href="blog/dark-mode-pdf-guide.html">How the dark PDF reader works</a>.</p></article>
+            <article class="lo-feature"><h3>Your colors, per site</h3><p>Choose pure black (<code>#000000</code>) for OLED screens or a soft slate (<code>#0f1115</code>). Eight built-in themes, a theme editor and per-site settings that sync through your Google account.</p></article>
+            <article class="lo-feature"><h3>No white flash</h3><p>The dark background is applied at <code>document_start</code>, before the first paint, so new tabs never flash white.</p></article>
+            <article class="lo-feature"><h3>Private by default</h3><p>No third-party analytics and no tracking pixels. Nothing leaves your device unless you opt in to the usage report or confirm a problem report.</p></article>
           </div>
         </div>
       </section>
 
-      <!-- ==========================================================================
-           Real Screenshots Gallery
-           ========================================================================== -->
-      <section id="gallery-section" class="container" aria-labelledby="gallery-heading" style="padding: 2rem 0 5rem;">
-        <div style="text-align: center; max-width: 720px; margin: 0 auto 3rem;">
-          <div class="hero-badge" style="margin-bottom: 1rem;">Real Sites, Unedited</div>
-          <h2 id="gallery-heading">See It On Sites You Actually Use</h2>
-          <p>Real before/after screenshots captured directly from the extension, not mockups. Every site here uses a different theme engine automatically.</p>
-        </div>
-
-        <div class="gallery-grid">
-          <div class="gallery-card">
-            <div class="gallery-card-header">
-              <span class="gallery-card-site">examtopics.com</span>
-              <span class="gallery-card-engine">CSS Override Engine</span>
-            </div>
-            <div class="gallery-images">
-              <div class="gallery-image-wrap is-before">
-                <span class="gallery-image-tag">Before</span>
-                <img src="assets/screenshots/examtopics-before.webp" alt="ExamTopics exam question page in its default light theme" loading="lazy" width="2000" height="1112" />
-              </div>
-              <div class="gallery-image-wrap is-after">
-                <span class="gallery-image-tag">After</span>
-                <img src="assets/screenshots/examtopics-after.webp" alt="Same ExamTopics page recolored dark by ThemeSwitcher, with text and buttons still fully readable" loading="lazy" width="2000" height="1110" />
-              </div>
-            </div>
+      <!-- Files -->
+      <section class="lo-files" aria-labelledby="files-heading">
+        <div class="container">
+          <div>
+            <h2 id="files-heading">PDFs and documents go dark too</h2>
+            <p class="lo-lead">Open a PDF in the built-in reader and the white paper turns dark while charts and images keep their colors. It runs offline, on your device.</p>
+            <ul class="lo-filelist">
+              <li><strong>Web PDFs</strong> open in the dark reader from the popup</li>
+              <li><strong>Local files</strong> open without uploading anywhere</li>
+              <li><strong>Google Docs</strong> pages stay light, because Google draws them on a canvas. The toolbars and menus do darken</li>
+            </ul>
+            <p><a href="blog/dark-mode-pdf-guide.html">How the dark PDF reader works</a></p>
           </div>
-
-          <div class="gallery-card">
-            <div class="gallery-card-header">
-              <span class="gallery-card-site">notion.so</span>
-              <span class="gallery-card-engine">CSS Override Engine</span>
-            </div>
-            <div class="gallery-images">
-              <div class="gallery-image-wrap is-before">
-                <span class="gallery-image-tag">Before</span>
-                <img src="assets/screenshots/notion-before.webp" alt="Notion marketing homepage in its default light theme" loading="lazy" width="2000" height="1112" />
-              </div>
-              <div class="gallery-image-wrap is-after">
-                <span class="gallery-image-tag">After</span>
-                <img src="assets/screenshots/notion-after.webp" alt="Same Notion homepage recolored dark by ThemeSwitcher, with the product screenshot and logos preserved" loading="lazy" width="2000" height="1112" />
-              </div>
-            </div>
-          </div>
-
-          <div class="gallery-card">
-            <div class="gallery-card-header">
-              <span class="gallery-card-site">youtube.com</span>
-              <span class="gallery-card-engine">Auto Engine</span>
-            </div>
-            <div class="gallery-images">
-              <div class="gallery-image-wrap is-before">
-                <span class="gallery-image-tag">Before</span>
-                <img src="assets/screenshots/youtube-before.webp" alt="YouTube homepage feed shown in light theme" loading="lazy" width="2000" height="1138" />
-              </div>
-              <div class="gallery-image-wrap is-after">
-                <span class="gallery-image-tag">After</span>
-                <img src="assets/screenshots/youtube-after.webp" alt="Same YouTube homepage feed recolored dark, with video thumbnails left untouched" loading="lazy" width="2000" height="1142" />
-              </div>
-            </div>
-          </div>
-
-          <div class="gallery-card">
-            <div class="gallery-card-header">
-              <span class="gallery-card-site">leetcode.com</span>
-              <span class="gallery-card-engine">CSS Override Engine</span>
-            </div>
-            <div class="gallery-images">
-              <div class="gallery-image-wrap is-before">
-                <span class="gallery-image-tag">Before</span>
-                <img src="assets/screenshots/leetcode-before.webp" alt="LeetCode Two Sum problem page shown in light theme" loading="lazy" width="2000" height="1112" />
-              </div>
-              <div class="gallery-image-wrap is-after">
-                <span class="gallery-image-tag">After</span>
-                <img src="assets/screenshots/leetcode-after.webp" alt="Same LeetCode problem page recolored dark, with the code editor and problem panel both readable" loading="lazy" width="2000" height="1114" />
-              </div>
-            </div>
+          <div class="lo-compare lo-doc-frame" data-split="50">
+            <div class="lo-compare-side lo-compare-light"><div class="lo-doc">
+                <div class="lo-doc-top"><span class="lo-doc-badge">Q3 report.pdf</span><span class="lo-doc-page">Page 4 of 12</span></div>
+                <h3 class="lo-doc-h">Revenue by region</h3>
+                <p class="lo-doc-p">Growth was strongest in the Americas, where subscriptions rose 18% over the quarter. Europe held steady, and Asia-Pacific recovered after a slow start.</p>
+                <div class="lo-doc-chart" role="img" aria-label="Bar chart with four colored bars">
+                  <span style="height:42%;background:#4f7cff"></span><span style="height:78%;background:#ff8a3d"></span><span style="height:58%;background:#2fb67a"></span><span style="height:92%;background:#e05297"></span>
+                </div>
+                <p class="lo-doc-p">Charts and images keep their colors. Only the paper and the text change.</p>
+</div></div>
+            <div class="lo-compare-side lo-compare-dark" aria-hidden="true"><div class="lo-doc">
+                <div class="lo-doc-top"><span class="lo-doc-badge">Q3 report.pdf</span><span class="lo-doc-page">Page 4 of 12</span></div>
+                <h3 class="lo-doc-h">Revenue by region</h3>
+                <p class="lo-doc-p">Growth was strongest in the Americas, where subscriptions rose 18% over the quarter. Europe held steady, and Asia-Pacific recovered after a slow start.</p>
+                <div class="lo-doc-chart" role="img" aria-label="Bar chart with four colored bars">
+                  <span style="height:42%;background:#4f7cff"></span><span style="height:78%;background:#ff8a3d"></span><span style="height:58%;background:#2fb67a"></span><span style="height:92%;background:#e05297"></span>
+                </div>
+                <p class="lo-doc-p">Charts and images keep their colors. Only the paper and the text change.</p>
+</div></div>
+            <div class="lo-handle" role="slider" tabindex="0" aria-label="Compare the PDF before and after" aria-valuemin="4" aria-valuemax="96" aria-valuenow="50"></div>
           </div>
         </div>
       </section>
 
+      <!-- Gallery -->
+      <section id="gallery-section" class="lo-gallery" aria-labelledby="gallery-heading">
+        <div class="container">
+          <h2 id="gallery-heading">Real sites, before and after</h2>
+          <p class="lo-lead">Screenshots taken with the extension, not mockups. Pick a site.</p>
+          <div class="lo-tabs" role="tablist" aria-label="Example sites"><button type="button" role="tab" class="lo-tab" id="tab-examtopics" aria-controls="panel-examtopics" aria-selected="true">examtopics.com</button><button type="button" role="tab" class="lo-tab" id="tab-notion" aria-controls="panel-notion" aria-selected="false">notion.so</button><button type="button" role="tab" class="lo-tab" id="tab-youtube" aria-controls="panel-youtube" aria-selected="false">youtube.com</button><button type="button" role="tab" class="lo-tab" id="tab-leetcode" aria-controls="panel-leetcode" aria-selected="false">leetcode.com</button></div>
+          <div role="tabpanel" class="lo-panel" id="panel-examtopics" aria-labelledby="tab-examtopics">
+            <div class="lo-pair">
+              <figure><img src="assets/screenshots/examtopics-before.webp" alt="ExamTopics exam question page in its default light theme" loading="lazy" width="2000" height="1112" /><figcaption>Before</figcaption></figure>
+              <figure><img src="assets/screenshots/examtopics-after.webp" alt="Same ExamTopics exam question page recolored dark by ThemeSwitcher" loading="lazy" width="2000" height="1112" /><figcaption>After</figcaption></figure>
+            </div>
+            <p class="lo-engine">Engine used: CSS Override Engine</p>
+          </div>
+          <div role="tabpanel" class="lo-panel" id="panel-notion" aria-labelledby="tab-notion" hidden>
+            <div class="lo-pair">
+              <figure><img src="assets/screenshots/notion-before.webp" alt="Notion marketing homepage in its default light theme" loading="lazy" width="2000" height="1112" /><figcaption>Before</figcaption></figure>
+              <figure><img src="assets/screenshots/notion-after.webp" alt="Same Notion marketing homepage recolored dark by ThemeSwitcher" loading="lazy" width="2000" height="1112" /><figcaption>After</figcaption></figure>
+            </div>
+            <p class="lo-engine">Engine used: CSS Override Engine</p>
+          </div>
+          <div role="tabpanel" class="lo-panel" id="panel-youtube" aria-labelledby="tab-youtube" hidden>
+            <div class="lo-pair">
+              <figure><img src="assets/screenshots/youtube-before.webp" alt="YouTube homepage feed in its default light theme" loading="lazy" width="2000" height="1140" /><figcaption>Before</figcaption></figure>
+              <figure><img src="assets/screenshots/youtube-after.webp" alt="Same YouTube homepage feed recolored dark by ThemeSwitcher" loading="lazy" width="2000" height="1140" /><figcaption>After</figcaption></figure>
+            </div>
+            <p class="lo-engine">Engine used: Auto Engine</p>
+          </div>
+          <div role="tabpanel" class="lo-panel" id="panel-leetcode" aria-labelledby="tab-leetcode" hidden>
+            <div class="lo-pair">
+              <figure><img src="assets/screenshots/leetcode-before.webp" alt="LeetCode Two Sum problem page in its default light theme" loading="lazy" width="2000" height="1112" /><figcaption>Before</figcaption></figure>
+              <figure><img src="assets/screenshots/leetcode-after.webp" alt="Same LeetCode Two Sum problem page recolored dark by ThemeSwitcher" loading="lazy" width="2000" height="1112" /><figcaption>After</figcaption></figure>
+            </div>
+            <p class="lo-engine">Engine used: CSS Override Engine</p>
+          </div>
+        </div>
+      </section>
 
       <!-- ==========================================================================
            Comparison Matrix Section
@@ -803,7 +635,7 @@
           <div class="hero-badge" style="margin-bottom: 1rem;">Independent Analytics</div>
           <h2 id="trends-heading">How many people use Force Dark Mode?</h2>
           <p>
-            1,270+ weekly users on the Chrome Web Store (developer dashboard, September 2026). Install trends below are tracked independently by Chrome-Stats.
+            <span data-user-count>3,900+</span> weekly users on the Chrome Web Store (developer dashboard). Install trends below are tracked independently by Chrome-Stats.
           </p>
         </div>
 
@@ -836,31 +668,12 @@
         </div>
       </section>
 
-      <!-- ==========================================================================
-           Call to Action Banner
-           ========================================================================== -->
-      <section class="container" aria-label="Install Extension Call to Action">
-        <div class="cta-banner">
-          <h2>Upgrade Your Browsing Comfort Today</h2>
-          <p>
-            Protect your eyes during late-night reading sessions with intelligent, layout-safe dark themes across all your favorite websites and PDF documents.
-          </p>
-          <a
-            href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke"
-            class="btn btn-primary btn-lg btn-chrome-store"
-            id="bottomCwsBtn"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="10"></circle>
-              <circle cx="12" cy="12" r="4"></circle>
-              <line x1="21.17" y1="8" x2="12" y2="8"></line>
-              <line x1="3.95" y1="6.06" x2="8.54" y2="14"></line>
-              <line x1="10.88" y1="21.94" x2="15.46" y2="14"></line>
-            </svg>
-            <span>Add to Chrome — Free on Web Store</span>
-          </a>
+      <!-- Closing CTA -->
+      <section class="lo-cta" aria-label="Install the extension">
+        <div class="container">
+          <h2>Lights out, for free.</h2>
+          <p>Install ThemeSwitcher and your next late-night read, PDF or doc is easy on the eyes.</p>
+          <a href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke" class="btn btn-primary btn-lg btn-chrome-store" id="bottomCwsBtn" rel="noopener noreferrer" target="_blank"><span>Add to Chrome, free</span></a>
         </div>
       </section>
     </main>
@@ -925,6 +738,8 @@
 
     <!-- Scripts -->
     <script src="js/main.js"></script>
+    <script src="js/home.js"></script>
+    <script src="js/user-count.js"></script>
     <script src="js/clarity-consent.js"></script>
   </body>
 </html>

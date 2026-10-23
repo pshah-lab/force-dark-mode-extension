@@ -77,6 +77,7 @@ chrome.storage.sync (Preferences synced securely per domain)
 ThemeSwitcher is built with privacy by design:
 - **Two optional reports, both opt-in**: nothing is sent on its own. The daily usage report is off until you turn it on (side panel card or Options): it sends a random install ID, the UTC day, the version, which engines you used and how many sites dark mode was applied on (a number only), and turning it off deletes it. The broken-site report: Pressing Report this site as broken in the side panel shows exactly what will be sent (the site's domain, the engine, a theme label and the version; no page address, content, ID or account) and sends it only after you confirm, every time. Our server function does not store IP addresses, and reports are purged after 13 months. No Google Analytics, no tracking beacons, no third-party scripts.
 - **Local processing**: All theming and document rendering is executed 100% locally on your machine.
+- **One pre-paint flag**: to avoid a white flash on load, the extension keeps one flag, `__fdm_pre` (`1` plus the time it was set, nothing else), in the `localStorage` of sites where it applied dark mode. The site's own scripts can see it; it holds no personal data, is never sent by the extension and is removed when dark mode is off for that site. No other web storage or cookies are used.
 - **Minimal Manifest V3 Permissions**:
   - `storage`: Storing domain preferences locally in Chrome Sync.
   - `activeTab`: Inspecting luminance and applying styles when the user opens the popup.

@@ -250,6 +250,9 @@
         <p>
           These preferences are stored in your local Chrome profile and synchronized across your signed-in devices through Google’s official synchronization service. They are never sent to any server run by the developer; the only server involved is the optional usage-statistics endpoint described in section 1, which does not receive your preferences.
         </p>
+        <p>
+          <strong>Pre-paint flag (the one value kept in a website&rsquo;s own storage):</strong> so that a site you use in dark mode does not flash white while the extension starts, the extension keeps one small flag, <code>__fdm_pre</code>, in that website&rsquo;s own <code>localStorage</code>. It holds only the digit <code>1</code> and the time it was set (for example <code>1:1760000000000</code>), meaning &ldquo;dark mode was applied on this site last time&rdquo;. It is removed when dark mode is off for the site, the site is natively dark, or dark mode is not applied there for any other reason, and it is ignored after 7 days. It contains no settings, themes, page addresses or personal data, and it is never sent anywhere by the extension. Because it lives in the site&rsquo;s storage, that site&rsquo;s own scripts can see it (and so could tell that dark mode was applied there); clearing the site&rsquo;s data in Chrome removes it. Nothing else is ever written to a website&rsquo;s storage, and the extension uses no cookies.
+        </p>
 
         <h2>3. Document &amp; PDF Processing</h2>
         <p>

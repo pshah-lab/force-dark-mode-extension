@@ -41,7 +41,7 @@ HOW TO USE IT
 3. Click "Open file viewer" (or press Alt+Shift+O) to read a PDF or document in dark mode.
 
 PRIVACY
-• No third-party analytics, tracking pixels, or advertising. Settings sync through your Google Account (chrome.storage.sync). Open source (MIT).
+• No third-party analytics, tracking pixels, or advertising. Settings sync through your Google Account (chrome.storage.sync). To avoid a white flash, sites where dark mode is on get one tiny flag in their own storage (__fdm_pre: "1" and a time, no personal data; the site can see it). Open source (MIT).
 • Nothing is sent on its own. There are two optional reports, and you decide on both:
 • Daily usage report: off unless you turn it on (a card asks once, and you can change it any time in Options). If you turn it on, each day you use dark mode we receive a random install ID (not linked to you), the date and extension version, which engines you used, and how many sites dark mode was applied on, a number only and never which sites. Turning it off deletes it.
 • Report this site as broken: a button in the side panel. It shows exactly what will be sent (the site's domain, your engine and theme choice, and the extension version, never the page address or content) and sends it only after you confirm. These reports are deleted after 13 months.

@@ -18,6 +18,59 @@ const ANALYSIS_SKIP_SELECTOR = [
   "track",
 ].join(",");
 
+// Pre-paint bridge. chrome.storage answers only after the first paint, so a site that had dark mode last time
+// would flash white. The one thing this extension keeps in the page's own web storage is the flag below: "1:" and
+// the time it was written, set when an engine applied dark mode on this origin and removed when the resolved
+// state is anything else. Nothing else (no settings, themes, addresses or user data) is ever written there.
+// While the flag is fresh, a dark canvas is painted until the real state arrives; it is removed on every path.
+const PREPAINT_KEY = "__fdm_pre";
+const PREPAINT_STYLE_ID = "__force_dark_prepaint__";
+const PREPAINT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const PREPAINT_FAILSAFE_MS = 4000;
+
+function readPrepaintFlag() {
+  try {
+    const match = /^1:(\d{1,15})$/.exec(window.localStorage.getItem(PREPAINT_KEY) || "");
+    if (!match) return false;
+    const age = Date.now() - Number(match[1]);
+    return age >= 0 && age <= PREPAINT_MAX_AGE_MS;
+  } catch (error) {
+    return false; // storage blocked or unavailable: no bridge
+  }
+}
+
+function writePrepaintFlag(dark) {
+  try {
+    if (dark) window.localStorage.setItem(PREPAINT_KEY, "1:" + Date.now());
+    else window.localStorage.removeItem(PREPAINT_KEY);
+  } catch (error) {
+    // storage blocked, full or unavailable: the next load simply has no bridge
+  }
+}
+
+function removePrepaintStyle() {
+  document.getElementById(PREPAINT_STYLE_ID)?.remove();
+}
+
+// Called whenever the real state for this page is known: drops the bridge and records the outcome.
+function settlePrepaint(dark) {
+  removePrepaintStyle();
+  writePrepaintFlag(dark);
+}
+
+function injectPrepaintStyle() {
+  const parent = document.head || document.documentElement;
+  if (!parent || document.getElementById(PREPAINT_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = PREPAINT_STYLE_ID;
+  style.textContent = "html{background:#0f1115!important;color-scheme:dark}";
+  parent.appendChild(style);
+  // Backstop: if the real state never arrives (storage error, invalidated context), never leave the page dark.
+  setTimeout(removePrepaintStyle, PREPAINT_FAILSAFE_MS);
+}
+
+if (readPrepaintFlag()) injectPrepaintStyle();
+
 function getColorUtils() {
   return window.ForceDarkColorUtils || {};
 }
@@ -26,28 +79,67 @@ function normalizeEngine(engine) {
   return VALID_ENGINES.has(engine) ? engine : DEFAULT_ENGINE;
 }
 
+// Signature of what is on the page now, so a re-apply with the same result (the DOMContentLoaded re-run, an
+// unrelated storage change) leaves the engine in place instead of tearing it down and flashing white.
+let appliedSignature = "";
+
 function applyEngine(config) {
+  const engine = config?.enabled ? withEngineStylesSuspended(() => resolveEngine(config)) : "";
+  const themed = engine && engine !== "invert" ? withThemePalette(config) : null;
+  const signature = engine ? engineSignature(engine, config, themed) : "";
+
+  if (signature && signature === appliedSignature && isEngineStylePresent(engine)) {
+    settlePrepaint(true);
+    return;
+  }
+
   disableDarkMode();
   disableInvert();
   clearFilterVars();
+  appliedSignature = "";
 
-  if (!config?.enabled) return;
-
-  const engine = resolveEngine(config);
-
-  if (!engine) return;
+  // Off, disabled for the site, outside the schedule or natively dark: no bridge, and no flag for next time.
+  if (!engine) {
+    settlePrepaint(false);
+    return;
+  }
 
   applyFilterVars(config);
 
   if (engine === "invert") {
     enableInvert();
   } else {
-    enableDarkMode(withThemePalette(config));
+    enableDarkMode(themed);
   }
 
   // Only when an engine actually applied dark mode (not on natively dark pages).
   applyCustomCss(currentCustomCss);
+  appliedSignature = signature;
+  settlePrepaint(true); // the engine style is in place, so the bridge goes in the same task (no paint between)
   reportDarkAppliedOnce(config);
+}
+
+function engineSignature(engine, config, themed) {
+  const filters = [config?.brightness, config?.contrast, config?.sepia];
+  return JSON.stringify([engine, filters, themed, currentCustomCss]);
+}
+
+function isEngineStylePresent(engine) {
+  return Boolean(document.getElementById(engine === "invert" ? "__force_dark_invert__" : "__force_dark_mode__"));
+}
+
+// Auto and Invert analyse the page's own colours, so our styles must not count: they are switched off for the
+// synchronous analysis only (no paint can happen in between) and switched back on afterwards.
+function withEngineStylesSuspended(fn) {
+  const styles = [...ENGINE_STYLE_IDS, CUSTOM_CSS_STYLE_ID, PREPAINT_STYLE_ID]
+    .map((id) => document.getElementById(id))
+    .filter((style) => style && !style.disabled);
+  styles.forEach((style) => { style.disabled = true; });
+  try {
+    return fn();
+  } finally {
+    styles.forEach((style) => { style.disabled = false; });
+  }
 }
 
 // Tells the service worker that dark mode was applied on this page, once per page load. The message carries the
@@ -203,21 +295,36 @@ function refreshScheduleTimer() {
   }
 }
 
-function loadSiteConfigAndApply() {
-  chrome.storage.sync.get([host, CUSTOM_THEMES_KEY, CUSTOM_CSS_KEY], (data) => {
+function loadSiteConfig(callback) {
+  chrome.storage.sync.get([host, CUSTOM_THEMES_KEY, CUSTOM_CSS_KEY], (result) => {
+    // A failed read (chrome.runtime.lastError) passes no data: treat it as no config, so the page is not left
+    // half-applied and the pre-paint bridge is removed.
+    const data = result || {};
     currentSiteConfig = data[host] || null;
     currentUserThemes = Array.isArray(data[CUSTOM_THEMES_KEY]) ? data[CUSTOM_THEMES_KEY] : [];
     currentCustomCss = toCustomCss(data[CUSTOM_CSS_KEY]);
-    applyEffectiveEngine();
+    callback();
   });
 }
 
-// Initial engine application: load the global schedule once, then the per-site config.
+function loadSiteConfigAndApply() {
+  loadSiteConfig(applyEffectiveEngine);
+}
+
+// Initial engine application: the global schedule and the per-site config are read at the same time
+// (one storage round trip before the first paint instead of two) and applied once both have returned.
+let initialReadsPending = 2;
+const applyWhenInitialReadsDone = () => {
+  initialReadsPending -= 1;
+  if (initialReadsPending === 0) applyEffectiveEngine();
+};
+
 chrome.storage.local.get(SCHEDULE_STORAGE_KEY, (localData) => {
-  currentSchedule = localData[SCHEDULE_STORAGE_KEY] || null;
+  currentSchedule = (localData && localData[SCHEDULE_STORAGE_KEY]) || null;
   refreshScheduleTimer();
-  loadSiteConfigAndApply();
+  applyWhenInitialReadsDone();
 });
+loadSiteConfig(applyWhenInitialReadsDone);
 
 // Re-evaluate Auto Mode engine on DOMContentLoaded if DOM was still loading at document_start
 if (document.readyState === "loading") {

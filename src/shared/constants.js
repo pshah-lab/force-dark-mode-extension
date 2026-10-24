@@ -37,6 +37,19 @@ export function mediaFieldsFor(msg, currentConfig) {
   return out;
 }
 
+// Per site, for pages that are already dark: leave them alone ("respect", the default and the meaning of a
+// missing field) or theme them anyway ("force").
+export const VALID_NATIVE_DARK_MODES = new Set(["respect", "force"]);
+export const DEFAULT_NATIVE_DARK_MODE = "respect";
+
+// The nativeDark field to store for a site: the message's valid value wins, else the stored valid value is kept.
+// Absent or invalid stays absent, so older configs keep their shape (missing = "respect").
+export function nativeDarkFieldsFor(msg, currentConfig) {
+  const pick = (value) => (typeof value === "string" && VALID_NATIVE_DARK_MODES.has(value) ? value : undefined);
+  const nativeDark = pick(msg?.nativeDark) ?? pick(currentConfig?.nativeDark);
+  return nativeDark ? { nativeDark } : {};
+}
+
 export const VALID_SCHEDULE_MODES = new Set(["off", "time", "system"]);
 export const DEFAULT_SCHEDULE_START = "20:00";
 export const DEFAULT_SCHEDULE_END = "07:00";

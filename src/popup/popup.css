@@ -126,6 +126,42 @@ body {
   accent-color: #4caf50;
 }
 
+/* Natively dark page: respect it, or theme it anyway */
+.native-dark {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1a1a1a;
+  font-size: 13px;
+}
+
+.native-dark[hidden] {
+  display: none;
+}
+
+.native-dark button {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #242424;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.native-dark button:hover {
+  border-color: #4caf50;
+}
+
+.native-dark button:focus-visible {
+  outline: 2px solid #4caf50;
+  outline-offset: 1px;
+}
+
 /* Invert engine: photos & media (On / Dim / Off) */
 .media-control {
   margin: 0;

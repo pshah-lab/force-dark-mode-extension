@@ -7,6 +7,7 @@ import {
   clampFilterValue,
   THEME_ID_PATTERN,
   mediaFieldsFor,
+  nativeDarkFieldsFor,
 } from "../shared/constants.js";
 import { postJson } from "./network.js";
 import { createUsage } from "./usageSender.js";
@@ -225,6 +226,8 @@ async function handleToggleMessage(msg, tabUrl) {
   if (typeof themeId === "string") nextConfig.themeId = themeId;
   // Invert's photos & media setting: kept across every toggle; a missing field means "on".
   Object.assign(nextConfig, mediaFieldsFor(msg, currentConfig));
+  // Natively dark pages: respect (missing) or theme anyway; kept across every toggle.
+  Object.assign(nextConfig, nativeDarkFieldsFor(msg, currentConfig));
 
   await setSiteConfig(host, nextConfig);
 }

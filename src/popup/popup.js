@@ -1,3 +1,15 @@
+// The "already dark" notice for this page: shown only when the page's own analysis says it is natively dark.
+// `setting` is the site's nativeDark field: "force" themes it anyway, anything else (or missing) respects it.
+function nativeDarkNotice(analysis, setting) {
+  const forced = setting === "force";
+  return {
+    visible: analysis?.nativeDark === true,
+    text: "This site is already dark",
+    button: forced ? "Respect site's dark theme" : "Theme it anyway",
+    next: forced ? "respect" : "force",
+  };
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const button = document.getElementById("toggle");
   const label = button.querySelector(".label");
@@ -15,6 +27,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const radios = document.querySelectorAll('input[name="engine"]');
   const mediaControl = document.getElementById("media-control");
   const mediaRadios = document.querySelectorAll('input[name="media"]');
+  const nativeDarkBox = document.getElementById("native-dark");
+  const nativeDarkText = document.getElementById("native-dark-text");
+  const nativeDarkToggle = document.getElementById("native-dark-toggle");
   const defaultMedia = "on";
   const mediaModes = new Set(["on", "dim", "off"]);
   const defaultBackgroundColor = "#0f1115";
@@ -25,6 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let filterDebounceTimer = null;
   let userHasInteractedWithEngine = false;
   let lastAnalysis = null; // this tab's Auto recommendation, to know whether Auto picked Invert
+  let siteNativeDark; // this site's nativeDark setting (missing = respect)
 
   const engineLabels = {
     auto: "Auto Engine",
@@ -133,6 +149,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       radio.disabled = true;
     });
     mediaControl.hidden = true;
+    nativeDarkBox.hidden = true;
   }
 
   // Broken-site report: a button, then an explicit confirmation naming the domain. Nothing is sent
@@ -232,7 +249,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     host = "";
     userHasInteractedWithEngine = false;
     lastAnalysis = null;
+    siteNativeDark = undefined;
     mediaControl.hidden = true;
+    nativeDarkBox.hidden = true;
     openPdfViewerButton.hidden = true;
     openPdfViewerButton.onclick = null;
     const siteCssLink = document.getElementById("site-css-link");
@@ -320,6 +339,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     mediaControl.hidden = !(engine === "invert" || autoPickedInvert);
   }
 
+  function updateNativeDarkNotice() {
+    const notice = nativeDarkNotice(lastAnalysis, siteNativeDark);
+    nativeDarkBox.hidden = !notice.visible;
+    nativeDarkText.textContent = notice.text;
+    nativeDarkToggle.textContent = notice.button;
+  }
+
   function getSelectedEngine() {
     return (
       document.querySelector('input[name="engine"]:checked')?.value ||
@@ -399,6 +425,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       lastAnalysis = analysis;
       showRecommendation(analysis);
+      updateNativeDarkNotice();
 
       if (!hasSavedConfig && !userHasInteractedWithEngine) {
         updateSelectedEngine(defaultEngine);
@@ -490,6 +517,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const config = changes[host].newValue || {};
     selectTheme(config.themeId);
     selectMedia(config.media);
+    siteNativeDark = config.nativeDark;
+    updateNativeDarkNotice();
     updateToggleUI(
       config.enabled === true,
       config.engine || defaultEngine,
@@ -507,6 +536,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       fillThemeOptions(data.__customThemes);
       selectTheme(config.themeId);
       selectMedia(config.media);
+      siteNativeDark = config.nativeDark;
       const hasSavedConfig = Boolean(data[uiHost]?.engine);
       const enabled = config.enabled === true;
       const engine = config.engine || defaultEngine;
@@ -578,6 +608,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     };
   });
+
+  // Natively dark page: theme it anyway (which also turns dark mode on for the site), or go back to respecting
+  // the site's own dark theme (dark mode stays as it is). Saved through TOGGLE like the engine.
+  nativeDarkToggle.onclick = () => {
+    const next = nativeDarkNotice(lastAnalysis, siteNativeDark).next;
+    chrome.storage.sync.get(host, (data) => {
+      const enabled = data[host]?.enabled === true;
+      chrome.runtime.sendMessage({
+        type: "TOGGLE",
+        tabId: tab.id,
+        host,
+        engine: getSelectedEngine(),
+        backgroundColor: normalizeColor(backgroundColorInput.value),
+        nativeDark: next,
+        forceEnabled: next === "force" ? true : enabled,
+        ...getFilterValues(),
+      });
+    });
+  };
 
   // Picking a colour means "use this colour": switch to Default colour so a selected
   // theme or a site pack theme never hides it.

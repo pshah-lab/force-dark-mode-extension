@@ -6,6 +6,7 @@ import {
   TIME_PATTERN,
   THEME_ID_PATTERN,
   mediaFieldsFor,
+  nativeDarkFieldsFor,
 } from "./constants.js";
 import "./colorUtils.js";
 import "./themeCore.js";
@@ -103,7 +104,7 @@ export function setSiteConfig(host, config) {
       contrast: clampFilterValue("contrast", config?.contrast),
       sepia: clampFilterValue("sepia", config?.sepia),
     };
-    Object.assign(safeConfig, mediaFieldsFor(config, null));
+    Object.assign(safeConfig, mediaFieldsFor(config, null), nativeDarkFieldsFor(config, null));
     if (config && Object.prototype.hasOwnProperty.call(config, "themeId")) {
       safeConfig.themeId = sanitizeThemeId(config.themeId);
     }
@@ -246,7 +247,7 @@ export async function importSettingsJson(jsonString) {
       contrast: clampFilterValue("contrast", val.contrast),
       sepia: clampFilterValue("sepia", val.sepia),
     };
-    Object.assign(toSet[key], mediaFieldsFor(val, null));
+    Object.assign(toSet[key], mediaFieldsFor(val, null), nativeDarkFieldsFor(val, null));
     if (Object.prototype.hasOwnProperty.call(val, "themeId")) {
       toSet[key].themeId = sanitizeThemeId(val.themeId);
     }

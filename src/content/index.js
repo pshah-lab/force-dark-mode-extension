@@ -46,6 +46,7 @@ function isInertFrame() {
 
 const DEFAULT_ENGINE = "auto";
 const FALLBACK_ENGINE = "css";
+const DEFAULT_NATIVE_DARK_MODE = "respect";
 const VALID_ENGINES = new Set(["auto", "css", "invert"]);
 const ANALYSIS_SAMPLE_LIMIT = 300;
 const ANALYSIS_SKIP_SELECTOR = [
@@ -62,6 +63,27 @@ const ANALYSIS_SKIP_SELECTOR = [
   "template",
   "track",
 ].join(",");
+
+// Root app containers checked for a dark theme marker and background. Bounded: a handful of elements at most.
+const APP_CONTAINER_SELECTOR = "ytd-app, #app, #root, #__next, main, #main, [role=main]";
+const APP_CONTAINER_LIMIT = 8;
+const APP_CONTAINER_COVER_RATIO = 0.6;
+
+// Dark theme markers sites put on html, body or the app root. Values and class names are matched as whole
+// tokens: "dark-blue-header", "darkroom" or "nightlife" are not dark themes.
+const DARK_THEME_ATTRS = ["data-theme", "data-bs-theme", "data-color-mode", "data-color-scheme", "data-mode"];
+const DARK_VALUE_TOKENS = new Set(["dark", "night"]);
+const DARK_CLASS_TOKENS = [
+  "dark",
+  "dark-mode",
+  "darkmode",
+  "dark-theme",
+  "theme-dark",
+  "theme--dark",
+  "is-dark",
+  "night",
+  "night-mode",
+];
 
 // Pre-paint bridge. chrome.storage answers only after the first paint, so a site that had dark mode last time
 // would flash white. The one thing this extension keeps in the page's own web storage is the flag below: "1:" and
@@ -138,7 +160,7 @@ function applyEngine(config) {
   const themed = engine && engine !== "invert" ? withThemePalette(config) : null;
   // Invert only: the per-site media setting (missing = "on"). Part of the signature so a change rebuilds it.
   const media = engine === "invert" ? invertMediaOptions(config) : null;
-  const signature = engine ? engineSignature(engine, config, themed, transparent, media) : "";
+  const signature = engine ? engineSignature(engine, config, themed, transparent, media, nativeDarkMode(config)) : "";
 
   if (signature && signature === appliedSignature && isEngineStylePresent(engine)) {
     settlePrepaint(true);
@@ -173,9 +195,14 @@ function applyEngine(config) {
   reportDarkAppliedOnce(config);
 }
 
-function engineSignature(engine, config, themed, transparent, media = null) {
+function engineSignature(engine, config, themed, transparent, media = null, nativeDark = DEFAULT_NATIVE_DARK_MODE) {
   const filters = [config?.brightness, config?.contrast, config?.sepia];
-  return JSON.stringify([engine, filters, themed, currentCustomCss, Boolean(transparent), media]);
+  return JSON.stringify([engine, filters, themed, currentCustomCss, Boolean(transparent), media, nativeDark]);
+}
+
+// Per site: "respect" (default, also any missing or unknown value) skips natively dark pages; "force" themes them.
+function nativeDarkMode(config) {
+  return config?.nativeDark === "force" ? "force" : DEFAULT_NATIVE_DARK_MODE;
 }
 
 // A child frame whose own document paints no background (html and body transparent, no image) shows the
@@ -239,6 +266,8 @@ function withThemePalette(config) {
   // Invert-only settings: dropped so a media change never rebuilds the CSS engine.
   delete out.media;
   delete out.mediaDim;
+  // In the signature on its own, so it is not counted twice.
+  delete out.nativeDark;
 
   const themes = window.ForceDarkThemes;
   if (!themes || typeof themes.resolveTheme !== "function") return out;
@@ -293,9 +322,13 @@ function resolveEngine(config) {
   }
 
   // Inverting a page that is already dark turns it light again, so Invert is
-  // skipped on natively dark pages just like Auto.
+  // skipped on natively dark pages just like Auto, unless the user chose to theme
+  // this site anyway: then Invert stays Invert and Auto uses the CSS engine.
   const analysis = analyzePageForEngine();
-  if (analysis.nativeDark) return "";
+  if (analysis.nativeDark) {
+    if (nativeDarkMode(config) !== "force") return "";
+    return engine === "invert" ? "invert" : FALLBACK_ENGINE;
+  }
   return engine === "invert" ? "invert" : analysis.engine;
 }
 
@@ -473,8 +506,9 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   // child frame replying first would hand back an iframe's address or analysis. It never calls sendResponse.
   if (IS_CHILD_FRAME) return;
 
+  // Measured with our own styles switched off, so a page we themed is not reported as natively dark.
   if (msg.type === "ANALYZE_PAGE") {
-    sendResponse(analyzePageForEngine());
+    sendResponse(withEngineStylesSuspended(analyzePageForEngine));
   }
 
   // The side panel stays open across tabs and Chrome hides a tab's address from it, so it asks the page.
@@ -653,24 +687,8 @@ function isNativeDarkPage({
   const rootColorScheme = rootStyles.colorScheme || "";
   const bodyColorScheme = bodyStyles.colorScheme || "";
 
-  const htmlEl = document.documentElement;
-  const bodyEl = document.body;
-  const hasDarkAttr =
-    htmlEl.hasAttribute("dark") ||
-    htmlEl.getAttribute("data-theme") === "dark" ||
-    htmlEl.getAttribute("data-mode") === "dark" ||
-    htmlEl.getAttribute("data-color-mode") === "dark" ||
-    htmlEl.classList.contains("dark") ||
-    htmlEl.classList.contains("dark-theme") ||
-    htmlEl.classList.contains("theme-dark") ||
-    (bodyEl && (
-      bodyEl.hasAttribute("dark") ||
-      bodyEl.getAttribute("data-theme") === "dark" ||
-      bodyEl.getAttribute("data-mode") === "dark" ||
-      bodyEl.classList.contains("dark") ||
-      bodyEl.classList.contains("dark-theme") ||
-      bodyEl.classList.contains("theme-dark")
-    ));
+  const container = findAppContainer();
+  const hasDarkAttr = [document.documentElement, document.body, container?.element].some(hasDarkThemeMarker);
 
   const declaresDarkScheme =
     colorSchemeResolvesToDark(rootColorScheme) ||
@@ -685,17 +703,11 @@ function isNativeDarkPage({
       bodyBackground.a > 0.35 &&
       getLuminance(bodyBackground) < 0.28);
 
-  // Check top-level app containers (like YouTube ytd-app, #app, #root, main)
-  let hasDarkAppContainer = false;
-  if (!hasDarkRoot) {
-    const mainContainer = document.querySelector("ytd-app, #app, #root, #__next, main, #main");
-    if (mainContainer) {
-      const containerBg = parseCssColor(getComputedStyle(mainContainer).backgroundColor);
-      if (containerBg && containerBg.a > 0.35 && getLuminance(containerBg) < 0.28) {
-        hasDarkAppContainer = true;
-      }
-    }
-  }
+  // Top-level app containers (YouTube ytd-app, #app, #root, main...): the largest one that paints a background.
+  const darkContainer = !hasDarkRoot && container?.background && getLuminance(container.background) < 0.28;
+  const hasDarkAppContainer = Boolean(darkContainer);
+  // A dark app filling most of the viewport is what the user sees, even over a light body.
+  const darkContainerCoversViewport = hasDarkAppContainer && container.areaRatio >= APP_CONTAINER_COVER_RATIO;
 
   // If too many light surfaces exist, it's not a dark page
   if (lightSurfaceRatio > 0.25) return false;
@@ -710,7 +722,7 @@ function isNativeDarkPage({
       : bodyBackground && bodyBackground.a > 0.35
         ? bodyBackground
         : null;
-  if (canvasBackground && getLuminance(canvasBackground) > 0.55) return false;
+  if (canvasBackground && getLuminance(canvasBackground) > 0.55 && !darkContainerCoversViewport) return false;
 
   // If site declares dark mode or has dark root/app container, and dark surfaces dominate
   if (declaresDarkScheme && (darkSurfaceRatio >= 0.55 || hasDarkRoot || hasDarkAppContainer)) {
@@ -722,6 +734,47 @@ function isNativeDarkPage({
   }
 
   return false;
+}
+
+// The root container that matters: the largest visible one that paints an opaque background (a transparent
+// #root around a dark <main> must not hide it), else the largest visible one (for its theme marker).
+function findAppContainer() {
+  const { parseCssColor } = getColorUtils();
+  const viewportArea = Math.max(window.innerWidth * window.innerHeight, 1);
+  let painted = null;
+  let largest = null;
+  const candidates = Array.from(document.querySelectorAll(APP_CONTAINER_SELECTOR)).slice(0, APP_CONTAINER_LIMIT);
+  for (const element of candidates) {
+    const area = getViewportArea(element);
+    if (area <= 0) continue;
+    const styles = getComputedStyle(element);
+    if (styles.display === "none" || styles.visibility === "hidden") continue;
+    const entry = { element, areaRatio: area / viewportArea, background: null };
+    if (!largest || entry.areaRatio > largest.areaRatio) largest = entry;
+    const background = parseCssColor ? parseCssColor(styles.backgroundColor) : null;
+    if (background && background.a > 0.35 && (!painted || entry.areaRatio > painted.areaRatio)) {
+      painted = { ...entry, background };
+    }
+  }
+  return painted || largest;
+}
+
+function hasDarkThemeMarker(element) {
+  if (!element || typeof element.getAttribute !== "function") return false;
+  if (element.hasAttribute("dark")) return true;
+  for (const name of DARK_THEME_ATTRS) {
+    const value = String(element.getAttribute(name) || "").toLowerCase();
+    if (!value) continue;
+    // GitHub: data-color-mode="auto" follows the OS.
+    if (name === "data-color-mode" && value === "auto" && window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
+      return true;
+    }
+    const tokens = value.split(/[^a-z0-9]+/).filter(Boolean);
+    // "light dark" is support for both schemes, not a dark theme.
+    if (tokens.includes("light")) continue;
+    if (tokens.some((token) => DARK_VALUE_TOKENS.has(token))) return true;
+  }
+  return DARK_CLASS_TOKENS.some((token) => element.classList?.contains(token));
 }
 
 function getVisibleSample() {

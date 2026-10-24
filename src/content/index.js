@@ -136,7 +136,9 @@ function applyEngine(config) {
   const engine = resolved.engine;
   const transparent = Boolean(engine) && resolved.transparent;
   const themed = engine && engine !== "invert" ? withThemePalette(config) : null;
-  const signature = engine ? engineSignature(engine, config, themed, transparent) : "";
+  // Invert only: the per-site media setting (missing = "on"). Part of the signature so a change rebuilds it.
+  const media = engine === "invert" ? invertMediaOptions(config) : null;
+  const signature = engine ? engineSignature(engine, config, themed, transparent, media) : "";
 
   if (signature && signature === appliedSignature && isEngineStylePresent(engine)) {
     settlePrepaint(true);
@@ -159,7 +161,7 @@ function applyEngine(config) {
   if (transparent) document.documentElement.setAttribute(TRANSPARENT_FRAME_ATTR, "transparent");
 
   if (engine === "invert") {
-    enableInvert();
+    enableInvert(media);
   } else {
     enableDarkMode(themed);
   }
@@ -171,9 +173,9 @@ function applyEngine(config) {
   reportDarkAppliedOnce(config);
 }
 
-function engineSignature(engine, config, themed, transparent) {
+function engineSignature(engine, config, themed, transparent, media = null) {
   const filters = [config?.brightness, config?.contrast, config?.sepia];
-  return JSON.stringify([engine, filters, themed, currentCustomCss, Boolean(transparent)]);
+  return JSON.stringify([engine, filters, themed, currentCustomCss, Boolean(transparent), media]);
 }
 
 // A child frame whose own document paints no background (html and body transparent, no image) shows the
@@ -234,6 +236,9 @@ function reportDarkAppliedOnce(config) {
 function withThemePalette(config) {
   const out = config && typeof config === "object" ? { ...config } : {};
   delete out.fixes;
+  // Invert-only settings: dropped so a media change never rebuilds the CSS engine.
+  delete out.media;
+  delete out.mediaDim;
 
   const themes = window.ForceDarkThemes;
   if (!themes || typeof themes.resolveTheme !== "function") return out;

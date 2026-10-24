@@ -13,6 +13,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const openDocumentViewerButton = document.getElementById("open-document-viewer");
   const themeSelect = document.getElementById("theme-select");
   const radios = document.querySelectorAll('input[name="engine"]');
+  const mediaControl = document.getElementById("media-control");
+  const mediaRadios = document.querySelectorAll('input[name="media"]');
+  const defaultMedia = "on";
+  const mediaModes = new Set(["on", "dim", "off"]);
   const defaultBackgroundColor = "#0f1115";
   const defaultEngine = "auto";
   const defaultFilters = { brightness: 100, contrast: 100, sepia: 0 };
@@ -20,6 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let colorDebounceTimer = null;
   let filterDebounceTimer = null;
   let userHasInteractedWithEngine = false;
+  let lastAnalysis = null; // this tab's Auto recommendation, to know whether Auto picked Invert
 
   const engineLabels = {
     auto: "Auto Engine",
@@ -124,6 +129,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     radios.forEach((radio) => {
       radio.disabled = true;
     });
+    mediaRadios.forEach((radio) => {
+      radio.disabled = true;
+    });
+    mediaControl.hidden = true;
   }
 
   // Broken-site report: a button, then an explicit confirmation naming the domain. Nothing is sent
@@ -191,6 +200,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     radios.forEach((radio) => {
       radio.disabled = false;
     });
+    mediaRadios.forEach((radio) => {
+      radio.disabled = false;
+    });
   }
 
   function askPageForUrl(tabId) {
@@ -219,6 +231,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const previousHost = host;
     host = "";
     userHasInteractedWithEngine = false;
+    lastAnalysis = null;
+    mediaControl.hidden = true;
     openPdfViewerButton.hidden = true;
     openPdfViewerButton.onclick = null;
     const siteCssLink = document.getElementById("site-css-link");
@@ -288,6 +302,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         radio.checked = radio.value === engine;
       });
     }
+    updateMediaVisibility();
+  }
+
+  // The site's photos & media setting (Invert engine only). A missing field means "on".
+  function selectMedia(media) {
+    const value = mediaModes.has(media) ? media : defaultMedia;
+    mediaRadios.forEach((radio) => {
+      radio.checked = radio.value === value;
+    });
+  }
+
+  // Shown when the Invert engine is selected, or Auto is selected and picked Invert for this page.
+  function updateMediaVisibility() {
+    const engine = getSelectedEngine();
+    const autoPickedInvert = engine === "auto" && lastAnalysis?.engine === "invert" && !lastAnalysis.nativeDark;
+    mediaControl.hidden = !(engine === "invert" || autoPickedInvert);
   }
 
   function getSelectedEngine() {
@@ -367,11 +397,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
+      lastAnalysis = analysis;
       showRecommendation(analysis);
 
       if (!hasSavedConfig && !userHasInteractedWithEngine) {
         updateSelectedEngine(defaultEngine);
       }
+      updateMediaVisibility();
     });
   }
 
@@ -457,6 +489,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const config = changes[host].newValue || {};
     selectTheme(config.themeId);
+    selectMedia(config.media);
     updateToggleUI(
       config.enabled === true,
       config.engine || defaultEngine,
@@ -473,6 +506,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const config = data[uiHost] || {};
       fillThemeOptions(data.__customThemes);
       selectTheme(config.themeId);
+      selectMedia(config.media);
       const hasSavedConfig = Boolean(data[uiHost]?.engine);
       const enabled = config.enabled === true;
       const engine = config.engine || defaultEngine;
@@ -508,6 +542,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   radios.forEach((radio) => {
     radio.onchange = () => {
       userHasInteractedWithEngine = true;
+      updateMediaVisibility();
       chrome.storage.sync.get(host, (data) => {
         const enabled = data[host]?.enabled === true;
 
@@ -517,6 +552,26 @@ document.addEventListener("DOMContentLoaded", async () => {
           host,
           engine: radio.value,
           backgroundColor: normalizeColor(backgroundColorInput.value),
+          forceEnabled: enabled,
+          ...getFilterValues(),
+        });
+      });
+    };
+  });
+
+  // Photos & media for this site: saved through TOGGLE like the engine, never changing whether dark mode is on.
+  mediaRadios.forEach((radio) => {
+    radio.onchange = () => {
+      chrome.storage.sync.get(host, (data) => {
+        const enabled = data[host]?.enabled === true;
+
+        chrome.runtime.sendMessage({
+          type: "TOGGLE",
+          tabId: tab.id,
+          host,
+          engine: getSelectedEngine(),
+          backgroundColor: normalizeColor(backgroundColorInput.value),
+          media: radio.value,
           forceEnabled: enabled,
           ...getFilterValues(),
         });

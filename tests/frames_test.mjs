@@ -426,9 +426,11 @@ test("the top frame is never marked transparent, and the marker is removed when 
 test("no double inversion: an inverted parent cancels its filter on iframes, each frame themes itself", () => {
   const f = load({ hostname: "top.example", sync: { "top.example": { enabled: true, engine: "invert" } } });
   const css = f.invertStyle().textContent;
-  const reinvert = css.split("}").find((b) => b.includes("filter: invert(1) hue-rotate(180deg)"));
-  const selectors = reinvert.split("{")[0].split(",").map((s) => s.trim());
-  assert.ok(selectors.includes("iframe"), "iframe elements are re-inverted so the parent's invert is cancelled");
+  // The re-invert is the exact inverse of the page's invert(0.92) hue-rotate(180deg) (see invertEngine.js).
+  const reinvert = css.replace(/\/\*[\s\S]*?\*\//g, "").split("}").find((b) => b.split("{")[0].split(",").map((s) => s.trim()).includes("iframe"));
+  assert.ok(reinvert, "iframe elements have their own rule");
+  assert.ok(reinvert.includes("filter: hue-rotate(180deg) invert(1) contrast(1.1905) !important"),
+    "iframe elements are re-inverted so the parent's invert is cancelled");
 
   // The child frame under it applies its own engine (it would otherwise be inverted back to light).
   const child = load({

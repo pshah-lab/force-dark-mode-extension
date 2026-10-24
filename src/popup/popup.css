@@ -126,6 +126,51 @@ body {
   accent-color: #4caf50;
 }
 
+/* Invert engine: photos & media (On / Dim / Off) */
+.media-control {
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #1a1a1a;
+  font-size: 13px;
+}
+
+.media-control[hidden] {
+  display: none;
+}
+
+.media-control legend {
+  float: left;
+  padding: 0;
+  margin-right: 8px;
+  line-height: 24px;
+}
+
+.media-options {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.media-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.media-option:hover {
+  background: #242424;
+}
+
+.media-option input {
+  accent-color: #4caf50;
+  margin: 0;
+}
+
 .color-control {
   display: flex;
   align-items: center;

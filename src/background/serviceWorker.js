@@ -6,6 +6,7 @@ import {
   HEX_COLOR_PATTERN,
   clampFilterValue,
   THEME_ID_PATTERN,
+  mediaFieldsFor,
 } from "../shared/constants.js";
 import { postJson } from "./network.js";
 import { createUsage } from "./usageSender.js";
@@ -222,6 +223,8 @@ async function handleToggleMessage(msg, tabUrl) {
     sepia,
   };
   if (typeof themeId === "string") nextConfig.themeId = themeId;
+  // Invert's photos & media setting: kept across every toggle; a missing field means "on".
+  Object.assign(nextConfig, mediaFieldsFor(msg, currentConfig));
 
   await setSiteConfig(host, nextConfig);
 }

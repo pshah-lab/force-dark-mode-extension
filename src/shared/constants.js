@@ -8,6 +8,7 @@ export const FILTER_RANGES = {
   brightness: { min: 50, max: 150, default: 100 },
   contrast: { min: 50, max: 150, default: 100 },
   sepia: { min: 0, max: 100, default: 0 },
+  mediaDim: { min: 0, max: 80, default: 20 },
 };
 
 export function clampFilterValue(name, value) {
@@ -15,6 +16,25 @@ export function clampFilterValue(name, value) {
   const numeric = Number(value);
   if (!range || !Number.isFinite(numeric)) return range?.default ?? 0;
   return Math.min(range.max, Math.max(range.min, Math.round(numeric)));
+}
+
+// Invert engine, per site: photos and media restored ("on", the default and the meaning of a missing field),
+// restored and dimmed by mediaDim percent ("dim"), or inverted with the page ("off").
+export const VALID_MEDIA_MODES = new Set(["on", "dim", "off"]);
+export const DEFAULT_MEDIA_MODE = "on";
+
+// The media fields to store for a site: the message's valid values win, else the stored valid values are kept.
+// Fields that are absent or invalid stay absent, so older configs keep their shape (missing = "on").
+export function mediaFieldsFor(msg, currentConfig) {
+  const out = {};
+  const pick = (value) => (typeof value === "string" && VALID_MEDIA_MODES.has(value) ? value : undefined);
+  const media = pick(msg?.media) ?? pick(currentConfig?.media);
+  if (media) out.media = media;
+  const dimSource = msg?.mediaDim ?? currentConfig?.mediaDim;
+  if (dimSource !== undefined && dimSource !== null && Number.isFinite(Number(dimSource))) {
+    out.mediaDim = clampFilterValue("mediaDim", dimSource);
+  }
+  return out;
 }
 
 export const VALID_SCHEDULE_MODES = new Set(["off", "time", "system"]);

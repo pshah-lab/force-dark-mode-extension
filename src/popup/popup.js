@@ -196,7 +196,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function askPageForUrl(tabId) {
     return new Promise((resolve) => {
       try {
-        chrome.tabs.sendMessage(tabId, { type: "PAGE_INFO" }, (info) => {
+        chrome.tabs.sendMessage(tabId, { type: "PAGE_INFO" }, { frameId: 0 }, (info) => {
           void chrome.runtime.lastError;
           resolve(info && typeof info.href === "string" ? info.href : null);
         });
@@ -360,7 +360,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const token = viewToken;
-    chrome.tabs.sendMessage(tab.id, { type: "ANALYZE_PAGE" }, (analysis) => {
+    chrome.tabs.sendMessage(tab.id, { type: "ANALYZE_PAGE" }, { frameId: 0 }, (analysis) => {
       if (token !== viewToken) return;
       if (chrome.runtime.lastError || !isValidAnalysis(analysis)) {
         showRecommendationUnavailable();

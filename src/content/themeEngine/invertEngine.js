@@ -10,8 +10,11 @@ function enableInvert() {
       color-scheme: dark !important;
     }
 
-    html {
+    html:not([data-force-dark-frame="transparent"]) {
       background-color: #121212 !important;
+    }
+
+    html {
       filter: invert(0.92) hue-rotate(180deg) brightness(var(--force-dark-brightness, 100%)) contrast(var(--force-dark-contrast, 100%)) sepia(var(--force-dark-sepia, 0%)) !important;
     }
 
@@ -31,9 +34,17 @@ function enableInvert() {
     picture,
     embed,
     object,
+    iframe,
     [style*="background-image"] {
       filter: invert(1) hue-rotate(180deg) !important;
     }
+
+    /*
+     * No double inversion across frames: the html filter above would also invert every child frame's
+     * pixels, and the content script themes each child frame itself (with the top site's settings). So the
+     * iframe element is re-inverted here, cancelling this frame's filter, and the child's own engine alone
+     * decides its colours. Without this a dark child frame would be flipped back to light.
+     */
 
     /* Prevent double inversion on media nested inside picture or video */
     picture img,

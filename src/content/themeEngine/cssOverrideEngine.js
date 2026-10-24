@@ -92,8 +92,13 @@ function enableDarkMode(config = {}) {
 
     :root[${ROOT_MODE_ATTR}="css"],
     :root[${ROOT_MODE_ATTR}="css"] body {
-      background-color: var(--force-dark-bg) !important;
       color: var(--force-dark-text) !important;
+    }
+
+    /* A transparent child frame (marked by the content script) keeps showing its embedding page. */
+    :root[${ROOT_MODE_ATTR}="css"]:not([data-force-dark-frame="transparent"]),
+    :root[${ROOT_MODE_ATTR}="css"]:not([data-force-dark-frame="transparent"]) body {
+      background-color: var(--force-dark-bg) !important;
     }
 
     :root[${ROOT_MODE_ATTR}="css"] [${SURFACE_ATTR}="strong"] {

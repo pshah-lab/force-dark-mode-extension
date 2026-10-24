@@ -1,4 +1,49 @@
-const host = location.hostname || "local_files";
+// This script runs in every frame (manifest all_frames / match_about_blank). Settings are keyed by the site the
+// user sees, so a child frame (iframe, srcdoc, about:blank) takes its key from the top frame's host. Child frames
+// never answer data requests, never report usage, never touch the pre-paint flag and stay inert when tiny.
+const IS_CHILD_FRAME = isChildFrame();
+const MIN_FRAME_SIZE_PX = 48;
+const TRANSPARENT_FRAME_ATTR = "data-force-dark-frame";
+const host = resolveConfigHost();
+
+function isChildFrame() {
+  try {
+    const top = window.top;
+    return Boolean(top) && top !== window;
+  } catch (error) {
+    return true;
+  }
+}
+
+function hostnameOfOrigin(origin) {
+  const match = /^[a-z][a-z0-9+.-]*:\/\/(\[[^\]]+\]|[^/:?#]+)/i.exec(String(origin || ""));
+  return match ? match[1].toLowerCase() : "";
+}
+
+// Top frame: its own host. Child frame: the top origin's host from location.ancestorOrigins (Chrome), else the
+// top's own location when same-origin, else (cross-origin without ancestorOrigins) the frame's own host.
+function resolveConfigHost() {
+  const own = location.hostname || "local_files";
+  if (!IS_CHILD_FRAME) return own;
+  const ancestors = location.ancestorOrigins;
+  if (ancestors && ancestors.length) return hostnameOfOrigin(ancestors[ancestors.length - 1]) || "local_files";
+  try {
+    return window.top.location.hostname || "local_files";
+  } catch (error) {
+    return own;
+  }
+}
+
+// Tracker / ad pixels and hidden frames: nothing worth theming, so no engine, observer or timer.
+function isInertFrame() {
+  if (!IS_CHILD_FRAME) return false;
+  if (window.innerWidth < MIN_FRAME_SIZE_PX || window.innerHeight < MIN_FRAME_SIZE_PX) return true;
+  const body = document.readyState === "loading" ? null : document.body;
+  if (!body) return false;
+  const rect = body.getBoundingClientRect();
+  return rect.width === 0 || rect.height === 0; // no visible body
+}
+
 const DEFAULT_ENGINE = "auto";
 const FALLBACK_ENGINE = "css";
 const VALID_ENGINES = new Set(["auto", "css", "invert"]);
@@ -53,9 +98,10 @@ function removePrepaintStyle() {
 }
 
 // Called whenever the real state for this page is known: drops the bridge and records the outcome.
+// The flag belongs to the top document's origin, so a child frame never reads or writes it.
 function settlePrepaint(dark) {
   removePrepaintStyle();
-  writePrepaintFlag(dark);
+  if (!IS_CHILD_FRAME) writePrepaintFlag(dark);
 }
 
 function injectPrepaintStyle() {
@@ -69,7 +115,7 @@ function injectPrepaintStyle() {
   setTimeout(removePrepaintStyle, PREPAINT_FAILSAFE_MS);
 }
 
-if (readPrepaintFlag()) injectPrepaintStyle();
+if (!IS_CHILD_FRAME && readPrepaintFlag()) injectPrepaintStyle();
 
 function getColorUtils() {
   return window.ForceDarkColorUtils || {};
@@ -84,9 +130,13 @@ function normalizeEngine(engine) {
 let appliedSignature = "";
 
 function applyEngine(config) {
-  const engine = config?.enabled ? withEngineStylesSuspended(() => resolveEngine(config)) : "";
+  const resolved = config?.enabled && !isInertFrame()
+    ? withEngineStylesSuspended(() => ({ engine: resolveEngine(config), transparent: isTransparentFrame() }))
+    : { engine: "", transparent: false };
+  const engine = resolved.engine;
+  const transparent = Boolean(engine) && resolved.transparent;
   const themed = engine && engine !== "invert" ? withThemePalette(config) : null;
-  const signature = engine ? engineSignature(engine, config, themed) : "";
+  const signature = engine ? engineSignature(engine, config, themed, transparent) : "";
 
   if (signature && signature === appliedSignature && isEngineStylePresent(engine)) {
     settlePrepaint(true);
@@ -96,6 +146,7 @@ function applyEngine(config) {
   disableDarkMode();
   disableInvert();
   clearFilterVars();
+  document.documentElement.removeAttribute(TRANSPARENT_FRAME_ATTR);
   appliedSignature = "";
 
   // Off, disabled for the site, outside the schedule or natively dark: no bridge, and no flag for next time.
@@ -105,6 +156,7 @@ function applyEngine(config) {
   }
 
   applyFilterVars(config);
+  if (transparent) document.documentElement.setAttribute(TRANSPARENT_FRAME_ATTR, "transparent");
 
   if (engine === "invert") {
     enableInvert();
@@ -119,9 +171,26 @@ function applyEngine(config) {
   reportDarkAppliedOnce(config);
 }
 
-function engineSignature(engine, config, themed) {
+function engineSignature(engine, config, themed, transparent) {
   const filters = [config?.brightness, config?.contrast, config?.sepia];
-  return JSON.stringify([engine, filters, themed, currentCustomCss]);
+  return JSON.stringify([engine, filters, themed, currentCustomCss, Boolean(transparent)]);
+}
+
+// A child frame whose own document paints no background (html and body transparent, no image) shows the
+// embedding page through it. Forcing an opaque dark canvas there would cover the parent's design, so the
+// engines skip their root/body background in such frames (light surfaces are still darkened by the scan).
+// Measured with our styles suspended. The top frame always gets the dark canvas.
+function isTransparentFrame() {
+  if (!IS_CHILD_FRAME) return false;
+  const { parseCssColor } = getColorUtils();
+  if (!parseCssColor) return false;
+  return [document.documentElement, document.body].every((element) => {
+    if (!element) return true;
+    const styles = getComputedStyle(element);
+    if (hasBackgroundImage(styles)) return false;
+    const background = parseCssColor(styles.backgroundColor);
+    return !background || background.a <= 0.05;
+  });
 }
 
 function isEngineStylePresent(engine) {
@@ -148,7 +217,7 @@ function withEngineStylesSuspended(fn) {
 let darkAppliedReported = false;
 
 function reportDarkAppliedOnce(config) {
-  if (darkAppliedReported) return;
+  if (IS_CHILD_FRAME || darkAppliedReported) return; // once per tab: the top frame speaks for the page
   darkAppliedReported = true;
   try {
     const result = chrome.runtime.sendMessage({ type: "DARK_APPLIED", engine: normalizeEngine(config?.engine) }, () => void chrome.runtime.lastError);
@@ -290,9 +359,20 @@ function refreshScheduleTimer() {
     scheduleIntervalId = null;
   }
 
-  if (currentSchedule && currentSchedule.mode !== "off") {
+  if (!currentSchedule || currentSchedule.mode === "off" || isInertFrame()) return;
+  if (!IS_CHILD_FRAME) {
     scheduleIntervalId = setInterval(applyEffectiveEngine, SCHEDULE_RECHECK_INTERVAL_MS);
+    return;
   }
+  // Time and system schedules change without a storage event, so a child frame keeps a timer too, but it only
+  // compares one boolean and re-runs the engine (and its page analysis) when the schedule state flips.
+  let lastInside = isWithinSchedule(currentSchedule);
+  scheduleIntervalId = setInterval(() => {
+    const inside = isWithinSchedule(currentSchedule);
+    if (inside === lastInside) return;
+    lastInside = inside;
+    applyEffectiveEngine();
+  }, SCHEDULE_RECHECK_INTERVAL_MS);
 }
 
 function loadSiteConfig(callback) {
@@ -331,6 +411,22 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", loadSiteConfigAndApply, { once: true });
 }
 
+// A child frame that starts tiny or hidden (lazy embeds) is re-checked when it is resized, debounced.
+if (IS_CHILD_FRAME) {
+  let wasInert = isInertFrame();
+  let resizeTimer = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const inert = isInertFrame();
+      if (inert === wasInert) return;
+      wasInert = inert;
+      refreshScheduleTimer();
+      applyEffectiveEngine();
+    }, 250);
+  });
+}
+
 function toCustomCss(value) {
   return typeof value === "string" ? value : "";
 }
@@ -367,6 +463,10 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     currentSiteConfig = msg.config || null;
     applyEffectiveEngine();
   }
+
+  // Data-returning requests are answered by the top frame only (the panel also sends them to frameId 0): a
+  // child frame replying first would hand back an iframe's address or analysis. It never calls sendResponse.
+  if (IS_CHILD_FRAME) return;
 
   if (msg.type === "ANALYZE_PAGE") {
     sendResponse(analyzePageForEngine());

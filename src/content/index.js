@@ -429,20 +429,36 @@ function loadSiteConfigAndApply() {
   loadSiteConfig(applyEffectiveEngine);
 }
 
-// Initial engine application: the global schedule and the per-site config are read at the same time
-// (one storage round trip before the first paint instead of two) and applied once both have returned.
-let initialReadsPending = 2;
-const applyWhenInitialReadsDone = () => {
-  initialReadsPending -= 1;
-  if (initialReadsPending === 0) applyEffectiveEngine();
-};
+// The global schedule and the per-site config are read at the same time (one storage round trip before the
+// first paint instead of two) and applied once both have returned. Used at startup and on a bfcache restore.
+function loadAllAndApply() {
+  let readsPending = 2;
+  const applyWhenReadsDone = () => {
+    readsPending -= 1;
+    if (readsPending === 0) applyEffectiveEngine();
+  };
 
-chrome.storage.local.get(SCHEDULE_STORAGE_KEY, (localData) => {
-  currentSchedule = (localData && localData[SCHEDULE_STORAGE_KEY]) || null;
-  refreshScheduleTimer();
-  applyWhenInitialReadsDone();
+  chrome.storage.local.get(SCHEDULE_STORAGE_KEY, (localData) => {
+    currentSchedule = (localData && localData[SCHEDULE_STORAGE_KEY]) || null;
+    refreshScheduleTimer();
+    applyWhenReadsDone();
+  });
+  loadSiteConfig(applyWhenReadsDone);
+}
+
+loadAllAndApply();
+
+// Back/forward cache: a restored page keeps this script's state, but storage.onChanged events can be missed
+// while it was frozen (e.g. dark mode switched off in another tab). Re-read both and re-apply; applyEngine keeps
+// the engine in place when nothing changed and settles the pre-paint flag either way (top frame only).
+window.addEventListener("pageshow", (event) => {
+  if (!event || event.persisted !== true) return;
+  try {
+    loadAllAndApply();
+  } catch (error) {
+    // extension context invalidated (extension updated while the page was frozen)
+  }
 });
-loadSiteConfig(applyWhenInitialReadsDone);
 
 // Re-evaluate Auto Mode engine on DOMContentLoaded if DOM was still loading at document_start
 if (document.readyState === "loading") {

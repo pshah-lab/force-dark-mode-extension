@@ -93,9 +93,39 @@ function getColorUtils() {
   return window.ForceDarkColorUtils || {};
 }
 
+// Google Docs / Sheets canvas documents (path-scoped, see canvasDocumentKind in sitePacks.js): the root gets this
+// attribute with the kind, and the page/grid canvases then get the Invert engine's page inversion (no re-invert),
+// so the white paper turns dark and text light. Every other canvas keeps filter: none.
+const CANVAS_DOC_ATTR = "data-force-dark-canvas-doc";
+const CANVAS_DOC_KINDS = ["document", "spreadsheet"];
+const CANVAS_DOC_FILTER = "invert(0.92) hue-rotate(180deg)"; // = invertEngine's PAGE_INVERT_AMOUNT page step
+
+function canvasDocumentCss() {
+  const themes = window.ForceDarkThemes;
+  if (!themes || typeof themes.canvasDocumentSelectors !== "function") return "";
+  return CANVAS_DOC_KINDS.map((kind) => {
+    const selectors = themes.canvasDocumentSelectors(kind);
+    if (!selectors.length) return "";
+    return `
+    :root[${ROOT_MODE_ATTR}="css"][${CANVAS_DOC_ATTR}="${kind}"] :is(${selectors.join(", ")}) {
+      filter: ${CANVAS_DOC_FILTER} !important;
+    }
+`;
+  }).join("");
+}
+
+function markCanvasDocument(kind) {
+  if (CANVAS_DOC_KINDS.includes(kind)) {
+    document.documentElement.setAttribute(CANVAS_DOC_ATTR, kind);
+  } else {
+    document.documentElement.removeAttribute(CANVAS_DOC_ATTR);
+  }
+}
+
 function enableDarkMode(config = {}) {
   applyCustomPalette(config);
   applyPackFixes(config && config.fixes);
+  markCanvasDocument(config && config.canvasDocument);
 
   if (document.getElementById(STYLE_ID)) {
     scheduleScan(document.documentElement);
@@ -193,7 +223,7 @@ function enableDarkMode(config = {}) {
     :root[${ROOT_MODE_ATTR}="css"] [${IMAGE_ATTR}="invert"] {
       filter: invert(0.9) hue-rotate(180deg) !important;
     }
-
+${canvasDocumentCss()}
     :root[${ROOT_MODE_ATTR}="css"] [${KEEP_ATTR}] {
       background-color: #ffffff !important;
       color: #111111 !important;
@@ -335,6 +365,7 @@ function disableDarkMode() {
   removeCustomCss();
   document.getElementById(STYLE_ID)?.remove();
   document.documentElement.removeAttribute(ROOT_MODE_ATTR);
+  document.documentElement.removeAttribute(CANVAS_DOC_ATTR);
   clearCustomPalette();
 
   if (darkModeObserver) {

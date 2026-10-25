@@ -72,9 +72,46 @@
     return null;
   }
 
+  // Canvas documents: Google Docs paints its pages and Sheets its grid on <canvas>, which both engines normally
+  // keep at natural colours (a white page inside a dark UI). On these editor paths only, the engines give the
+  // canvases below the page inversion instead. Site packs are host-only and pick a theme, so this is a separate,
+  // path-scoped table. Slides is not listed: its editor draws with SVG, not canvas.
+  // The selectors are assumptions about the Docs/Sheets DOM (no public contract); they target canvases only,
+  // never the hidden text-event iframe or the DOM overlays used for typing, selection and cell editing.
+  const CANVAS_DOCUMENT_HOST = "docs.google.com";
+  const CANVAS_DOCUMENTS = {
+    document: [".kix-page-paginated canvas", "canvas.kix-canvas-tile-content"],
+    spreadsheet: ["#waffle-grid-container canvas", ".grid-container canvas"],
+  };
+  // /document/... or /spreadsheets/..., optionally after a Workspace /a/<domain>/ prefix.
+  const CANVAS_DOCUMENT_PATH = /^\/(?:a\/[^/]+\/)?(document|spreadsheets)\//;
+
+  // "document", "spreadsheet" or "" from a hostname and pathname (strings; anything else is "").
+  function canvasDocumentKind(hostname, pathname) {
+    if (typeof hostname !== "string" || typeof pathname !== "string") return "";
+    let h = hostname.toLowerCase();
+    if (h.endsWith(".")) h = h.slice(0, -1);
+    if (h !== CANVAS_DOCUMENT_HOST) return "";
+    const match = CANVAS_DOCUMENT_PATH.exec(pathname);
+    if (!match) return "";
+    return match[1] === "document" ? "document" : "spreadsheet";
+  }
+
+  function isCanvasDocumentSite(loc) {
+    return Boolean(loc && canvasDocumentKind(loc.hostname, loc.pathname));
+  }
+
+  // Fresh copy, [] for an unknown kind.
+  function canvasDocumentSelectors(kind) {
+    return Object.prototype.hasOwnProperty.call(CANVAS_DOCUMENTS, kind) ? CANVAS_DOCUMENTS[kind].slice() : [];
+  }
+
   global.ForceDarkThemes = Object.assign(global.ForceDarkThemes || {}, {
     findSitePack,
     validateFix,
     getSitePacks,
+    canvasDocumentKind,
+    isCanvasDocumentSite,
+    canvasDocumentSelectors,
   });
 })(typeof globalThis !== "undefined" ? globalThis : self);

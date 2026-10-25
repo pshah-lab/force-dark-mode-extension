@@ -160,7 +160,13 @@ function applyEngine(config) {
   const themed = engine && engine !== "invert" ? withThemePalette(config) : null;
   // Invert only: the per-site media setting (missing = "on"). Part of the signature so a change rebuilds it.
   const media = engine === "invert" ? invertMediaOptions(config) : null;
-  const signature = engine ? engineSignature(engine, config, themed, transparent, media, nativeDarkMode(config)) : "";
+  // Docs/Sheets canvas documents: decided from this frame's real location on every apply (also on pageshow),
+  // never from stored config. Auto needs no special case: both engines darken these canvases.
+  const canvasDoc = engine ? currentCanvasDocumentKind() : "";
+  if (themed && canvasDoc) themed.canvasDocument = canvasDoc;
+  const signature = engine
+    ? engineSignature(engine, config, themed, transparent, media, nativeDarkMode(config), canvasDoc)
+    : "";
 
   if (signature && signature === appliedSignature && isEngineStylePresent(engine)) {
     settlePrepaint(true);
@@ -183,7 +189,7 @@ function applyEngine(config) {
   if (transparent) document.documentElement.setAttribute(TRANSPARENT_FRAME_ATTR, "transparent");
 
   if (engine === "invert") {
-    enableInvert(media);
+    enableInvert({ ...media, canvasDocument: canvasDoc });
   } else {
     enableDarkMode(themed);
   }
@@ -195,9 +201,15 @@ function applyEngine(config) {
   reportDarkAppliedOnce(config);
 }
 
-function engineSignature(engine, config, themed, transparent, media = null, nativeDark = DEFAULT_NATIVE_DARK_MODE) {
+function engineSignature(engine, config, themed, transparent, media = null, nativeDark = DEFAULT_NATIVE_DARK_MODE, canvasDoc = "") {
   const filters = [config?.brightness, config?.contrast, config?.sepia];
-  return JSON.stringify([engine, filters, themed, currentCustomCss, Boolean(transparent), media, nativeDark]);
+  return JSON.stringify([engine, filters, themed, currentCustomCss, Boolean(transparent), media, nativeDark, canvasDoc || ""]);
+}
+
+// "document" / "spreadsheet" on Google Docs / Sheets editor paths, else "" (see canvasDocumentKind in sitePacks.js).
+function currentCanvasDocumentKind() {
+  const kind = window.ForceDarkThemes?.canvasDocumentKind;
+  return typeof kind === "function" ? kind(location.hostname, location.pathname) : "";
 }
 
 // Per site: "respect" (default, also any missing or unknown value) skips natively dark pages; "force" themes them.
@@ -268,6 +280,8 @@ function withThemePalette(config) {
   delete out.mediaDim;
   // In the signature on its own, so it is not counted twice.
   delete out.nativeDark;
+  // Set from the real location in applyEngine only.
+  delete out.canvasDocument;
 
   const themes = window.ForceDarkThemes;
   if (!themes || typeof themes.resolveTheme !== "function") return out;

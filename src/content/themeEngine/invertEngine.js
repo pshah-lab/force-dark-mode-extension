@@ -107,7 +107,7 @@ function buildInvertCss(options = {}) {
     }
   `;
 
-  if (media === "off") return css;
+  if (media === "off") return css + canvasDocumentInvertCss(options?.canvasDocument);
 
   css += `
     /*
@@ -148,7 +148,20 @@ function buildInvertCss(options = {}) {
       filter: none !important;
     }
   `;
-  return css;
+  return css + canvasDocumentInvertCss(options?.canvasDocument);
+}
+
+// Google Docs / Sheets (path-scoped, see canvasDocumentKind in sitePacks.js): the page and grid canvases are
+// left to the html filter, so the white paper turns dark and text light, instead of being restored. Each
+// selector has a class or id, so it outranks the plain `canvas` restore rule above; emitted in every media mode.
+function canvasDocumentInvertCss(kind) {
+  const selectors = window.ForceDarkThemes?.canvasDocumentSelectors?.(kind) || [];
+  if (!selectors.length) return "";
+  return `
+    ${selectors.join(",\n    ")} {
+      filter: none !important;
+    }
+  `;
 }
 
 function enableInvert(options = {}) {

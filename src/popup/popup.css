@@ -207,6 +207,34 @@ body {
   margin: 0;
 }
 
+/* CSS engine: per-site image dimming (0-60%) */
+.dim-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #d6d9df;
+  font-size: 13px;
+}
+
+.dim-control[hidden] {
+  display: none;
+}
+
+.dim-control input {
+  flex: 1;
+  min-width: 0;
+  accent-color: #4caf50;
+}
+
+.dim-control output {
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .color-control {
   display: flex;
   align-items: center;

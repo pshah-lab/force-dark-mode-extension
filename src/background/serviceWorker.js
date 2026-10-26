@@ -8,6 +8,7 @@ import {
   THEME_ID_PATTERN,
   mediaFieldsFor,
   nativeDarkFieldsFor,
+  imageDimFieldsFor,
 } from "../shared/constants.js";
 import { postJson } from "./network.js";
 import { createUsage } from "./usageSender.js";
@@ -228,6 +229,8 @@ async function handleToggleMessage(msg, tabUrl) {
   Object.assign(nextConfig, mediaFieldsFor(msg, currentConfig));
   // Natively dark pages: respect (missing) or theme anyway; kept across every toggle.
   Object.assign(nextConfig, nativeDarkFieldsFor(msg, currentConfig));
+  // CSS engine image dimming override (0-60); missing means the theme's value. Kept across every toggle.
+  Object.assign(nextConfig, imageDimFieldsFor(msg, currentConfig));
 
   await setSiteConfig(host, nextConfig);
 }

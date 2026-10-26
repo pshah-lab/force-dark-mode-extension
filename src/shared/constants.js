@@ -50,6 +50,24 @@ export function nativeDarkFieldsFor(msg, currentConfig) {
   return nativeDark ? { nativeDark } : {};
 }
 
+// CSS engine, per site: image dimming in percent (the engine clamps to the same 0-60 range as themes). A missing
+// field means "use the theme's value", so older configs keep their shape.
+export const IMAGE_DIM_RANGE = Object.freeze({ min: 0, max: 60 });
+
+// The imageDim field to store for a site: the message's valid number wins, else the stored valid number is kept.
+// Numbers and numeric strings are rounded and clamped; anything else (booleans, null, junk) stays absent.
+export function imageDimFieldsFor(msg, currentConfig) {
+  const pick = (value) => {
+    if (typeof value !== "number" && typeof value !== "string") return undefined;
+    if (typeof value === "string" && value.trim() === "") return undefined;
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return undefined;
+    return Math.min(IMAGE_DIM_RANGE.max, Math.max(IMAGE_DIM_RANGE.min, Math.round(numeric)));
+  };
+  const imageDim = pick(msg?.imageDim) ?? pick(currentConfig?.imageDim);
+  return imageDim === undefined ? {} : { imageDim };
+}
+
 export const VALID_SCHEDULE_MODES = new Set(["off", "time", "system"]);
 export const DEFAULT_SCHEDULE_START = "20:00";
 export const DEFAULT_SCHEDULE_END = "07:00";

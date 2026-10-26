@@ -150,6 +150,8 @@ function normalizeEngine(engine) {
 // Signature of what is on the page now, so a re-apply with the same result (the DOMContentLoaded re-run, an
 // unrelated storage change) leaves the engine in place instead of tearing it down and flashing white.
 let appliedSignature = "";
+// The same signature with the image dimming left out, so a dim-only change is applied in place.
+let appliedDimFreeSignature = "";
 
 function applyEngine(config) {
   const resolved = config?.enabled && !isInertFrame()
@@ -173,11 +175,26 @@ function applyEngine(config) {
     return;
   }
 
+  // CSS engine, only the image dimming changed (the side panel slider): update it in place, no teardown.
+  const dimFreeSignature = themed
+    ? engineSignature(engine, config, withoutImageDim(themed), transparent, media, nativeDarkMode(config), canvasDoc)
+    : "";
+  if (
+    themed && engine === "css" && dimFreeSignature === appliedDimFreeSignature &&
+    isEngineStylePresent(engine) && typeof setImageDim === "function"
+  ) {
+    setImageDim(themed.imageDim);
+    appliedSignature = signature;
+    settlePrepaint(true);
+    return;
+  }
+
   disableDarkMode();
   disableInvert();
   clearFilterVars();
   document.documentElement.removeAttribute(TRANSPARENT_FRAME_ATTR);
   appliedSignature = "";
+  appliedDimFreeSignature = "";
 
   // Off, disabled for the site, outside the schedule or natively dark: no bridge, and no flag for next time.
   if (!engine) {
@@ -197,8 +214,16 @@ function applyEngine(config) {
   // Only when an engine actually applied dark mode (not on natively dark pages).
   applyCustomCss(currentCustomCss);
   appliedSignature = signature;
+  appliedDimFreeSignature = engine === "css" ? dimFreeSignature : "";
   settlePrepaint(true); // the engine style is in place, so the bridge goes in the same task (no paint between)
   reportDarkAppliedOnce(config);
+}
+
+// The themed config without its imageDim key (deleted, not nulled, so key order cannot differ).
+function withoutImageDim(themed) {
+  const copy = { ...themed };
+  delete copy.imageDim;
+  return copy;
 }
 
 function engineSignature(engine, config, themed, transparent, media = null, nativeDark = DEFAULT_NATIVE_DARK_MODE, canvasDoc = "") {

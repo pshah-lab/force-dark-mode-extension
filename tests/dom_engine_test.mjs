@@ -731,9 +731,10 @@ test("imageDim sets the image brightness variable and 0 clears it", () => {
   const dimRule = css.split("}").find((block) => block.includes("--force-dark-image-brightness, 100%"));
   assert.ok(dimRule, "brightness rule exists");
   const selector = dimRule.split("{")[0];
-  for (const tag of ["img", "video"]) assert.ok(new RegExp(`\\b${tag}\\b`).test(selector), `${tag} is dimmed`);
+  // canvas is dimmed too since audit item 7 (Docs/Sheets document canvases excluded, see css_dim_logo_test.mjs).
+  for (const tag of ["img", "video", "canvas"]) assert.ok(new RegExp(`\\b${tag}\\b`).test(selector), `${tag} is dimmed`);
   assert.ok(!/\bpicture\b/.test(selector), "picture must not be dimmed: its <img> already is (I1)");
-  for (const tag of ["svg", "canvas", "iframe", "embed", "object"]) assert.ok(!new RegExp(`\\b${tag}\\b`).test(selector), `${tag} must not be dimmed`);
+  for (const tag of ["svg", "iframe", "embed", "object"]) assert.ok(!new RegExp(`\\b${tag}\\b`).test(selector), `${tag} must not be dimmed`);
   assert.ok(css.includes("filter: none !important"), "full media list keeps filter: none");
   assert.ok(css.includes('[data-force-dark-image="invert"]') && css.includes("invert(0.9) hue-rotate(180deg) !important"), "logo invert rule kept");
   assert.ok(css.indexOf("filter: none !important") < css.indexOf("--force-dark-image-brightness, 100%"), "dimming rule comes after the reset");

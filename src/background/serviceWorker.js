@@ -109,7 +109,8 @@ chrome.runtime.onInstalled.addListener((details) => {
   chrome.contextMenus.create({
     id: "force-dark-mode-open-current-document",
     title: "Open This PDF in Dark Viewer",
-    contexts: ["page"],
+    // "frame": a right-click inside an embedded PDF frame passes that frame's address (info.frameUrl).
+    contexts: ["page", "frame"],
   });
 });
 
@@ -125,7 +126,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 
   if (info.menuItemId === "force-dark-mode-open-current-document") {
-    openCurrentDocumentInViewer(tab);
+    openCurrentDocumentInViewer(tab, info.frameUrl);
   }
 });
 
@@ -138,13 +139,77 @@ function openFileViewer() {
   chrome.tabs.create({ url: chrome.runtime.getURL("src/viewer/viewer.html") });
 }
 
-function openCurrentDocumentInViewer(tab) {
-  if (!tab?.url || !isPdfUrl(tab.url)) return;
+// Opens the viewer only on the user's command (shortcut or context menu), never on its own. A .pdf address is
+// decided at once, as before. Otherwise the tab's top frame is asked what PDF it shows: Chrome's built-in viewer
+// (document.contentType) or exactly one embedded PDF. No per-tab state is kept, so a worker restart loses nothing.
+// The PDF address is used only to open the local viewer tab.
+async function openCurrentDocumentInViewer(tab, frameUrl) {
+  if (!tab?.url) return;
+  if (isPdfUrl(tab.url)) {
+    openPdfInViewer(tab.url, getNameFromUrl(tab.url) || "PDF document");
+    return;
+  }
+  if (typeof frameUrl === "string" && isPdfUrl(frameUrl) && readOpenableUrl(frameUrl)) {
+    openPdfInViewer(frameUrl, getNameFromUrl(frameUrl) || "PDF document");
+    return;
+  }
+  if (!isTogglableUrl(tab.url) || typeof tab.id !== "number") return;
+  const info = await askPageForPdf(tab.id);
+  if (info) openPdfInViewer(info.url, pdfDocumentName(info.url, info.title));
+}
 
+function openPdfInViewer(src, name) {
   const viewerUrl = new URL(chrome.runtime.getURL("src/viewer/viewer.html"));
-  viewerUrl.searchParams.set("src", tab.url);
-  viewerUrl.searchParams.set("name", getNameFromUrl(tab.url) || "PDF document");
+  viewerUrl.searchParams.set("src", src);
+  viewerUrl.searchParams.set("name", name);
   chrome.tabs.create({ url: viewerUrl.href });
+}
+
+// Only the top frame answers (frameId 0). No content script (restricted page) or no PDF resolves to null.
+function askPageForPdf(tabId) {
+  return new Promise((resolve) => {
+    try {
+      chrome.tabs.sendMessage(tabId, { type: "PDF_INFO" }, { frameId: 0 }, (reply) => {
+        if (chrome.runtime.lastError) {
+          resolve(null);
+          return;
+        }
+        resolve(readPdfInfoReply(reply));
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+const MAX_PDF_URL_LENGTH = 4096;
+const MAX_PDF_NAME_LENGTH = 120;
+const OPENABLE_PDF_PROTOCOLS = new Set(["http:", "https:", "file:"]);
+
+function readOpenableUrl(value) {
+  if (typeof value !== "string" || !value || value.length > MAX_PDF_URL_LENGTH) return "";
+  try {
+    const url = new URL(value);
+    return OPENABLE_PDF_PROTOCOLS.has(url.protocol) ? url.href : "";
+  } catch {
+    return "";
+  }
+}
+
+function readPdfInfoReply(reply) {
+  if (!reply || typeof reply !== "object" || reply.type !== "PDF_INFO") return null;
+  const url = readOpenableUrl(reply.url);
+  if (!url) return null;
+  const title = typeof reply.title === "string" ? reply.title : "";
+  return { url, title };
+}
+
+// A ".pdf" file name in the path wins, then the page title, then the last path segment.
+export function pdfDocumentName(urlString, title) {
+  const segment = getNameFromUrl(urlString);
+  if (segment && segment.toLowerCase().endsWith(".pdf")) return segment.slice(0, MAX_PDF_NAME_LENGTH);
+  const cleanTitle = typeof title === "string" ? title.replace(/\s+/g, " ").trim() : "";
+  return (cleanTitle || segment || "PDF document").slice(0, MAX_PDF_NAME_LENGTH);
 }
 
 function isTogglableUrl(url) {
@@ -157,7 +222,7 @@ function isTogglableUrl(url) {
   }
 }
 
-function isPdfUrl(urlString) {
+export function isPdfUrl(urlString) {
   try {
     const url = new URL(urlString);
     return url.pathname.toLowerCase().endsWith(".pdf") || url.search.toLowerCase().includes(".pdf");

@@ -571,7 +571,62 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "PAGE_INFO") {
     sendResponse({ href: location.href });
   }
+
+  // "Open This PDF in Dark Viewer" on a PDF whose address has no ".pdf". Inspected only when the user asks; the
+  // answer goes only to the service worker, which uses it to open the local viewer tab.
+  if (msg.type === "PDF_INFO") {
+    sendResponse(findPdfOnPage());
+  }
 });
+
+const PDF_MIME_TYPE = "application/pdf";
+const PDF_EMBED_SCAN_LIMIT = 200;
+const PDF_SOURCE_PROTOCOLS = new Set(["http:", "https:", "file:"]);
+
+function isPdfMimeType(value) {
+  return String(value || "").split(";")[0].trim().toLowerCase() === PDF_MIME_TYPE;
+}
+
+// http(s)/file address without its fragment, or "" (about:blank, blob:, data:, javascript:, unparsable).
+function toPdfSourceUrl(raw, base) {
+  if (typeof raw !== "string" || !raw.trim()) return "";
+  try {
+    const url = new URL(raw, base);
+    if (!PDF_SOURCE_PROTOCOLS.has(url.protocol)) return "";
+    url.hash = "";
+    return url.href;
+  } catch (error) {
+    return "";
+  }
+}
+
+// Chrome's built-in viewer: the top document itself is the PDF. Otherwise exactly one embedded PDF
+// (<embed>/<object> typed application/pdf, or any of them / an <iframe> whose path ends in .pdf).
+function findPdfOnPage() {
+  if (isPdfMimeType(document.contentType)) {
+    const url = toPdfSourceUrl(location.href, location.href);
+    return url ? { type: "PDF_INFO", url, title: String(document.title || "") } : null;
+  }
+  const base = document.baseURI || location.href;
+  const found = new Set();
+  let nodes = [];
+  try {
+    nodes = document.querySelectorAll("embed, object, iframe");
+  } catch (error) {
+    return null;
+  }
+  const count = Math.min(nodes.length, PDF_EMBED_SCAN_LIMIT);
+  for (let i = 0; i < count; i += 1) {
+    const el = nodes[i];
+    const tag = String(el.tagName || "").toLowerCase();
+    const url = toPdfSourceUrl(el.getAttribute(tag === "object" ? "data" : "src"), base);
+    if (!url) continue;
+    const typed = tag !== "iframe" && isPdfMimeType(el.getAttribute("type"));
+    if (typed || new URL(url).pathname.toLowerCase().endsWith(".pdf")) found.add(url);
+    if (found.size > 1) return null;
+  }
+  return found.size === 1 ? { type: "PDF_INFO", url: [...found][0], title: "" } : null;
+}
 
 function analyzePageForEngine() {
   const { parseCssColor, getLuminance, getContrastRatio } = getColorUtils();

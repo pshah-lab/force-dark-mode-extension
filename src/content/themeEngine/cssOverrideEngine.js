@@ -124,7 +124,17 @@ function dimmedCanvasSelector() {
   return selectors.length ? `canvas:not(${selectors.join(", ")})` : "canvas";
 }
 
+// Docs/Sheets header widgets with intentional colours (Gemini sparkle, Share pill) are left completely alone:
+// elements inside get no marks, and marks set earlier are removed by the scan (see classifyElement). Empty
+// string off Docs/Sheets, so every other page is unaffected.
+let docsUiKeepSelector = "";
+
 function markCanvasDocument(kind) {
+  const themes = window.ForceDarkThemes;
+  const keep = CANVAS_DOC_KINDS.includes(kind) && themes && typeof themes.docsUiKeepOriginalSelectors === "function"
+    ? themes.docsUiKeepOriginalSelectors(kind)
+    : [];
+  docsUiKeepSelector = keep.join(", ");
   if (CANVAS_DOC_KINDS.includes(kind)) {
     document.documentElement.setAttribute(CANVAS_DOC_ATTR, kind);
   } else {
@@ -409,6 +419,7 @@ function disableDarkMode() {
   lastFullScanSignature = "";
   clearPackFixes();
   clearDarkAttributes(document.documentElement);
+  docsUiKeepSelector = "";
 }
 
 function observePageChanges() {
@@ -635,9 +646,22 @@ function runScanSlice(deadline) {
   }
 }
 
+function insideKeepOriginal(element) {
+  try {
+    return element.closest(docsUiKeepSelector) !== null;
+  } catch (error) {
+    return false;
+  }
+}
+
 function classifyElement(element, marks, settleRoots, parseCssColor, getLuminance) {
   if (!(element instanceof Element) || element.isConnected === false || shouldSkipElement(element)) return null;
   scanClassified.add(element);
+
+  // Keep-original widgets: no marks at all; the write pass strips any set before the exemption applied.
+  if (docsUiKeepSelector && insideKeepOriginal(element)) {
+    return { element, surfaceAttr: null, textAttr: false, borderAttr: false, imageAttr: null };
+  }
 
   // keep-light subtrees are never darkened; markers from an earlier scan are dropped.
   if (marks.keep.has(element)) {

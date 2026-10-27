@@ -97,6 +97,19 @@
     return match[1] === "document" ? "document" : "spreadsheet";
   }
 
+  // Google Docs / Sheets editor header widgets whose colours are intentional and must never be recoloured by the
+  // CSS engine (verified against the real DOM): the "Ask Gemini" sparkle button (#docs-sidekick-button-container,
+  // coloured ring lines and shapes over a transparent button) and the Share pill with its dropdown arrow half
+  // (.scb-gm3.scb-container, light-blue pill with dark-blue label and sprite icon, arrow drawn with CSS borders).
+  // Whole subtrees are left alone: no surface/text/border/image marks. Only applied when canvasDocumentKind() is
+  // "document" or "spreadsheet". Add more selectors here (must pass SELECTOR_PATTERN).
+  const DOCS_UI_KEEP_ORIGINAL = ["#docs-sidekick-button-container", ".scb-gm3.scb-container"];
+
+  // Fresh copy of the keep-original selectors for a Docs/Sheets kind, [] for anything else.
+  function docsUiKeepOriginalSelectors(kind) {
+    return Object.prototype.hasOwnProperty.call(CANVAS_DOCUMENTS, kind) ? DOCS_UI_KEEP_ORIGINAL.slice() : [];
+  }
+
   function isCanvasDocumentSite(loc) {
     return Boolean(loc && canvasDocumentKind(loc.hostname, loc.pathname));
   }
@@ -113,5 +126,6 @@
     canvasDocumentKind,
     isCanvasDocumentSite,
     canvasDocumentSelectors,
+    docsUiKeepOriginalSelectors,
   });
 })(typeof globalThis !== "undefined" ? globalThis : self);

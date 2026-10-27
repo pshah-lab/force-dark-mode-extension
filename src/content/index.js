@@ -628,7 +628,20 @@ function findPdfOnPage() {
   return found.size === 1 ? { type: "PDF_INFO", url: [...found][0], title: "" } : null;
 }
 
+// Google Docs/Sheets editors: Auto resolves to Invert (cleanest result; CSS mode leaves glitches). Kept in the
+// analysis result so the popup shows it too. Natively dark pages stay untouched (never inverted twice).
 function analyzePageForEngine() {
+  const result = analyzePageContent();
+  if (result.nativeDark || !currentCanvasDocumentKind()) return result;
+  return {
+    ...result,
+    engine: "invert",
+    confidence: "high",
+    reason: "Google Docs/Sheets: Invert themes the canvas and the whole interface most reliably",
+  };
+}
+
+function analyzePageContent() {
   const { parseCssColor, getLuminance, getContrastRatio } = getColorUtils();
   const elements = getVisibleSample();
   const visibleCount = elements.length || 1;

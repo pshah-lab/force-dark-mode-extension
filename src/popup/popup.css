@@ -572,6 +572,15 @@ body {
   color: #8ab4f8;
 }
 
+.footer-btn-wide {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.footer-btn-wide[hidden] {
+  display: none;
+}
+
 /* One-time welcome card */
 .welcome-card {
   padding: 12px;

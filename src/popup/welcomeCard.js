@@ -11,6 +11,8 @@
       id: "whatsnew",
       title: "What's new",
       items: [
+        "No more white flash when a dark site loads, and frames inside pages are themed too.",
+        "Image dimming for the CSS engine, dark Google Docs and Sheets, and PDFs open in the dark viewer even without .pdf in the address.",
         "Side panel: the controls now open beside the page and follow the tab you are on.",
         "Report this site as broken: if a site looks wrong, press the button to tell us.",
         "Optional usage report: off unless you turn it on. You are asked once, and you can change it in Options.",

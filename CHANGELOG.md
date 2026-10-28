@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.2.0] - 2026-10-28
+
+### Added
+- **No white flash on load**: sites you use in dark mode paint dark before the page is shown. This keeps one small flag, `__fdm_pre`, in the site's own `localStorage` (documented in the privacy policy).
+- **Iframes and embedded frames** are themed too.
+- **Photos & media** setting per site for the Invert engine: On, Dim or Off.
+- **Theme it anyway**: a per-site override for sites that are already natively dark.
+- **Image dimming** slider for the CSS engine (a site's value overrides the theme's), and pixel-based logo detection so light-on-dark logos and avatars are handled correctly.
+- **Google Docs and Sheets** get a dark canvas, and Auto picks the Invert engine there.
+- **PDF detection by content type**: PDFs without ".pdf" in the address open in the dark viewer, including embedded PDFs and redirected downloads.
+- **Site CSS** is a full-width button in the side panel, with a link to a short tutorial video on the website.
+
+### Changed
+- Pages restored from the back/forward cache re-read your settings, and the CSS engine scans pages in smaller chunks so heavy pages stay responsive.
+
+---
+
 ## [2.1.0] - 2026-10-17
 
 ### Added

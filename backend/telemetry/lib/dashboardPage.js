@@ -107,6 +107,7 @@ function lastWith(days, key){ for (var i = days.length - 1; i >= 0; i--) if (Obj
 
 function render(doc){
   var days = doc.days, last = days[days.length - 1];
+  $("view").hidden = false; // canvases measure 0 wide while hidden, so show the view before drawing
   $("sub").textContent = "Private. Counts only; updated " + doc.generatedAt.replace("T", " ").replace("Z", " UTC") + ".";
   var tiles = $("tiles"); tiles.textContent = "";
   var week = days.slice(-7), month = days.slice(-30);
@@ -126,7 +127,6 @@ function render(doc){
   var top = $("top"); top.textContent = "";
   if (!doc.topSites.length) { var tr0 = el("tr"); var td0 = el("td", "No reports yet."); td0.colSpan = 4; tr0.appendChild(td0); top.appendChild(tr0); }
   doc.topSites.forEach(function(s){ var tr = el("tr"); [s.site, s.reports, s.days, s.lastDay].forEach(function(v){ tr.appendChild(el("td", v)); }); top.appendChild(tr); });
-  $("view").hidden = false;
 }
 
 function load(){

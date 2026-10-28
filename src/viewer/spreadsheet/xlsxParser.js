@@ -270,6 +270,10 @@ function parseSheet(xml, ctx) {
   const height = rows.length;
   const width = height ? rows[0].length : 0;
   const mergeRe = /<mergeCell\b([^<>]*)>/g;
+  // Valid merges never overlap, so together they cover at most the grid (at most MAX_CELLS cells).
+  // Capping the total fill work there leaves real files alone but stops a flood of duplicate or
+  // overlapping merges from rewriting the whole grid once per merge.
+  let mergeBudget = MAX_CELLS;
   let mm;
   while ((mm = mergeRe.exec(xml)) !== null) {
     const [a, b] = (attrs(mm[1]).ref ?? "").split(":");
@@ -281,6 +285,10 @@ function parseSheet(xml, ctx) {
     const colspan = c2 - tl.col + 1;
     const rowspan = r2 - tl.row + 1;
     if (colspan === 1 && rowspan === 1) continue;
+    if (colspan > 0 && rowspan > 0) {
+      if (mergeBudget < 0) continue;
+      mergeBudget -= colspan * rowspan;
+    }
     for (let r = tl.row; r <= r2; r++) {
       for (let c = tl.col; c <= c2; c++) {
         if (r === tl.row && c === tl.col) continue;

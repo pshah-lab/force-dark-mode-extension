@@ -775,8 +775,10 @@ function renderMarkdownSafely(text, container) {
 
   lines.forEach((rawLine) => {
     const line = rawLine.trimEnd();
-    const heading = line.match(/^(#{1,3})\s+(.+)$/);
-    const listItem = line.match(/^[-*]\s+(.+)$/);
+    // `(\S.*)` rather than `(.+)`: the text must start where the whitespace run ends, so `\s+` cannot
+    // backtrack into `.+` (quadratic on "#" + many spaces + "x\ry"). Same matches on trimEnd'd lines.
+    const heading = line.match(/^(#{1,3})\s+(\S.*)$/);
+    const listItem = line.match(/^[-*]\s+(\S.*)$/);
 
     if (heading) {
       currentList = null;

@@ -375,6 +375,33 @@ await test("hostile XML stays linear: unterminated <mergeCell ", async () => {
   assert.ok((await timed(files)) < budget);
 });
 
+const colName = (i) => (i >= 26 ? String.fromCharCode(64 + Math.floor(i / 26)) : "") + String.fromCharCode(65 + (i % 26));
+// A merge flood: every merge rewrites its whole range, so the total work must be bounded, not merges x grid.
+const gridCell = '<row r="2000"><c r="AX2000"><v>1</v></c></row>';
+const mergesSheet = (refs) => sheetXml(gridCell, "<mergeCells>" + refs.join("") + "</mergeCells>");
+
+await test("merge flood: duplicate full-grid merges stay fast and the first still applies", async () => {
+  const files = wbWith(mergesSheet(Array(20000).fill('<mergeCell ref="A1:AX2000"/>')));
+  assert.ok((await timed(files)) < budget);
+  const r = await parseXlsx(makeZip(files));
+  assert.strictEqual(r.sheets[0].rows[0][0].colspan, 50);
+  assert.strictEqual(r.sheets[0].rows[0][0].rowspan, 2000);
+});
+
+await test("merge flood: overlapping merges with distinct anchors stay fast", async () => {
+  const refs = Array.from({ length: 20000 }, (_, i) => `<mergeCell ref="A${(i % 400) + 1}:AX2000"/>`);
+  assert.ok((await timed(wbWith(mergesSheet(refs)))) < budget);
+});
+
+await test("merge flood: many valid non-overlapping merges all still apply", async () => {
+  const refs = [];
+  for (let r = 1; r <= 2000; r++) for (let c = 0; c < 50; c += 2) refs.push(`<mergeCell ref="${colName(c)}${r}:${colName(c + 1)}${r}"/>`);
+  const r = await parseXlsx(makeZip(wbWith(mergesSheet(refs))));
+  const rows = r.sheets[0].rows;
+  assert.strictEqual(rows.length, 2000);
+  assert.ok(rows.every((row) => row.every((cell, c) => (c % 2 === 0 ? cell.colspan === 2 : cell.covered === true))));
+});
+
 await test("hostile XML stays linear: unterminated <row ", async () => {
   const files = wbWith("<worksheet><sheetData>" + "<row ".repeat(40000));
   assert.ok((await timed(files)) < budget);

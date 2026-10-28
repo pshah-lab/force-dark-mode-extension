@@ -3,6 +3,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import assert from "assert";
+import vm from "vm";
+import { FakeDocument } from "./helpers/fakeDom.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -358,6 +360,57 @@ test("viewer.js validates document URL protocols against allowlist", () => {
   const viewerJs = fs.readFileSync(path.join(rootDir, "src/viewer/viewer.js"), "utf8");
   assert.ok(viewerJs.includes("ALLOWED_DOCUMENT_PROTOCOLS"), "viewer.js should define allowed protocols");
   assert.ok(viewerJs.includes("isSafeDocumentUrl"), "viewer.js should validate document URLs");
+});
+
+test("viewer.js Markdown rendering stays linear on hostile lines and renders normal Markdown as before", () => {
+  const viewerJs = fs.readFileSync(path.join(rootDir, "src/viewer/viewer.js"), "utf8");
+  const extractFunction = (name) => {
+    const start = viewerJs.indexOf(`\nfunction ${name}(`);
+    assert.ok(start !== -1, `viewer.js should define ${name}`);
+    return viewerJs.slice(start, viewerJs.indexOf("\n}\n", start) + 3);
+  };
+  const doc = new FakeDocument();
+  const ctx = vm.createContext({ document: doc });
+  vm.runInContext(extractFunction("appendInlineMarkdown") + extractFunction("renderMarkdownSafely"), ctx);
+  const serialize = (node) =>
+    node.nodeType === 3 ? node.text : `<${node.tagName}>${node.children.map(serialize).join("")}</${node.tagName}>`;
+  const render = (text) => {
+    const container = doc.createElement("div");
+    ctx.renderMarkdownSafely(text, container);
+    return container.children.map(serialize).join("");
+  };
+
+  // "#" / "- " + many spaces + text with an embedded \r (or U+2028/U+2029) used to make `\s+` backtrack into `.+`.
+  for (const hostile of ["#" + " ".repeat(200000) + "x\ry", "- " + " ".repeat(200000) + "x\ry", "#" + " ".repeat(200000) + "x y"]) {
+    const started = Date.now();
+    const html = render(hostile);
+    const elapsed = Date.now() - started;
+    assert.ok(elapsed < 1000, `hostile Markdown line took ${elapsed}ms`);
+    assert.strictEqual(html, `<p>${hostile}</p>`, "a line with an embedded line terminator stays a paragraph");
+  }
+
+  const md = [
+    "# Title",
+    "##\tTab heading",
+    "###   Spaced **bold** and *em*  ",
+    "#  Leading nbsp　inside",
+    "#### Four hashes",
+    "#NoSpace",
+    "#   ",
+    "- one",
+    "*  two `code`",
+    "- nbsp item",
+    "- a\rb",
+    "",
+    "Plain *text*",
+  ].join("\n");
+  assert.strictEqual(
+    render(md),
+    "<h1>Title</h1><h2>Tab heading</h2><h3>Spaced <strong>bold</strong> and <em>em</em></h3>" +
+      "<h1>Leading nbsp　inside</h1><p>#### Four hashes</p><p>#NoSpace</p><p>#</p>" +
+      "<ul><li>one</li><li>two <code>code</code></li><li>nbsp item</li></ul><p>- a\rb</p>" +
+      "<p>Plain <em>text</em></p>"
+  );
 });
 
 test("viewer.html sandboxes fallback iframe securely without same-origin", () => {

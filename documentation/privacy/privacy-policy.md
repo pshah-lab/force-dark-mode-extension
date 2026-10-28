@@ -50,7 +50,7 @@ To prevent any ambiguity, ThemeSwitcher explicitly confirms that it **does NOT**
 - **No Keystrokes or Form Input:** We do not access, log, or record form fields, passwords, search queries, payment card information, or credentials.
 - **No Personal Identifiers:** We do not collect names, email addresses, phone numbers, IP addresses, or hardware MAC addresses through the extension. The opt-in usage reports carry only a random ID, which we treat as pseudonymous personal data (lawful basis: consent, GDPR Art. 6(1)(a)); our server function does not store IP addresses (the hosting platform's own request logs may transiently contain them, along with the browser's User-Agent and Accept-Language headers).
 - **No Behavioral Profiling or Third-Party Analytics:** There are zero third-party telemetry libraries, crash reporting SDKs, advertising trackers, or tracking pixels in the extension. The only first-party exceptions are the user-confirmed broken-site report (version 2.1.0 and later; the domain of the reported site, engine, theme and version, with no ID) and the opt-in usage reports described in section 3 and in the main `PRIVACY.md` (off by default; no page content or documents; in 2.1.0 only a count of sites, never which sites). Reports are never sold or shared; only combined totals from 2.0.0 (never individual reports or random IDs) are published at darkmode.pshah.fun/stats.html, and groups of fewer than 10 installs are never shown.
-- **No User Cookies:** The extension does not read, set, or transmit browser cookies.
+- **No User Cookies:** The extension does not read, set, or transmit browser cookies. Its only use of a website's own storage is the pre-paint flag described in section 5, which holds no personal data.
 
 ---
 
@@ -63,6 +63,7 @@ The extension processes only minimal, non-sensitive display preferences required
 | **Site Theme Preferences** | Domain host (e.g. `example.com`), enabled state (`true`/`false`), selected engine (`auto`/`css`/`invert`), custom background color hex | `chrome.storage.sync` | Retained locally until edited or erased by user |
 | **Global Defaults** | Default engine (`auto`), default background color (`#0f1115`), default active toggle state | `chrome.storage.sync` (`__global_defaults__`) | Retained locally until changed or erased |
 | **Viewer Preferences** | Display mode (`smart`/`invert`/`sepia`/`original`), font size, contrast multiplier, custom palette colors | `chrome.storage.sync` (`__force_dark_viewer__`) | Retained locally until changed or erased |
+| **Pre-paint Flag** | `__fdm_pre` = `1:<time set>` only, meaning dark mode was applied on this site last time; no settings, addresses or personal data | The visited website's own `localStorage` (visible to that site's scripts; never sent by the extension) | Removed when dark mode resolves to off, disabled or natively dark for the site; ignored after 7 days; removed when the user clears the site's data |
 
 ### Cloud Synchronization Note
 Preferences stored via `chrome.storage.sync` are synchronized across your own devices using Google Chrome's built-in synchronization infrastructure if you are signed into Chrome with sync enabled. This synchronization is handled directly by Google under your Google account terms; ThemeSwitcher has no server, database, or access to your Google account or synced payload.

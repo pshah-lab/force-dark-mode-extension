@@ -126,6 +126,115 @@ body {
   accent-color: #4caf50;
 }
 
+/* Natively dark page: respect it, or theme it anyway */
+.native-dark {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1a1a1a;
+  font-size: 13px;
+}
+
+.native-dark[hidden] {
+  display: none;
+}
+
+.native-dark button {
+  flex-shrink: 0;
+  padding: 4px 8px;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #242424;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.native-dark button:hover {
+  border-color: #4caf50;
+}
+
+.native-dark button:focus-visible {
+  outline: 2px solid #4caf50;
+  outline-offset: 1px;
+}
+
+/* Invert engine: photos & media (On / Dim / Off) */
+.media-control {
+  margin: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: #1a1a1a;
+  font-size: 13px;
+}
+
+.media-control[hidden] {
+  display: none;
+}
+
+.media-control legend {
+  float: left;
+  padding: 0;
+  margin-right: 8px;
+  line-height: 24px;
+}
+
+.media-options {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.media-option {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.media-option:hover {
+  background: #242424;
+}
+
+.media-option input {
+  accent-color: #4caf50;
+  margin: 0;
+}
+
+/* CSS engine: per-site image dimming (0-60%) */
+.dim-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #d6d9df;
+  font-size: 13px;
+}
+
+.dim-control[hidden] {
+  display: none;
+}
+
+.dim-control input {
+  flex: 1;
+  min-width: 0;
+  accent-color: #4caf50;
+}
+
+.dim-control output {
+  min-width: 3ch;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .color-control {
   display: flex;
   align-items: center;
@@ -461,6 +570,15 @@ body {
 .footer-btn-primary {
   border-color: #3b4a6b;
   color: #8ab4f8;
+}
+
+.footer-btn-wide {
+  margin-top: 8px;
+  width: 100%;
+}
+
+.footer-btn-wide[hidden] {
+  display: none;
 }
 
 /* One-time welcome card */

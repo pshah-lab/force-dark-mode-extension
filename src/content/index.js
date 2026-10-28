@@ -1,6 +1,52 @@
-const host = location.hostname || "local_files";
+// This script runs in every frame (manifest all_frames / match_about_blank). Settings are keyed by the site the
+// user sees, so a child frame (iframe, srcdoc, about:blank) takes its key from the top frame's host. Child frames
+// never answer data requests, never report usage, never touch the pre-paint flag and stay inert when tiny.
+const IS_CHILD_FRAME = isChildFrame();
+const MIN_FRAME_SIZE_PX = 48;
+const TRANSPARENT_FRAME_ATTR = "data-force-dark-frame";
+const host = resolveConfigHost();
+
+function isChildFrame() {
+  try {
+    const top = window.top;
+    return Boolean(top) && top !== window;
+  } catch (error) {
+    return true;
+  }
+}
+
+function hostnameOfOrigin(origin) {
+  const match = /^[a-z][a-z0-9+.-]*:\/\/(\[[^\]]+\]|[^/:?#]+)/i.exec(String(origin || ""));
+  return match ? match[1].toLowerCase() : "";
+}
+
+// Top frame: its own host. Child frame: the top origin's host from location.ancestorOrigins (Chrome), else the
+// top's own location when same-origin, else (cross-origin without ancestorOrigins) the frame's own host.
+function resolveConfigHost() {
+  const own = location.hostname || "local_files";
+  if (!IS_CHILD_FRAME) return own;
+  const ancestors = location.ancestorOrigins;
+  if (ancestors && ancestors.length) return hostnameOfOrigin(ancestors[ancestors.length - 1]) || "local_files";
+  try {
+    return window.top.location.hostname || "local_files";
+  } catch (error) {
+    return own;
+  }
+}
+
+// Tracker / ad pixels and hidden frames: nothing worth theming, so no engine, observer or timer.
+function isInertFrame() {
+  if (!IS_CHILD_FRAME) return false;
+  if (window.innerWidth < MIN_FRAME_SIZE_PX || window.innerHeight < MIN_FRAME_SIZE_PX) return true;
+  const body = document.readyState === "loading" ? null : document.body;
+  if (!body) return false;
+  const rect = body.getBoundingClientRect();
+  return rect.width === 0 || rect.height === 0; // no visible body
+}
+
 const DEFAULT_ENGINE = "auto";
 const FALLBACK_ENGINE = "css";
+const DEFAULT_NATIVE_DARK_MODE = "respect";
 const VALID_ENGINES = new Set(["auto", "css", "invert"]);
 const ANALYSIS_SAMPLE_LIMIT = 300;
 const ANALYSIS_SKIP_SELECTOR = [
@@ -18,6 +64,81 @@ const ANALYSIS_SKIP_SELECTOR = [
   "track",
 ].join(",");
 
+// Root app containers checked for a dark theme marker and background. Bounded: a handful of elements at most.
+const APP_CONTAINER_SELECTOR = "ytd-app, #app, #root, #__next, main, #main, [role=main]";
+const APP_CONTAINER_LIMIT = 8;
+const APP_CONTAINER_COVER_RATIO = 0.6;
+
+// Dark theme markers sites put on html, body or the app root. Values and class names are matched as whole
+// tokens: "dark-blue-header", "darkroom" or "nightlife" are not dark themes.
+const DARK_THEME_ATTRS = ["data-theme", "data-bs-theme", "data-color-mode", "data-color-scheme", "data-mode"];
+const DARK_VALUE_TOKENS = new Set(["dark", "night"]);
+const DARK_CLASS_TOKENS = [
+  "dark",
+  "dark-mode",
+  "darkmode",
+  "dark-theme",
+  "theme-dark",
+  "theme--dark",
+  "is-dark",
+  "night",
+  "night-mode",
+];
+
+// Pre-paint bridge. chrome.storage answers only after the first paint, so a site that had dark mode last time
+// would flash white. The one thing this extension keeps in the page's own web storage is the flag below: "1:" and
+// the time it was written, set when an engine applied dark mode on this origin and removed when the resolved
+// state is anything else. Nothing else (no settings, themes, addresses or user data) is ever written there.
+// While the flag is fresh, a dark canvas is painted until the real state arrives; it is removed on every path.
+const PREPAINT_KEY = "__fdm_pre";
+const PREPAINT_STYLE_ID = "__force_dark_prepaint__";
+const PREPAINT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const PREPAINT_FAILSAFE_MS = 4000;
+
+function readPrepaintFlag() {
+  try {
+    const match = /^1:(\d{1,15})$/.exec(window.localStorage.getItem(PREPAINT_KEY) || "");
+    if (!match) return false;
+    const age = Date.now() - Number(match[1]);
+    return age >= 0 && age <= PREPAINT_MAX_AGE_MS;
+  } catch (error) {
+    return false; // storage blocked or unavailable: no bridge
+  }
+}
+
+function writePrepaintFlag(dark) {
+  try {
+    if (dark) window.localStorage.setItem(PREPAINT_KEY, "1:" + Date.now());
+    else window.localStorage.removeItem(PREPAINT_KEY);
+  } catch (error) {
+    // storage blocked, full or unavailable: the next load simply has no bridge
+  }
+}
+
+function removePrepaintStyle() {
+  document.getElementById(PREPAINT_STYLE_ID)?.remove();
+}
+
+// Called whenever the real state for this page is known: drops the bridge and records the outcome.
+// The flag belongs to the top document's origin, so a child frame never reads or writes it.
+function settlePrepaint(dark) {
+  removePrepaintStyle();
+  if (!IS_CHILD_FRAME) writePrepaintFlag(dark);
+}
+
+function injectPrepaintStyle() {
+  const parent = document.head || document.documentElement;
+  if (!parent || document.getElementById(PREPAINT_STYLE_ID)) return;
+  const style = document.createElement("style");
+  style.id = PREPAINT_STYLE_ID;
+  style.textContent = "html{background:#0f1115!important;color-scheme:dark}";
+  parent.appendChild(style);
+  // Backstop: if the real state never arrives (storage error, invalidated context), never leave the page dark.
+  setTimeout(removePrepaintStyle, PREPAINT_FAILSAFE_MS);
+}
+
+if (!IS_CHILD_FRAME && readPrepaintFlag()) injectPrepaintStyle();
+
 function getColorUtils() {
   return window.ForceDarkColorUtils || {};
 }
@@ -26,28 +147,134 @@ function normalizeEngine(engine) {
   return VALID_ENGINES.has(engine) ? engine : DEFAULT_ENGINE;
 }
 
+// Signature of what is on the page now, so a re-apply with the same result (the DOMContentLoaded re-run, an
+// unrelated storage change) leaves the engine in place instead of tearing it down and flashing white.
+let appliedSignature = "";
+// The same signature with the image dimming left out, so a dim-only change is applied in place.
+let appliedDimFreeSignature = "";
+
 function applyEngine(config) {
+  const resolved = config?.enabled && !isInertFrame()
+    ? withEngineStylesSuspended(() => ({ engine: resolveEngine(config), transparent: isTransparentFrame() }))
+    : { engine: "", transparent: false };
+  const engine = resolved.engine;
+  const transparent = Boolean(engine) && resolved.transparent;
+  const themed = engine && engine !== "invert" ? withThemePalette(config) : null;
+  // Invert only: the per-site media setting (missing = "on"). Part of the signature so a change rebuilds it.
+  const media = engine === "invert" ? invertMediaOptions(config) : null;
+  // Docs/Sheets canvas documents: decided from this frame's real location on every apply (also on pageshow),
+  // never from stored config. Auto needs no special case: both engines darken these canvases.
+  const canvasDoc = engine ? currentCanvasDocumentKind() : "";
+  if (themed && canvasDoc) themed.canvasDocument = canvasDoc;
+  const signature = engine
+    ? engineSignature(engine, config, themed, transparent, media, nativeDarkMode(config), canvasDoc)
+    : "";
+
+  if (signature && signature === appliedSignature && isEngineStylePresent(engine)) {
+    settlePrepaint(true);
+    return;
+  }
+
+  // CSS engine, only the image dimming changed (the side panel slider): update it in place, no teardown.
+  const dimFreeSignature = themed
+    ? engineSignature(engine, config, withoutImageDim(themed), transparent, media, nativeDarkMode(config), canvasDoc)
+    : "";
+  if (
+    themed && engine === "css" && dimFreeSignature === appliedDimFreeSignature &&
+    isEngineStylePresent(engine) && typeof setImageDim === "function"
+  ) {
+    setImageDim(themed.imageDim);
+    appliedSignature = signature;
+    settlePrepaint(true);
+    return;
+  }
+
   disableDarkMode();
   disableInvert();
   clearFilterVars();
+  document.documentElement.removeAttribute(TRANSPARENT_FRAME_ATTR);
+  appliedSignature = "";
+  appliedDimFreeSignature = "";
 
-  if (!config?.enabled) return;
-
-  const engine = resolveEngine(config);
-
-  if (!engine) return;
+  // Off, disabled for the site, outside the schedule or natively dark: no bridge, and no flag for next time.
+  if (!engine) {
+    settlePrepaint(false);
+    return;
+  }
 
   applyFilterVars(config);
+  if (transparent) document.documentElement.setAttribute(TRANSPARENT_FRAME_ATTR, "transparent");
 
   if (engine === "invert") {
-    enableInvert();
+    enableInvert({ ...media, canvasDocument: canvasDoc });
   } else {
-    enableDarkMode(withThemePalette(config));
+    enableDarkMode(themed);
   }
 
   // Only when an engine actually applied dark mode (not on natively dark pages).
   applyCustomCss(currentCustomCss);
+  appliedSignature = signature;
+  appliedDimFreeSignature = engine === "css" ? dimFreeSignature : "";
+  settlePrepaint(true); // the engine style is in place, so the bridge goes in the same task (no paint between)
   reportDarkAppliedOnce(config);
+}
+
+// The themed config without its imageDim key (deleted, not nulled, so key order cannot differ).
+function withoutImageDim(themed) {
+  const copy = { ...themed };
+  delete copy.imageDim;
+  return copy;
+}
+
+function engineSignature(engine, config, themed, transparent, media = null, nativeDark = DEFAULT_NATIVE_DARK_MODE, canvasDoc = "") {
+  const filters = [config?.brightness, config?.contrast, config?.sepia];
+  return JSON.stringify([engine, filters, themed, currentCustomCss, Boolean(transparent), media, nativeDark, canvasDoc || ""]);
+}
+
+// "document" / "spreadsheet" on Google Docs / Sheets editor paths, else "" (see canvasDocumentKind in sitePacks.js).
+function currentCanvasDocumentKind() {
+  const kind = window.ForceDarkThemes?.canvasDocumentKind;
+  return typeof kind === "function" ? kind(location.hostname, location.pathname) : "";
+}
+
+// Per site: "respect" (default, also any missing or unknown value) skips natively dark pages; "force" themes them.
+function nativeDarkMode(config) {
+  return config?.nativeDark === "force" ? "force" : DEFAULT_NATIVE_DARK_MODE;
+}
+
+// A child frame whose own document paints no background (html and body transparent, no image) shows the
+// embedding page through it. Forcing an opaque dark canvas there would cover the parent's design, so the
+// engines skip their root/body background in such frames (light surfaces are still darkened by the scan).
+// Measured with our styles suspended. The top frame always gets the dark canvas.
+function isTransparentFrame() {
+  if (!IS_CHILD_FRAME) return false;
+  const { parseCssColor } = getColorUtils();
+  if (!parseCssColor) return false;
+  return [document.documentElement, document.body].every((element) => {
+    if (!element) return true;
+    const styles = getComputedStyle(element);
+    if (hasBackgroundImage(styles)) return false;
+    const background = parseCssColor(styles.backgroundColor);
+    return !background || background.a <= 0.05;
+  });
+}
+
+function isEngineStylePresent(engine) {
+  return Boolean(document.getElementById(engine === "invert" ? "__force_dark_invert__" : "__force_dark_mode__"));
+}
+
+// Auto and Invert analyse the page's own colours, so our styles must not count: they are switched off for the
+// synchronous analysis only (no paint can happen in between) and switched back on afterwards.
+function withEngineStylesSuspended(fn) {
+  const styles = [...ENGINE_STYLE_IDS, CUSTOM_CSS_STYLE_ID, PREPAINT_STYLE_ID]
+    .map((id) => document.getElementById(id))
+    .filter((style) => style && !style.disabled);
+  styles.forEach((style) => { style.disabled = true; });
+  try {
+    return fn();
+  } finally {
+    styles.forEach((style) => { style.disabled = false; });
+  }
 }
 
 // Tells the service worker that dark mode was applied on this page, once per page load. The message carries the
@@ -56,7 +283,7 @@ function applyEngine(config) {
 let darkAppliedReported = false;
 
 function reportDarkAppliedOnce(config) {
-  if (darkAppliedReported) return;
+  if (IS_CHILD_FRAME || darkAppliedReported) return; // once per tab: the top frame speaks for the page
   darkAppliedReported = true;
   try {
     const result = chrome.runtime.sendMessage({ type: "DARK_APPLIED", engine: normalizeEngine(config?.engine) }, () => void chrome.runtime.lastError);
@@ -73,6 +300,13 @@ function reportDarkAppliedOnce(config) {
 function withThemePalette(config) {
   const out = config && typeof config === "object" ? { ...config } : {};
   delete out.fixes;
+  // Invert-only settings: dropped so a media change never rebuilds the CSS engine.
+  delete out.media;
+  delete out.mediaDim;
+  // In the signature on its own, so it is not counted twice.
+  delete out.nativeDark;
+  // Set from the real location in applyEngine only.
+  delete out.canvasDocument;
 
   const themes = window.ForceDarkThemes;
   if (!themes || typeof themes.resolveTheme !== "function") return out;
@@ -127,9 +361,13 @@ function resolveEngine(config) {
   }
 
   // Inverting a page that is already dark turns it light again, so Invert is
-  // skipped on natively dark pages just like Auto.
+  // skipped on natively dark pages just like Auto, unless the user chose to theme
+  // this site anyway: then Invert stays Invert and Auto uses the CSS engine.
   const analysis = analyzePageForEngine();
-  if (analysis.nativeDark) return "";
+  if (analysis.nativeDark) {
+    if (nativeDarkMode(config) !== "force") return "";
+    return engine === "invert" ? "invert" : FALLBACK_ENGINE;
+  }
   return engine === "invert" ? "invert" : analysis.engine;
 }
 
@@ -198,30 +436,88 @@ function refreshScheduleTimer() {
     scheduleIntervalId = null;
   }
 
-  if (currentSchedule && currentSchedule.mode !== "off") {
+  if (!currentSchedule || currentSchedule.mode === "off" || isInertFrame()) return;
+  if (!IS_CHILD_FRAME) {
     scheduleIntervalId = setInterval(applyEffectiveEngine, SCHEDULE_RECHECK_INTERVAL_MS);
+    return;
   }
+  // Time and system schedules change without a storage event, so a child frame keeps a timer too, but it only
+  // compares one boolean and re-runs the engine (and its page analysis) when the schedule state flips.
+  let lastInside = isWithinSchedule(currentSchedule);
+  scheduleIntervalId = setInterval(() => {
+    const inside = isWithinSchedule(currentSchedule);
+    if (inside === lastInside) return;
+    lastInside = inside;
+    applyEffectiveEngine();
+  }, SCHEDULE_RECHECK_INTERVAL_MS);
 }
 
-function loadSiteConfigAndApply() {
-  chrome.storage.sync.get([host, CUSTOM_THEMES_KEY, CUSTOM_CSS_KEY], (data) => {
+function loadSiteConfig(callback) {
+  chrome.storage.sync.get([host, CUSTOM_THEMES_KEY, CUSTOM_CSS_KEY], (result) => {
+    // A failed read (chrome.runtime.lastError) passes no data: treat it as no config, so the page is not left
+    // half-applied and the pre-paint bridge is removed.
+    const data = result || {};
     currentSiteConfig = data[host] || null;
     currentUserThemes = Array.isArray(data[CUSTOM_THEMES_KEY]) ? data[CUSTOM_THEMES_KEY] : [];
     currentCustomCss = toCustomCss(data[CUSTOM_CSS_KEY]);
-    applyEffectiveEngine();
+    callback();
   });
 }
 
-// Initial engine application: load the global schedule once, then the per-site config.
-chrome.storage.local.get(SCHEDULE_STORAGE_KEY, (localData) => {
-  currentSchedule = localData[SCHEDULE_STORAGE_KEY] || null;
-  refreshScheduleTimer();
-  loadSiteConfigAndApply();
+function loadSiteConfigAndApply() {
+  loadSiteConfig(applyEffectiveEngine);
+}
+
+// The global schedule and the per-site config are read at the same time (one storage round trip before the
+// first paint instead of two) and applied once both have returned. Used at startup and on a bfcache restore.
+function loadAllAndApply() {
+  let readsPending = 2;
+  const applyWhenReadsDone = () => {
+    readsPending -= 1;
+    if (readsPending === 0) applyEffectiveEngine();
+  };
+
+  chrome.storage.local.get(SCHEDULE_STORAGE_KEY, (localData) => {
+    currentSchedule = (localData && localData[SCHEDULE_STORAGE_KEY]) || null;
+    refreshScheduleTimer();
+    applyWhenReadsDone();
+  });
+  loadSiteConfig(applyWhenReadsDone);
+}
+
+loadAllAndApply();
+
+// Back/forward cache: a restored page keeps this script's state, but storage.onChanged events can be missed
+// while it was frozen (e.g. dark mode switched off in another tab). Re-read both and re-apply; applyEngine keeps
+// the engine in place when nothing changed and settles the pre-paint flag either way (top frame only).
+window.addEventListener("pageshow", (event) => {
+  if (!event || event.persisted !== true) return;
+  try {
+    loadAllAndApply();
+  } catch (error) {
+    // extension context invalidated (extension updated while the page was frozen)
+  }
 });
 
 // Re-evaluate Auto Mode engine on DOMContentLoaded if DOM was still loading at document_start
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", loadSiteConfigAndApply, { once: true });
+}
+
+// A child frame that starts tiny or hidden (lazy embeds) is re-checked when it is resized, debounced.
+if (IS_CHILD_FRAME) {
+  let wasInert = isInertFrame();
+  let resizeTimer = 0;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      const inert = isInertFrame();
+      if (inert === wasInert) return;
+      wasInert = inert;
+      refreshScheduleTimer();
+      applyEffectiveEngine();
+    }, 250);
+  });
 }
 
 function toCustomCss(value) {
@@ -261,8 +557,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     applyEffectiveEngine();
   }
 
+  // Data-returning requests are answered by the top frame only (the panel also sends them to frameId 0): a
+  // child frame replying first would hand back an iframe's address or analysis. It never calls sendResponse.
+  if (IS_CHILD_FRAME) return;
+
+  // Measured with our own styles switched off, so a page we themed is not reported as natively dark.
   if (msg.type === "ANALYZE_PAGE") {
-    sendResponse(analyzePageForEngine());
+    sendResponse(withEngineStylesSuspended(analyzePageForEngine));
   }
 
   // The side panel stays open across tabs and Chrome hides a tab's address from it, so it asks the page.
@@ -270,9 +571,77 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg.type === "PAGE_INFO") {
     sendResponse({ href: location.href });
   }
+
+  // "Open This PDF in Dark Viewer" on a PDF whose address has no ".pdf". Inspected only when the user asks; the
+  // answer goes only to the service worker, which uses it to open the local viewer tab.
+  if (msg.type === "PDF_INFO") {
+    sendResponse(findPdfOnPage());
+  }
 });
 
+const PDF_MIME_TYPE = "application/pdf";
+const PDF_EMBED_SCAN_LIMIT = 200;
+const PDF_SOURCE_PROTOCOLS = new Set(["http:", "https:", "file:"]);
+
+function isPdfMimeType(value) {
+  return String(value || "").split(";")[0].trim().toLowerCase() === PDF_MIME_TYPE;
+}
+
+// http(s)/file address without its fragment, or "" (about:blank, blob:, data:, javascript:, unparsable).
+function toPdfSourceUrl(raw, base) {
+  if (typeof raw !== "string" || !raw.trim()) return "";
+  try {
+    const url = new URL(raw, base);
+    if (!PDF_SOURCE_PROTOCOLS.has(url.protocol)) return "";
+    url.hash = "";
+    return url.href;
+  } catch (error) {
+    return "";
+  }
+}
+
+// Chrome's built-in viewer: the top document itself is the PDF. Otherwise exactly one embedded PDF
+// (<embed>/<object> typed application/pdf, or any of them / an <iframe> whose path ends in .pdf).
+function findPdfOnPage() {
+  if (isPdfMimeType(document.contentType)) {
+    const url = toPdfSourceUrl(location.href, location.href);
+    return url ? { type: "PDF_INFO", url, title: String(document.title || "") } : null;
+  }
+  const base = document.baseURI || location.href;
+  const found = new Set();
+  let nodes = [];
+  try {
+    nodes = document.querySelectorAll("embed, object, iframe");
+  } catch (error) {
+    return null;
+  }
+  const count = Math.min(nodes.length, PDF_EMBED_SCAN_LIMIT);
+  for (let i = 0; i < count; i += 1) {
+    const el = nodes[i];
+    const tag = String(el.tagName || "").toLowerCase();
+    const url = toPdfSourceUrl(el.getAttribute(tag === "object" ? "data" : "src"), base);
+    if (!url) continue;
+    const typed = tag !== "iframe" && isPdfMimeType(el.getAttribute("type"));
+    if (typed || new URL(url).pathname.toLowerCase().endsWith(".pdf")) found.add(url);
+    if (found.size > 1) return null;
+  }
+  return found.size === 1 ? { type: "PDF_INFO", url: [...found][0], title: "" } : null;
+}
+
+// Google Docs/Sheets editors: Auto resolves to Invert (cleanest result; CSS mode leaves glitches). Kept in the
+// analysis result so the popup shows it too. Natively dark pages stay untouched (never inverted twice).
 function analyzePageForEngine() {
+  const result = analyzePageContent();
+  if (result.nativeDark || !currentCanvasDocumentKind()) return result;
+  return {
+    ...result,
+    engine: "invert",
+    confidence: "high",
+    reason: "Google Docs/Sheets: Invert themes the canvas and the whole interface most reliably",
+  };
+}
+
+function analyzePageContent() {
   const { parseCssColor, getLuminance, getContrastRatio } = getColorUtils();
   const elements = getVisibleSample();
   const visibleCount = elements.length || 1;
@@ -441,24 +810,8 @@ function isNativeDarkPage({
   const rootColorScheme = rootStyles.colorScheme || "";
   const bodyColorScheme = bodyStyles.colorScheme || "";
 
-  const htmlEl = document.documentElement;
-  const bodyEl = document.body;
-  const hasDarkAttr =
-    htmlEl.hasAttribute("dark") ||
-    htmlEl.getAttribute("data-theme") === "dark" ||
-    htmlEl.getAttribute("data-mode") === "dark" ||
-    htmlEl.getAttribute("data-color-mode") === "dark" ||
-    htmlEl.classList.contains("dark") ||
-    htmlEl.classList.contains("dark-theme") ||
-    htmlEl.classList.contains("theme-dark") ||
-    (bodyEl && (
-      bodyEl.hasAttribute("dark") ||
-      bodyEl.getAttribute("data-theme") === "dark" ||
-      bodyEl.getAttribute("data-mode") === "dark" ||
-      bodyEl.classList.contains("dark") ||
-      bodyEl.classList.contains("dark-theme") ||
-      bodyEl.classList.contains("theme-dark")
-    ));
+  const container = findAppContainer();
+  const hasDarkAttr = [document.documentElement, document.body, container?.element].some(hasDarkThemeMarker);
 
   const declaresDarkScheme =
     colorSchemeResolvesToDark(rootColorScheme) ||
@@ -473,17 +826,11 @@ function isNativeDarkPage({
       bodyBackground.a > 0.35 &&
       getLuminance(bodyBackground) < 0.28);
 
-  // Check top-level app containers (like YouTube ytd-app, #app, #root, main)
-  let hasDarkAppContainer = false;
-  if (!hasDarkRoot) {
-    const mainContainer = document.querySelector("ytd-app, #app, #root, #__next, main, #main");
-    if (mainContainer) {
-      const containerBg = parseCssColor(getComputedStyle(mainContainer).backgroundColor);
-      if (containerBg && containerBg.a > 0.35 && getLuminance(containerBg) < 0.28) {
-        hasDarkAppContainer = true;
-      }
-    }
-  }
+  // Top-level app containers (YouTube ytd-app, #app, #root, main...): the largest one that paints a background.
+  const darkContainer = !hasDarkRoot && container?.background && getLuminance(container.background) < 0.28;
+  const hasDarkAppContainer = Boolean(darkContainer);
+  // A dark app filling most of the viewport is what the user sees, even over a light body.
+  const darkContainerCoversViewport = hasDarkAppContainer && container.areaRatio >= APP_CONTAINER_COVER_RATIO;
 
   // If too many light surfaces exist, it's not a dark page
   if (lightSurfaceRatio > 0.25) return false;
@@ -498,7 +845,7 @@ function isNativeDarkPage({
       : bodyBackground && bodyBackground.a > 0.35
         ? bodyBackground
         : null;
-  if (canvasBackground && getLuminance(canvasBackground) > 0.55) return false;
+  if (canvasBackground && getLuminance(canvasBackground) > 0.55 && !darkContainerCoversViewport) return false;
 
   // If site declares dark mode or has dark root/app container, and dark surfaces dominate
   if (declaresDarkScheme && (darkSurfaceRatio >= 0.55 || hasDarkRoot || hasDarkAppContainer)) {
@@ -510,6 +857,47 @@ function isNativeDarkPage({
   }
 
   return false;
+}
+
+// The root container that matters: the largest visible one that paints an opaque background (a transparent
+// #root around a dark <main> must not hide it), else the largest visible one (for its theme marker).
+function findAppContainer() {
+  const { parseCssColor } = getColorUtils();
+  const viewportArea = Math.max(window.innerWidth * window.innerHeight, 1);
+  let painted = null;
+  let largest = null;
+  const candidates = Array.from(document.querySelectorAll(APP_CONTAINER_SELECTOR)).slice(0, APP_CONTAINER_LIMIT);
+  for (const element of candidates) {
+    const area = getViewportArea(element);
+    if (area <= 0) continue;
+    const styles = getComputedStyle(element);
+    if (styles.display === "none" || styles.visibility === "hidden") continue;
+    const entry = { element, areaRatio: area / viewportArea, background: null };
+    if (!largest || entry.areaRatio > largest.areaRatio) largest = entry;
+    const background = parseCssColor ? parseCssColor(styles.backgroundColor) : null;
+    if (background && background.a > 0.35 && (!painted || entry.areaRatio > painted.areaRatio)) {
+      painted = { ...entry, background };
+    }
+  }
+  return painted || largest;
+}
+
+function hasDarkThemeMarker(element) {
+  if (!element || typeof element.getAttribute !== "function") return false;
+  if (element.hasAttribute("dark")) return true;
+  for (const name of DARK_THEME_ATTRS) {
+    const value = String(element.getAttribute(name) || "").toLowerCase();
+    if (!value) continue;
+    // GitHub: data-color-mode="auto" follows the OS.
+    if (name === "data-color-mode" && value === "auto" && window.matchMedia?.("(prefers-color-scheme: dark)").matches) {
+      return true;
+    }
+    const tokens = value.split(/[^a-z0-9]+/).filter(Boolean);
+    // "light dark" is support for both schemes, not a dark theme.
+    if (tokens.includes("light")) continue;
+    if (tokens.some((token) => DARK_VALUE_TOKENS.has(token))) return true;
+  }
+  return DARK_CLASS_TOKENS.some((token) => element.classList?.contains(token));
 }
 
 function getVisibleSample() {

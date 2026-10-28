@@ -30,6 +30,11 @@
         Recommendation unavailable
       </div>
 
+      <div class="native-dark" id="native-dark" role="status" hidden>
+        <span id="native-dark-text">This site is already dark</span>
+        <button type="button" id="native-dark-toggle">Theme it anyway</button>
+      </div>
+
       <button id="toggle" class="toggle-btn">
         <span class="status-dot"></span>
         <span class="label">Loading…</span>
@@ -52,6 +57,30 @@
           <input type="radio" name="engine" value="invert" />
           <span>Invert Engine</span>
         </label>
+      </div>
+
+      <fieldset class="media-control" id="media-control" hidden>
+        <legend>Photos &amp; media</legend>
+        <div class="media-options">
+          <label class="media-option" title="Show photos and videos in their natural colours">
+            <input type="radio" name="media" value="on" />
+            <span>On</span>
+          </label>
+          <label class="media-option" title="Natural colours, a little darker">
+            <input type="radio" name="media" value="dim" />
+            <span>Dim</span>
+          </label>
+          <label class="media-option" title="Invert photos and videos with the page">
+            <input type="radio" name="media" value="off" />
+            <span>Off</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="dim-control" id="image-dim-control" hidden>
+        <label for="image-dim">Image dimming</label>
+        <input id="image-dim" type="range" min="0" max="60" step="1" value="0" />
+        <output id="image-dim-value" for="image-dim">0%</output>
       </div>
 
       <label class="theme-control">
@@ -124,7 +153,8 @@
           <a id="rate-link" href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke/reviews" target="_blank" rel="noopener noreferrer" class="footer-btn footer-btn-primary">Rate ★</a>
           <a id="feedback-link" href="https://darkmode.pshah.fun/support.html#feedback" target="_blank" rel="noopener noreferrer" class="footer-btn">Feedback &amp; Suggestions ↗</a>
         </div>
-        <a id="site-css-link" href="#" class="feedback-link" hidden>Site CSS…</a>
+        <a id="site-css-link" href="#" class="footer-btn footer-btn-wide" hidden>Site CSS…</a>
+        <a id="site-css-tutorial-link" href="https://darkmode.pshah.fun/site-css-tutorial.html" target="_blank" rel="noopener noreferrer" class="feedback-link">Watch the Site CSS tutorial ▶</a>
       </div>
     </div>
 

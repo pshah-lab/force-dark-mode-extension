@@ -5,13 +5,16 @@ import {
   DEFAULT_SCHEDULE_END,
   TIME_PATTERN,
   THEME_ID_PATTERN,
+  mediaFieldsFor,
+  nativeDarkFieldsFor,
+  imageDimFieldsFor,
 } from "./constants.js";
 import "./colorUtils.js";
 import "./themeCore.js";
 import "./customCss.js";
 
 // Single place to bump the exported settings version (the privacy test matches this literal).
-const EXTENSION_VERSION_META = { version: "2.1.0" };
+const EXTENSION_VERSION_META = { version: "2.2.0" };
 const EXTENSION_VERSION = EXTENSION_VERSION_META.version;
 const THEMES_KEY = "__customThemes";
 const CSS_PREFIX = "__css:";
@@ -102,6 +105,7 @@ export function setSiteConfig(host, config) {
       contrast: clampFilterValue("contrast", config?.contrast),
       sepia: clampFilterValue("sepia", config?.sepia),
     };
+    Object.assign(safeConfig, mediaFieldsFor(config, null), nativeDarkFieldsFor(config, null), imageDimFieldsFor(config, null));
     if (config && Object.prototype.hasOwnProperty.call(config, "themeId")) {
       safeConfig.themeId = sanitizeThemeId(config.themeId);
     }
@@ -244,6 +248,7 @@ export async function importSettingsJson(jsonString) {
       contrast: clampFilterValue("contrast", val.contrast),
       sepia: clampFilterValue("sepia", val.sepia),
     };
+    Object.assign(toSet[key], mediaFieldsFor(val, null), nativeDarkFieldsFor(val, null), imageDimFieldsFor(val, null));
     if (Object.prototype.hasOwnProperty.call(val, "themeId")) {
       toSet[key].themeId = sanitizeThemeId(val.themeId);
     }

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Force Dark Mode - ThemeSwitcher",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "Apply smart dark mode to websites, PDFs, and documents with Auto, CSS, Invert, native dark detection, and local PDF rendering.",
   "minimum_chrome_version": "114",
   "permissions": ["storage", "activeTab", "contextMenus", "sidePanel"],
@@ -45,7 +45,10 @@
         "src/content/themeEngine/invertEngine.js",
         "src/content/index.js"
       ],
-      "run_at": "document_start"
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true,
+      "match_origin_as_fallback": true
     }
   ],
   "action": {},

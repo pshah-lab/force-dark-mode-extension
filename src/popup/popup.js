@@ -1,3 +1,32 @@
+// The "already dark" notice for this page: shown only when the page's own analysis says it is natively dark.
+// `setting` is the site's nativeDark field: "force" themes it anyway, anything else (or missing) respects it.
+function nativeDarkNotice(analysis, setting) {
+  const forced = setting === "force";
+  return {
+    visible: analysis?.nativeDark === true,
+    text: "This site is already dark",
+    button: forced ? "Respect site's dark theme" : "Theme it anyway",
+    next: forced ? "respect" : "force",
+  };
+}
+
+// Whether the CSS engine is (or will be) what themes this page: CSS selected, or Auto picking CSS. On a natively
+// dark page Auto applies nothing unless the site is set to "force", and then it always uses CSS.
+function cssEngineActive(engine, analysis, nativeDark) {
+  if (engine === "css") return true;
+  if (engine !== "auto" || !analysis) return false;
+  if (analysis.nativeDark === true) return nativeDark === "force";
+  return analysis.engine === "css";
+}
+
+// The image dimming the slider shows: the site's own value, else the theme's, as a whole number from 0 to 60.
+function imageDimValue(override, themeDim) {
+  const clamp = (value) => Math.min(60, Math.max(0, Math.round(value)));
+  if (typeof override === "number" && Number.isFinite(override)) return clamp(override);
+  if (typeof themeDim === "number" && Number.isFinite(themeDim)) return clamp(themeDim);
+  return 0;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const button = document.getElementById("toggle");
   const label = button.querySelector(".label");
@@ -13,6 +42,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   const openDocumentViewerButton = document.getElementById("open-document-viewer");
   const themeSelect = document.getElementById("theme-select");
   const radios = document.querySelectorAll('input[name="engine"]');
+  const mediaControl = document.getElementById("media-control");
+  const mediaRadios = document.querySelectorAll('input[name="media"]');
+  const nativeDarkBox = document.getElementById("native-dark");
+  const nativeDarkText = document.getElementById("native-dark-text");
+  const nativeDarkToggle = document.getElementById("native-dark-toggle");
+  const imageDimControl = document.getElementById("image-dim-control");
+  const imageDimInput = document.getElementById("image-dim");
+  const imageDimOutput = document.getElementById("image-dim-value");
+  const defaultMedia = "on";
+  const mediaModes = new Set(["on", "dim", "off"]);
   const defaultBackgroundColor = "#0f1115";
   const defaultEngine = "auto";
   const defaultFilters = { brightness: 100, contrast: 100, sepia: 0 };
@@ -20,6 +59,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   let colorDebounceTimer = null;
   let filterDebounceTimer = null;
   let userHasInteractedWithEngine = false;
+  let lastAnalysis = null; // this tab's Auto recommendation, to know whether Auto picked Invert
+  let siteNativeDark; // this site's nativeDark setting (missing = respect)
+  let siteConfig = {}; // this site's saved config, for the theme behind the image dimming default
+  let userThemes = [];
+  let dimDebounceTimer = null;
 
   const engineLabels = {
     auto: "Auto Engine",
@@ -124,6 +168,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     radios.forEach((radio) => {
       radio.disabled = true;
     });
+    mediaRadios.forEach((radio) => {
+      radio.disabled = true;
+    });
+    mediaControl.hidden = true;
+    nativeDarkBox.hidden = true;
+    imageDimInput.disabled = true;
+    imageDimControl.hidden = true;
   }
 
   // Broken-site report: a button, then an explicit confirmation naming the domain. Nothing is sent
@@ -191,12 +242,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     radios.forEach((radio) => {
       radio.disabled = false;
     });
+    mediaRadios.forEach((radio) => {
+      radio.disabled = false;
+    });
+    imageDimInput.disabled = false;
   }
 
   function askPageForUrl(tabId) {
     return new Promise((resolve) => {
       try {
-        chrome.tabs.sendMessage(tabId, { type: "PAGE_INFO" }, (info) => {
+        chrome.tabs.sendMessage(tabId, { type: "PAGE_INFO" }, { frameId: 0 }, (info) => {
           void chrome.runtime.lastError;
           resolve(info && typeof info.href === "string" ? info.href : null);
         });
@@ -219,6 +274,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const previousHost = host;
     host = "";
     userHasInteractedWithEngine = false;
+    lastAnalysis = null;
+    siteNativeDark = undefined;
+    siteConfig = {};
+    mediaControl.hidden = true;
+    nativeDarkBox.hidden = true;
+    imageDimControl.hidden = true;
     openPdfViewerButton.hidden = true;
     openPdfViewerButton.onclick = null;
     const siteCssLink = document.getElementById("site-css-link");
@@ -288,6 +349,51 @@ document.addEventListener("DOMContentLoaded", async () => {
         radio.checked = radio.value === engine;
       });
     }
+    updateMediaVisibility();
+  }
+
+  // The site's photos & media setting (Invert engine only). A missing field means "on".
+  function selectMedia(media) {
+    const value = mediaModes.has(media) ? media : defaultMedia;
+    mediaRadios.forEach((radio) => {
+      radio.checked = radio.value === value;
+    });
+  }
+
+  // Shown when the Invert engine is selected, or Auto is selected and picked Invert for this page.
+  function updateMediaVisibility() {
+    const engine = getSelectedEngine();
+    const autoPickedInvert = engine === "auto" && lastAnalysis?.engine === "invert" && !lastAnalysis.nativeDark;
+    mediaControl.hidden = !(engine === "invert" || autoPickedInvert);
+    updateImageDimVisibility();
+  }
+
+  // Shown when the CSS engine is selected, or Auto resolves to CSS for this page.
+  function updateImageDimVisibility() {
+    imageDimControl.hidden = !cssEngineActive(getSelectedEngine(), lastAnalysis, siteNativeDark);
+  }
+
+  // The theme this site resolves to (its choice, else its site pack's) and that theme's image dimming.
+  function themeImageDim() {
+    try {
+      const resolve = ForceDarkThemes.resolveTheme;
+      return typeof resolve === "function" ? resolve({ config: siteConfig, host, userThemes })?.theme?.imageDim : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  function refreshImageDim() {
+    const value = imageDimValue(siteConfig.imageDim, themeImageDim());
+    imageDimInput.value = String(value);
+    imageDimOutput.textContent = `${value}%`;
+  }
+
+  function updateNativeDarkNotice() {
+    const notice = nativeDarkNotice(lastAnalysis, siteNativeDark);
+    nativeDarkBox.hidden = !notice.visible;
+    nativeDarkText.textContent = notice.text;
+    nativeDarkToggle.textContent = notice.button;
   }
 
   function getSelectedEngine() {
@@ -360,18 +466,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     const token = viewToken;
-    chrome.tabs.sendMessage(tab.id, { type: "ANALYZE_PAGE" }, (analysis) => {
+    chrome.tabs.sendMessage(tab.id, { type: "ANALYZE_PAGE" }, { frameId: 0 }, (analysis) => {
       if (token !== viewToken) return;
       if (chrome.runtime.lastError || !isValidAnalysis(analysis)) {
         showRecommendationUnavailable();
         return;
       }
 
+      lastAnalysis = analysis;
       showRecommendation(analysis);
+      updateNativeDarkNotice();
 
       if (!hasSavedConfig && !userHasInteractedWithEngine) {
         updateSelectedEngine(defaultEngine);
       }
+      updateMediaVisibility();
     });
   }
 
@@ -457,6 +566,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const config = changes[host].newValue || {};
     selectTheme(config.themeId);
+    selectMedia(config.media);
+    siteNativeDark = config.nativeDark;
+    siteConfig = config;
+    if (!dimDebounceTimer) refreshImageDim(); // never move the slider under the user's finger (config.imageDim)
+    updateNativeDarkNotice();
     updateToggleUI(
       config.enabled === true,
       config.engine || defaultEngine,
@@ -473,6 +587,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const config = data[uiHost] || {};
       fillThemeOptions(data.__customThemes);
       selectTheme(config.themeId);
+      selectMedia(config.media);
+      siteNativeDark = config.nativeDark;
+      siteConfig = config;
+      userThemes = Array.isArray(data.__customThemes) ? data.__customThemes : [];
+      refreshImageDim();
       const hasSavedConfig = Boolean(data[uiHost]?.engine);
       const enabled = config.enabled === true;
       const engine = config.engine || defaultEngine;
@@ -508,6 +627,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   radios.forEach((radio) => {
     radio.onchange = () => {
       userHasInteractedWithEngine = true;
+      updateMediaVisibility();
       chrome.storage.sync.get(host, (data) => {
         const enabled = data[host]?.enabled === true;
 
@@ -523,6 +643,69 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     };
   });
+
+  // Photos & media for this site: saved through TOGGLE like the engine, never changing whether dark mode is on.
+  mediaRadios.forEach((radio) => {
+    radio.onchange = () => {
+      chrome.storage.sync.get(host, (data) => {
+        const enabled = data[host]?.enabled === true;
+
+        chrome.runtime.sendMessage({
+          type: "TOGGLE",
+          tabId: tab.id,
+          host,
+          engine: getSelectedEngine(),
+          backgroundColor: normalizeColor(backgroundColorInput.value),
+          media: radio.value,
+          forceEnabled: enabled,
+          ...getFilterValues(),
+        });
+      });
+    };
+  });
+
+  // Image dimming for this site (CSS engine): saved through TOGGLE, debounced, never changing whether dark mode is
+  // on. The content script updates the dimming in place, without rebuilding the page's theme.
+  imageDimInput.oninput = () => {
+    const value = imageDimValue(Number(imageDimInput.value), 0);
+    imageDimOutput.textContent = `${value}%`;
+    if (dimDebounceTimer) clearTimeout(dimDebounceTimer);
+    dimDebounceTimer = setTimeout(() => {
+      dimDebounceTimer = null;
+      chrome.storage.sync.get(host, (data) => {
+        const enabled = data[host]?.enabled === true;
+        chrome.runtime.sendMessage({
+          type: "TOGGLE",
+          tabId: tab.id,
+          host,
+          engine: getSelectedEngine(),
+          backgroundColor: normalizeColor(backgroundColorInput.value),
+          imageDim: value,
+          forceEnabled: enabled,
+          ...getFilterValues(),
+        });
+      });
+    }, 200);
+  };
+
+  // Natively dark page: theme it anyway (which also turns dark mode on for the site), or go back to respecting
+  // the site's own dark theme (dark mode stays as it is). Saved through TOGGLE like the engine.
+  nativeDarkToggle.onclick = () => {
+    const next = nativeDarkNotice(lastAnalysis, siteNativeDark).next;
+    chrome.storage.sync.get(host, (data) => {
+      const enabled = data[host]?.enabled === true;
+      chrome.runtime.sendMessage({
+        type: "TOGGLE",
+        tabId: tab.id,
+        host,
+        engine: getSelectedEngine(),
+        backgroundColor: normalizeColor(backgroundColorInput.value),
+        nativeDark: next,
+        forceEnabled: next === "force" ? true : enabled,
+        ...getFilterValues(),
+      });
+    });
+  };
 
   // Picking a colour means "use this colour": switch to Default colour so a selected
   // theme or a site pack theme never hides it.

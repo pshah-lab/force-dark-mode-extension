@@ -277,7 +277,7 @@ testAsync("exportSettingsJson exports sanitized JSON payload (Portability)", asy
   const exportedString = await storageModule.exportSettingsJson();
   const parsed = JSON.parse(exportedString);
 
-  assert.strictEqual(parsed.version, "2.1.0");
+  assert.strictEqual(parsed.version, "2.2.0");
   assert.ok(parsed.exportDate);
   assert.ok(parsed.settings["wikipedia.org"]);
   assert.strictEqual(parsed.settings["wikipedia.org"].engine, "css");
@@ -712,12 +712,36 @@ test("extension HTML pages have no inline handlers, inline scripts or remote res
   }
 });
 
+// The single, documented exception to "no web storage": the content script keeps one pre-paint flag,
+// `__fdm_pre`, in the visited page's own localStorage (value "1:<epoch ms>", or removed). It must stay in
+// src/content/index.js, use only these three exact calls, and no other key or value may ever be written.
+const PREPAINT_FLAG_FILE = "src/content/index.js";
+const PREPAINT_FLAG_CALLS = [
+  "window.localStorage.getItem(PREPAINT_KEY)",
+  'window.localStorage.setItem(PREPAINT_KEY, "1:" + Date.now())',
+  "window.localStorage.removeItem(PREPAINT_KEY)",
+];
+
 test("only chrome.storage.sync and chrome.storage.local are used; no cookies or web storage", () => {
   const allowedNamespaces = new Set(["sync", "local", "onChanged"]);
   const seen = new Set();
   for (const full of walkFiles(path.join(rootDir, "src"), ".js")) {
-    const code = fs.readFileSync(full, "utf8");
+    let code = fs.readFileSync(full, "utf8");
     const rel = relToRoot(full);
+    assert.ok(!code.includes("__fdm_") || rel === PREPAINT_FLAG_FILE, `The pre-paint flag key is used outside ${PREPAINT_FLAG_FILE}: ${rel}`);
+    if (rel === PREPAINT_FLAG_FILE) {
+      // Exactly one definition of the key, each allowed call exactly once, nothing else touching localStorage.
+      assert.strictEqual(code.match(/__fdm_/g)?.length, 1, "the flag key literal must appear exactly once");
+      assert.ok(code.includes('const PREPAINT_KEY = "__fdm_pre";'), "the flag key must be exactly __fdm_pre");
+      assert.strictEqual(code.match(/\bPREPAINT_KEY\b/g)?.length, 4, "PREPAINT_KEY is defined once and used only by the three allowed calls");
+      for (const call of PREPAINT_FLAG_CALLS) {
+        assert.strictEqual(code.split(call).length - 1, 1, `expected exactly one ${call}`);
+        code = code.replace(call, "");
+      }
+    }
+    // With the allowed calls taken out, any remaining localStorage reference (another key, value, alias or
+    // file) fails below. Assembled names such as "local" + "Storage" are rejected too.
+    assert.ok(!/["'`]Storage["'`]|\bStorage\.prototype\b/.test(code), `Obfuscated web storage access in ${rel}`);
     for (const match of code.matchAll(/\bchrome\.storage\.([A-Za-z_]+)/g)) {
       seen.add(match[1]);
       assert.ok(allowedNamespaces.has(match[1]), `Unexpected chrome.storage.${match[1]} in ${rel}`);

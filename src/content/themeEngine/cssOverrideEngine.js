@@ -10,7 +10,8 @@ const KEEP_ATTR = "data-force-dark-keep";
 const MAX_PACK_FIXES = 50;
 const IMAGE_BRIGHTNESS_PROPERTY = "--force-dark-image-brightness";
 // Set on the root only while a theme dims images, so undimmed images keep filter: none.
-// The dimming rule matches img and video, never picture (its img is already dimmed).
+// The dimming rule matches img, video and canvas, never picture (its img is already dimmed), and never the
+// Google Docs/Sheets document canvases (they get the page inversion instead, see canvasDocumentCss).
 const IMAGE_DIM_ATTR = "data-force-dark-image-dim";
 const CUSTOM_PROPERTIES = [
   "--force-dark-bg",
@@ -48,14 +49,43 @@ const EXCLUDED_SELECTOR = [
 
 const STYLESHEET_RESCAN_DELAY_MS = 150;
 // CSS-in-JS libraries add rules through the stylesheet API after hydration, which
-// fires no DOM event; a few bounded rescans after load catch the colours they set.
+// fires no DOM event; a few bounded checks after load catch the colours they set.
+// Each check rescans only if the document grew since the last full scan (element
+// count, stylesheet count or CSSOM rule count changed); the last one runs only if
+// an earlier check found growth.
 const LATE_RESCAN_DELAYS_MS = [800, 2500, 6000];
+
+// Scans run in slices: the first in an animation frame, the rest in idle callbacks
+// (setTimeout fallback). A slice classifies at most SCAN_SLICE_MAX elements and stops
+// early once its time budget is spent (checked after SCAN_SLICE_MIN elements).
+const SCAN_SLICE_MAX = 300;
+const SCAN_SLICE_MIN = 50;
+const SCAN_SLICE_BUDGET_MS = 8;
+const SCAN_IDLE_TIMEOUT_MS = 100;
+const SCAN_TIMEOUT_FALLBACK_MS = 16;
+// An attribute-only change rescans the element plus this many nearest descendants.
+const ATTR_RESCAN_DESCENDANTS = 100;
+const SCAN_FULL = 3;
+const SCAN_SUBTREE = 2;
+const SCAN_SHALLOW = 1;
 
 let darkModeObserver = null;
 let styleRescanTimer = 0;
 let lateRescanTimers = [];
+let lateRescanFoundGrowth = false;
 let scanFrame = 0;
-let pendingScanRoots = new Set();
+let scanContinuation = 0;
+let scanContinuationKind = "";
+// Requested roots (element -> SCAN_* mode), coalesced when the next slice starts.
+let pendingScanRoots = new Map();
+// Elements waiting to be classified, in document order, and the same set for dedupe.
+let scanQueue = [];
+let scanQueueIndex = 0;
+let scanQueued = new Set();
+let scanMarks = null;
+// Elements classified at least once (used to ignore no-op attribute mutations).
+let scanClassified = new WeakSet();
+let lastFullScanSignature = "";
 // Site pack fixes: validated {selector, action} entries, re-applied on every scan.
 let packFixes = [];
 let packFixMarks = { invert: new Set(), surface: new Set(), keep: new Set() };
@@ -64,9 +94,58 @@ function getColorUtils() {
   return window.ForceDarkColorUtils || {};
 }
 
+// Google Docs / Sheets canvas documents (path-scoped, see canvasDocumentKind in sitePacks.js): the root gets this
+// attribute with the kind, and the page/grid canvases then get the Invert engine's page inversion (no re-invert),
+// so the white paper turns dark and text light. Every other canvas keeps filter: none.
+const CANVAS_DOC_ATTR = "data-force-dark-canvas-doc";
+const CANVAS_DOC_KINDS = ["document", "spreadsheet"];
+const CANVAS_DOC_FILTER = "invert(0.92) hue-rotate(180deg)"; // = invertEngine's PAGE_INVERT_AMOUNT page step
+
+function canvasDocumentCss() {
+  const themes = window.ForceDarkThemes;
+  if (!themes || typeof themes.canvasDocumentSelectors !== "function") return "";
+  return CANVAS_DOC_KINDS.map((kind) => {
+    const selectors = themes.canvasDocumentSelectors(kind);
+    if (!selectors.length) return "";
+    return `
+    :root[${ROOT_MODE_ATTR}="css"][${CANVAS_DOC_ATTR}="${kind}"] :is(${selectors.join(", ")}) {
+      filter: ${CANVAS_DOC_FILTER} !important;
+    }
+`;
+  }).join("");
+}
+
+// canvas, minus every Docs/Sheets document canvas selector (whatever the page), for the dimming rule.
+function dimmedCanvasSelector() {
+  const themes = window.ForceDarkThemes;
+  const selectors = themes && typeof themes.canvasDocumentSelectors === "function"
+    ? CANVAS_DOC_KINDS.flatMap((kind) => themes.canvasDocumentSelectors(kind))
+    : [];
+  return selectors.length ? `canvas:not(${selectors.join(", ")})` : "canvas";
+}
+
+// Docs/Sheets header widgets with intentional colours (Gemini sparkle, Share pill) are left completely alone:
+// elements inside get no marks, and marks set earlier are removed by the scan (see classifyElement). Empty
+// string off Docs/Sheets, so every other page is unaffected.
+let docsUiKeepSelector = "";
+
+function markCanvasDocument(kind) {
+  const themes = window.ForceDarkThemes;
+  const keep = CANVAS_DOC_KINDS.includes(kind) && themes && typeof themes.docsUiKeepOriginalSelectors === "function"
+    ? themes.docsUiKeepOriginalSelectors(kind)
+    : [];
+  docsUiKeepSelector = keep.join(", ");
+  if (CANVAS_DOC_KINDS.includes(kind)) {
+    document.documentElement.setAttribute(CANVAS_DOC_ATTR, kind);
+  } else {
+    document.documentElement.removeAttribute(CANVAS_DOC_ATTR);
+  }
+}
+
 function enableDarkMode(config = {}) {
   applyCustomPalette(config);
   applyPackFixes(config && config.fixes);
+  markCanvasDocument(config && config.canvasDocument);
 
   if (document.getElementById(STYLE_ID)) {
     scheduleScan(document.documentElement);
@@ -92,8 +171,13 @@ function enableDarkMode(config = {}) {
 
     :root[${ROOT_MODE_ATTR}="css"],
     :root[${ROOT_MODE_ATTR}="css"] body {
-      background-color: var(--force-dark-bg) !important;
       color: var(--force-dark-text) !important;
+    }
+
+    /* A transparent child frame (marked by the content script) keeps showing its embedding page. */
+    :root[${ROOT_MODE_ATTR}="css"]:not([data-force-dark-frame="transparent"]),
+    :root[${ROOT_MODE_ATTR}="css"]:not([data-force-dark-frame="transparent"]) body {
+      background-color: var(--force-dark-bg) !important;
     }
 
     :root[${ROOT_MODE_ATTR}="css"] [${SURFACE_ATTR}="strong"] {
@@ -152,14 +236,14 @@ function enableDarkMode(config = {}) {
       background-color: transparent !important;
     }
 
-    :root[${ROOT_MODE_ATTR}="css"][${IMAGE_DIM_ATTR}] :is(img, video):not([${IMAGE_ATTR}="invert"]) {
+    :root[${ROOT_MODE_ATTR}="css"][${IMAGE_DIM_ATTR}] :is(img, video, ${dimmedCanvasSelector()}):not([${IMAGE_ATTR}="invert"]) {
       filter: brightness(var(--force-dark-image-brightness, 100%)) !important;
     }
 
     :root[${ROOT_MODE_ATTR}="css"] [${IMAGE_ATTR}="invert"] {
       filter: invert(0.9) hue-rotate(180deg) !important;
     }
-
+${canvasDocumentCss()}
     :root[${ROOT_MODE_ATTR}="css"] [${KEEP_ATTR}] {
       background-color: #ffffff !important;
       color: #111111 !important;
@@ -214,13 +298,59 @@ function clearLateRescans() {
 function scheduleLateRescans() {
   clearLateRescans();
   scheduleFullRescan();
-  lateRescanTimers = LATE_RESCAN_DELAYS_MS.map((delay) =>
-    setTimeout(() => scheduleScan(document.documentElement), delay)
+  lateRescanFoundGrowth = false;
+  lateRescanTimers = LATE_RESCAN_DELAYS_MS.map((delay, index) =>
+    setTimeout(() => runLateRescanCheck(index), delay)
   );
 }
 
+function runLateRescanCheck(index) {
+  const lastIndex = LATE_RESCAN_DELAYS_MS.length - 1;
+  if (index === lastIndex && !lateRescanFoundGrowth) return;
+  if (documentGrowthSignature() !== lastFullScanSignature) {
+    lateRescanFoundGrowth = true;
+    scheduleScan(document.documentElement);
+  } else if (index === lastIndex - 1 && !lateRescanFoundGrowth) {
+    // Settled through every earlier check: the last rescan is not needed.
+    clearTimeout(lateRescanTimers[lastIndex]);
+  }
+}
+
+// Cheap measure of whether the page is still changing: element count (a live
+// collection's length), stylesheet count and CSSOM rule count (insertRule adds
+// rules without any DOM mutation). Cross-origin sheets throw on cssRules: skipped.
+function documentGrowthSignature() {
+  let elements = 0;
+  try {
+    elements = typeof document.getElementsByTagName === "function"
+      ? document.getElementsByTagName("*").length
+      : document.querySelectorAll("*").length;
+  } catch (error) {
+    elements = 0;
+  }
+  let sheetCount = 0;
+  let rules = 0;
+  const sheets = document.styleSheets;
+  if (sheets && typeof sheets.length === "number") {
+    sheetCount = sheets.length;
+    for (let i = 0; i < sheets.length; i++) {
+      try {
+        const list = sheets[i] && sheets[i].cssRules;
+        rules += list ? list.length : 0;
+      } catch (error) {
+        // cross-origin stylesheet
+      }
+    }
+  }
+  return `${elements}:${sheetCount}:${rules}`;
+}
+
 function onResourceLoad(event) {
-  if (isSiteStylesheet(event.target)) scheduleFullRescan();
+  if (isSiteStylesheet(event.target)) {
+    scheduleFullRescan();
+    return;
+  }
+  onImageLoad(event.target);
 }
 
 // The user's per-site CSS. It is validated again here, right before it reaches the page,
@@ -259,6 +389,7 @@ function disableDarkMode() {
   removeCustomCss();
   document.getElementById(STYLE_ID)?.remove();
   document.documentElement.removeAttribute(ROOT_MODE_ATTR);
+  document.documentElement.removeAttribute(CANVAS_DOC_ATTR);
   clearCustomPalette();
 
   if (darkModeObserver) {
@@ -279,10 +410,16 @@ function disableDarkMode() {
     cancelAnimationFrame(scanFrame);
     scanFrame = 0;
   }
+  cancelScanContinuation();
 
   pendingScanRoots.clear();
+  resetScanQueue();
+  scanClassified = new WeakSet();
+  logoAwaitingLoad = new WeakSet();
+  lastFullScanSignature = "";
   clearPackFixes();
   clearDarkAttributes(document.documentElement);
+  docsUiKeepSelector = "";
 }
 
 function observePageChanges() {
@@ -291,9 +428,14 @@ function observePageChanges() {
   darkModeObserver = new MutationObserver((records) => {
     for (const record of records) {
       if (record.type === "attributes") {
-        const attr = record.attributeName || "";
-        if (attr.startsWith("data-force-dark")) continue;
-        scheduleScan(record.target);
+        if (!attributeMutationMatters(record)) continue;
+        const target = record.target;
+        // html/body class or style changes (site theme toggles) can restyle the whole page.
+        if (target === document.documentElement || target === document.body) {
+          scheduleScan(target);
+        } else {
+          scheduleScan(target, SCAN_SHALLOW);
+        }
         continue;
       }
 
@@ -309,6 +451,7 @@ function observePageChanges() {
   darkModeObserver.observe(document.documentElement, {
     attributes: true,
     attributeFilter: ["class", "style", "bgcolor", "color"],
+    attributeOldValue: true,
     childList: true,
     subtree: true,
   });
@@ -319,162 +462,451 @@ function observePageChanges() {
   if (document.readyState === "complete") scheduleLateRescans();
 }
 
-function scheduleScan(root) {
-  if (!root || root.nodeType !== Node.ELEMENT_NODE) return;
-
-  pendingScanRoots.add(root);
-  if (scanFrame) return;
-
-  scanFrame = requestAnimationFrame(() => {
-    const roots = Array.from(pendingScanRoots);
-    pendingScanRoots.clear();
-    scanFrame = 0;
-
-    batchScanTrees(roots);
-  });
+// Our own markers are never observed (attributeFilter), and are skipped here too. A
+// style change that only touches our --force-dark-* custom properties, or any change
+// that leaves an already classified element's attribute as it was, cannot change
+// its colours, so it schedules nothing.
+function attributeMutationMatters(record) {
+  const attr = record.attributeName || "";
+  if (attr.startsWith("data-force-dark")) return false;
+  const target = record.target;
+  if (!target || target.nodeType !== Node.ELEMENT_NODE) return false;
+  if (typeof target.getAttribute !== "function" || record.oldValue === undefined) return true;
+  const current = target.getAttribute(attr);
+  if (attr === "style" && withoutOwnStyle(record.oldValue) === withoutOwnStyle(current)) return false;
+  return !(scanClassified.has(target) && record.oldValue === current);
 }
 
-function batchScanTrees(roots) {
-  const elementsToScan = new Set();
+function withoutOwnStyle(value) {
+  return String(value || "")
+    .replace(/--force-dark-[\w-]*\s*:[^;]*;?/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  roots.forEach((root) => {
-    if (!root || root.nodeType !== Node.ELEMENT_NODE) return;
-    elementsToScan.add(root);
-    root.querySelectorAll("*").forEach((el) => elementsToScan.add(el));
-  });
+// Queues a scan of `root`. The default mode scans its whole subtree (the document
+// element always means a full scan); SCAN_SHALLOW scans the element plus a bounded
+// set of its nearest descendants. Roots are coalesced when the next slice starts.
+function scheduleScan(root, mode = SCAN_SUBTREE) {
+  if (!root || root.nodeType !== Node.ELEMENT_NODE) return;
+
+  const effective = root === document.documentElement ? SCAN_FULL : mode;
+  if ((pendingScanRoots.get(root) || 0) < effective) pendingScanRoots.set(root, effective);
+  if (scanFrame || scanContinuation) return;
+
+  scanFrame = requestAnimationFrame(runScanSlice);
+}
+
+function scheduleScanContinuation() {
+  if (scanContinuation) return;
+  if (typeof requestIdleCallback === "function") {
+    scanContinuationKind = "idle";
+    scanContinuation = requestIdleCallback(runScanSlice, { timeout: SCAN_IDLE_TIMEOUT_MS });
+    return;
+  }
+  // A synchronous timer (test doubles) would run the slice before the id is stored.
+  let ran = false;
+  const id = setTimeout(() => { ran = true; runScanSlice(); }, SCAN_TIMEOUT_FALLBACK_MS);
+  if (!ran) {
+    scanContinuationKind = "timeout";
+    scanContinuation = id;
+  }
+}
+
+function cancelScanContinuation() {
+  if (!scanContinuation) return;
+  if (scanContinuationKind === "idle" && typeof cancelIdleCallback === "function") {
+    cancelIdleCallback(scanContinuation);
+  } else if (scanContinuationKind === "timeout") {
+    clearTimeout(scanContinuation);
+  }
+  scanContinuation = 0;
+  scanContinuationKind = "";
+}
+
+function resetScanQueue() {
+  scanQueue = [];
+  scanQueueIndex = 0;
+  scanQueued = new Set();
+  scanMarks = null;
+}
+
+function enqueueForScan(element) {
+  if (scanQueued.has(element)) return;
+  scanQueued.add(element);
+  scanQueue.push(element);
+}
+
+function isInsideAny(element, roots) {
+  for (let node = element.parentElement; node; node = node.parentElement) {
+    const mode = roots.get(node);
+    if (mode === SCAN_SUBTREE || mode === SCAN_FULL) return true;
+  }
+  return false;
+}
+
+// Breadth-first: the element's nearest descendants, at most `limit` of them.
+function boundedDescendants(root, limit) {
+  const out = [];
+  const queue = [root];
+  for (let i = 0; i < queue.length && out.length < limit; i++) {
+    const children = queue[i].children || [];
+    for (let c = 0; c < children.length && out.length < limit; c++) {
+      out.push(children[c]);
+      queue.push(children[c]);
+    }
+  }
+  return out;
+}
+
+// Moves requested roots into the scan queue. A full scan restarts the queue (every
+// element is re-read); a root inside another queued subtree root is dropped.
+function drainPendingScanRoots() {
+  if (!pendingScanRoots.size) return;
+  const roots = pendingScanRoots;
+  pendingScanRoots = new Map();
+
+  const full = Array.from(roots.keys()).find((root) => roots.get(root) === SCAN_FULL);
+  if (full) {
+    resetScanQueue();
+    lastFullScanSignature = documentGrowthSignature();
+    enqueueForScan(full);
+    full.querySelectorAll("*").forEach(enqueueForScan);
+  } else {
+    roots.forEach((mode, root) => {
+      if (isInsideAny(root, roots)) return;
+      enqueueForScan(root);
+      if (mode === SCAN_SHALLOW) {
+        boundedDescendants(root, ATTR_RESCAN_DESCENDANTS).forEach(enqueueForScan);
+      } else {
+        root.querySelectorAll("*").forEach(enqueueForScan);
+      }
+    });
+  }
+
+  // Pack fixes are re-applied on every scan batch so late-added matches are caught.
+  scanMarks = markPackFixes();
+}
+
+function scanNow() {
+  return typeof performance !== "undefined" && performance && typeof performance.now === "function"
+    ? performance.now()
+    : Date.now();
+}
+
+function runScanSlice(deadline) {
+  scanFrame = 0;
+  scanContinuation = 0;
+  scanContinuationKind = "";
+
+  drainPendingScanRoots();
+  if (scanQueueIndex >= scanQueue.length) {
+    resetScanQueue();
+    return;
+  }
 
   const { parseCssColor, getLuminance } = getColorUtils();
-  if (!parseCssColor || !getLuminance) return;
+  if (!parseCssColor || !getLuminance) {
+    resetScanQueue();
+    return;
+  }
 
-  // Pack fixes are re-applied on every scan so late-added matches are caught.
-  const marks = markPackFixes();
+  const idleBudget = deadline && !deadline.didTimeout && typeof deadline.timeRemaining === "function"
+    ? Math.max(1, Math.min(deadline.timeRemaining(), SCAN_SLICE_BUDGET_MS))
+    : SCAN_SLICE_BUDGET_MS;
+  const sliceEnd = scanNow() + idleBudget;
+  logoSamplesLeft = LOGO_SAMPLES_PER_SLICE;
+  const marks = scanMarks || markPackFixes();
 
   // READ PASS: Gather styles without mutating DOM to prevent forced reflows
   const updates = [];
   const settleRoots = [];
-  elementsToScan.forEach((element) => {
-    if (!(element instanceof Element) || shouldSkipElement(element)) return;
+  while (scanQueueIndex < scanQueue.length) {
+    if (updates.length >= SCAN_SLICE_MAX) break;
+    if (updates.length >= SCAN_SLICE_MIN && scanNow() >= sliceEnd) break;
+    const element = scanQueue[scanQueueIndex++];
+    scanQueued.delete(element);
+    const update = classifyElement(element, marks, settleRoots, parseCssColor, getLuminance);
+    if (update) updates.push(update);
+  }
 
-    // keep-light subtrees are never darkened; markers from an earlier scan are dropped.
-    if (marks.keep.has(element)) {
-      updates.push({ element, surfaceAttr: null, textAttr: false, borderAttr: false, imageAttr: null });
-      return;
-    }
+  // WRITE PASS: Apply this slice's attribute updates in a single batch
+  updates.forEach(applyScanUpdate);
 
-    const tag = element.tagName.toLowerCase();
-    const styles = getComputedStyle(element);
-    const background = parseCssColor(styles.backgroundColor);
-    const text = parseCssColor(styles.color);
-
-    // Computed colours already include this engine's own overrides, so a marker
-    // that is already set is kept: otherwise a rescan would read the darkened
-    // colours, drop the marker, and flip the element back to its light colours.
-    let surfaceAttr = null;
-    if (background && background.a > 0.35) {
-      const bgLum = getLuminance(background);
-      if (bgLum > 0.82) {
-        surfaceAttr = "strong";
-      } else if (bgLum > 0.55) {
-        surfaceAttr = "soft";
-      }
-    }
-    if (!surfaceAttr) surfaceAttr = element.getAttribute(SURFACE_ATTR);
-
-    let textAttr = false;
-    if (text && text.a > 0.45 && getLuminance(text) < 0.48) {
-      textAttr = true;
-    }
-    if (!textAttr && element.hasAttribute(TEXT_ATTR)) textAttr = true;
-
-    const borderAttr =
-      hasLightBorder(styles, parseCssColor, getLuminance) || element.hasAttribute(BORDER_ATTR);
-
-    // Smart logo / SVG inversion check
-    let imageAttr = null;
-    if (tag === "img" || tag === "svg") {
-      const src = (element.getAttribute("src") || "").toLowerCase();
-      const className = (element.getAttribute("class") || "").toLowerCase();
-      const id = (element.getAttribute("id") || "").toLowerCase();
-      const alt = (element.getAttribute("alt") || "").toLowerCase();
-
-      const isLogoOrTextGraphic =
-        tag === "svg" ||
-        src.includes("logo") ||
-        src.includes("brand") ||
-        src.includes("text") ||
-        src.includes(".svg") ||
-        className.includes("logo") ||
-        className.includes("brand") ||
-        className.includes("text") ||
-        id.includes("logo") ||
-        id.includes("brand") ||
-        id.includes("text") ||
-        alt.includes("logo") ||
-        alt.includes("wikipedia");
-
-      // An svg's own fill is often not what is painted (fill="none" on the root, or the
-      // initial black when unset). When its shapes follow the text colour or are all
-      // light, it is never inverted; otherwise the svg's own colours decide, as before.
-      const shapes = tag === "svg" ? classifySvgShapes(element, parseCssColor, getLuminance) : null;
-
-      // A paint that only *equals* the text colour (no currentColor attribute) may be a
-      // hard-coded fill that happens to match. Once the text marker recolours `color`,
-      // the next scan tells the two apart, so an svg marked for the first time now is
-      // rescanned right after this write pass instead of waiting for an unrelated one.
-      if (shapes === SVG_MATCHES_TEXT && textAttr && !element.hasAttribute(TEXT_ATTR)) {
-        settleRoots.push(element);
-      }
-
-      if (isLogoOrTextGraphic && !shapes) {
-        const fill = parseCssColor(styles.fill);
-        const color = parseCssColor(styles.color);
-        const fillLum = fill ? getLuminance(fill) : 0;
-        const colorLum = color ? getLuminance(color) : 0;
-        const isDarkGraphic =
-          (fill && fillLum < 0.45) || (color && colorLum < 0.45) || (!fill && !color);
-
-        if (isDarkGraphic) {
-          imageAttr = "invert";
-        }
-      }
-    }
-
-    if (marks.invert.has(element)) imageAttr = "invert";
-    if (marks.surface.has(element)) surfaceAttr = "strong";
-
-    updates.push({ element, surfaceAttr, textAttr, borderAttr, imageAttr });
-  });
-
-  // WRITE PASS: Apply all DOM attribute updates in a single batch
-  updates.forEach(({ element, surfaceAttr, textAttr, borderAttr, imageAttr }) => {
-    if (surfaceAttr) {
-      element.setAttribute(SURFACE_ATTR, surfaceAttr);
-    } else {
-      element.removeAttribute(SURFACE_ATTR);
-    }
-
-    if (textAttr) {
-      element.setAttribute(TEXT_ATTR, "true");
-    } else {
-      element.removeAttribute(TEXT_ATTR);
-    }
-
-    if (borderAttr) {
-      element.setAttribute(BORDER_ATTR, "true");
-    } else {
-      element.removeAttribute(BORDER_ATTR);
-    }
-
-    if (imageAttr) {
-      element.setAttribute(IMAGE_ATTR, imageAttr);
-    } else {
-      element.removeAttribute(IMAGE_ATTR);
-    }
-  });
+  if (scanQueueIndex >= scanQueue.length) resetScanQueue();
 
   // One follow-up scan per newly text-marked svg whose shapes only matched the text
   // colour. It runs once: the svg then carries the text marker, so it is not re-queued.
+  // Logo images whose sampling did not fit this slice's budget are queued the same way.
   settleRoots.forEach((svg) => scheduleScan(svg));
+
+  // Remaining work continues in the next slice, unless a follow-up above already claimed a frame.
+  if ((scanQueueIndex < scanQueue.length || pendingScanRoots.size) && !scanFrame) {
+    scheduleScanContinuation();
+  }
+}
+
+function insideKeepOriginal(element) {
+  try {
+    return element.closest(docsUiKeepSelector) !== null;
+  } catch (error) {
+    return false;
+  }
+}
+
+function classifyElement(element, marks, settleRoots, parseCssColor, getLuminance) {
+  if (!(element instanceof Element) || element.isConnected === false || shouldSkipElement(element)) return null;
+  scanClassified.add(element);
+
+  // Keep-original widgets: no marks at all; the write pass strips any set before the exemption applied.
+  if (docsUiKeepSelector && insideKeepOriginal(element)) {
+    return { element, surfaceAttr: null, textAttr: false, borderAttr: false, imageAttr: null };
+  }
+
+  // keep-light subtrees are never darkened; markers from an earlier scan are dropped.
+  if (marks.keep.has(element)) {
+    return { element, surfaceAttr: null, textAttr: false, borderAttr: false, imageAttr: null };
+  }
+
+  const tag = element.tagName.toLowerCase();
+  const styles = getComputedStyle(element);
+  const background = parseCssColor(styles.backgroundColor);
+  const text = parseCssColor(styles.color);
+
+  // Computed colours already include this engine's own overrides, so a marker
+  // that is already set is kept: otherwise a rescan would read the darkened
+  // colours, drop the marker, and flip the element back to its light colours.
+  let surfaceAttr = null;
+  if (background && background.a > 0.35) {
+    const bgLum = getLuminance(background);
+    if (bgLum > 0.82) {
+      surfaceAttr = "strong";
+    } else if (bgLum > 0.55) {
+      surfaceAttr = "soft";
+    }
+  }
+  if (!surfaceAttr) surfaceAttr = element.getAttribute(SURFACE_ATTR);
+
+  let textAttr = false;
+  if (text && text.a > 0.45 && getLuminance(text) < 0.48) {
+    textAttr = true;
+  }
+  if (!textAttr && element.hasAttribute(TEXT_ATTR)) textAttr = true;
+
+  const borderAttr =
+    hasLightBorder(styles, parseCssColor, getLuminance) || element.hasAttribute(BORDER_ATTR);
+
+  // Smart logo / SVG inversion check
+  let imageAttr = null;
+  if (tag === "img") {
+    imageAttr = classifyImageLogo(element, styles, settleRoots, parseCssColor, getLuminance);
+  } else if (tag === "svg") {
+    // An svg's own fill is often not what is painted (fill="none" on the root, or the
+    // initial black when unset). When its shapes follow the text colour or are all
+    // light, it is never inverted; otherwise the svg's own colours decide, as before.
+    const shapes = classifySvgShapes(element, parseCssColor, getLuminance);
+
+    // A paint that only *equals* the text colour (no currentColor attribute) may be a
+    // hard-coded fill that happens to match. Once the text marker recolours `color`,
+    // the next scan tells the two apart, so an svg marked for the first time now is
+    // rescanned right after this write pass instead of waiting for an unrelated one.
+    if (shapes === SVG_MATCHES_TEXT && textAttr && !element.hasAttribute(TEXT_ATTR)) {
+      settleRoots.push(element);
+    }
+
+    if (!shapes && isDarkGraphicStyle(styles, parseCssColor, getLuminance)) imageAttr = "invert";
+  }
+
+  if (marks.invert.has(element)) imageAttr = "invert";
+  if (marks.surface.has(element)) surfaceAttr = "strong";
+
+  return { element, surfaceAttr, textAttr, borderAttr, imageAttr };
+}
+
+function isDarkGraphicStyle(styles, parseCssColor, getLuminance) {
+  const fill = parseCssColor(styles.fill);
+  const color = parseCssColor(styles.color);
+  const fillLum = fill ? getLuminance(fill) : 0;
+  const colorLum = color ? getLuminance(color) : 0;
+  return (fill && fillLum < 0.45) || (color && colorLum < 0.45) || (!fill && !color);
+}
+
+// --- <img> logo detection -----------------------------------------------------------------------------------
+// Candidates are the images today's name hints pick out. For a candidate that is loaded, same-origin (or
+// CORS-clean) and not huge, its pixels decide: drawn to a 16x16 canvas, it is inverted only when it is a dark,
+// grey logo on a transparent background. When the pixels cannot be read (cross-origin taint, not loaded yet,
+// too large), tighter name hints and the old colour check decide. Verdicts are cached per element and src,
+// sampling is capped per scan slice, and an image still loading is re-evaluated by its load event.
+const LOGO_SAMPLE_SIZE = 16;
+const LOGO_SAMPLE_MAX_SIDE = 1024; // natural width/height cap; larger images are photos or banners
+const LOGO_SAMPLES_PER_SLICE = 8;
+const LOGO_ALPHA_TRANSPARENT = 32; // alpha below this (of 255) is background
+const LOGO_ALPHA_OPAQUE = 128; // colour statistics use pixels at least this opaque (anti-aliased edges ignored)
+const LOGO_MIN_TRANSPARENT_RATIO = 0.3; // at least 30% of the box must be transparent
+const LOGO_DARK_LUMA = 0.4; // Rec. 709 luma (0-1) below which a pixel counts as dark
+const LOGO_MIN_DARK_RATIO = 0.8; // of the opaque pixels
+const LOGO_COLOURFUL_CHROMA = 0.2; // (max - min) / 255 above which a pixel counts as coloured
+const LOGO_MAX_COLOURFUL_RATIO = 0.1; // of the opaque pixels
+const LOGO_INVERT = "invert";
+const LOGO_KEEP = "keep";
+const LOGO_DEFER = "defer";
+
+let logoVerdicts = new WeakMap(); // img -> { src, verdict: "invert" | "keep" | null (no data) }
+let logoAwaitingLoad = new WeakSet(); // candidates seen before they loaded
+let logoSamplesLeft = LOGO_SAMPLES_PER_SLICE;
+let logoSampleCanvas = null;
+
+// "invert", "keep", or null when the data cannot decide (missing or too short).
+function logoVerdictFromPixels(data) {
+  const total = LOGO_SAMPLE_SIZE * LOGO_SAMPLE_SIZE;
+  if (!data || typeof data.length !== "number" || data.length < total * 4) return null;
+  let transparent = 0;
+  let opaque = 0;
+  let dark = 0;
+  let colourful = 0;
+  for (let i = 0; i < total * 4; i += 4) {
+    const a = data[i + 3];
+    if (a < LOGO_ALPHA_TRANSPARENT) {
+      transparent++;
+      continue;
+    }
+    if (a < LOGO_ALPHA_OPAQUE) continue;
+    opaque++;
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    if ((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 < LOGO_DARK_LUMA) dark++;
+    if ((Math.max(r, g, b) - Math.min(r, g, b)) / 255 > LOGO_COLOURFUL_CHROMA) colourful++;
+  }
+  if (!opaque) return LOGO_KEEP; // nothing (or only faint edges) visible
+  if (transparent / total < LOGO_MIN_TRANSPARENT_RATIO) return LOGO_KEEP; // mostly opaque: photo, banner
+  if (colourful / opaque > LOGO_MAX_COLOURFUL_RATIO) return LOGO_KEEP; // colourful logo or illustration
+  return dark / opaque >= LOGO_MIN_DARK_RATIO ? LOGO_INVERT : LOGO_KEEP;
+}
+
+// The image's 16x16 RGBA bytes, or null when they cannot be read (a cross-origin image taints the canvas and
+// getImageData throws). One detached canvas is reused; nothing is added to the page.
+function sampleLogoPixels(img) {
+  try {
+    if (!logoSampleCanvas) {
+      logoSampleCanvas = document.createElement("canvas");
+      logoSampleCanvas.width = LOGO_SAMPLE_SIZE;
+      logoSampleCanvas.height = LOGO_SAMPLE_SIZE;
+    }
+    const context = logoSampleCanvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return null;
+    context.clearRect(0, 0, LOGO_SAMPLE_SIZE, LOGO_SAMPLE_SIZE);
+    context.drawImage(img, 0, 0, LOGO_SAMPLE_SIZE, LOGO_SAMPLE_SIZE);
+    const image = context.getImageData(0, 0, LOGO_SAMPLE_SIZE, LOGO_SAMPLE_SIZE);
+    return image && image.data ? image.data : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function imageSource(img) {
+  return String(img.currentSrc || img.getAttribute("src") || "");
+}
+
+// "invert" / "keep" from the pixels, null when they cannot be read, "defer" when this slice's budget is spent.
+function sampledLogoVerdict(img) {
+  const src = imageSource(img);
+  const cached = logoVerdicts.get(img);
+  if (cached && cached.src === src) return cached.verdict;
+  if (img.complete !== true) {
+    logoAwaitingLoad.add(img);
+    return null;
+  }
+  const width = Number(img.naturalWidth) || 0;
+  const height = Number(img.naturalHeight) || 0;
+  let verdict = null;
+  if (width > 0 && height > 0 && Math.max(width, height) <= LOGO_SAMPLE_MAX_SIDE) {
+    if (logoSamplesLeft <= 0) return LOGO_DEFER;
+    logoSamplesLeft--;
+    verdict = logoVerdictFromPixels(sampleLogoPixels(img));
+  }
+  logoVerdicts.set(img, { src, verdict });
+  return verdict;
+}
+
+// Today's broad name hints: which images are candidates at all (unchanged, so no new image is ever touched).
+function hasBroadLogoHint(img) {
+  const src = (img.getAttribute("src") || "").toLowerCase();
+  const className = (img.getAttribute("class") || "").toLowerCase();
+  const id = (img.getAttribute("id") || "").toLowerCase();
+  const alt = (img.getAttribute("alt") || "").toLowerCase();
+  return (
+    /logo|brand|text|\.svg/.test(src) ||
+    /logo|brand|text/.test(className) ||
+    /logo|brand|text/.test(id) ||
+    /logo|wikipedia/.test(alt) ||
+    hasLogoNameHint(img)
+  );
+}
+
+const LOGO_WORD = /logo(?!ut)|wordmark/i; // "logout" is not a logo
+
+// The tighter hints used when the pixels cannot be read: "logo" (or "wordmark") in src, alt, class, id,
+// aria-label, title or any data-* attribute, the Wikipedia wordmark, or an SVG image in the page header/nav.
+function hasLogoNameHint(img) {
+  for (const name of ["src", "alt", "class", "id", "aria-label", "title"]) {
+    if (LOGO_WORD.test(img.getAttribute(name) || "")) return true;
+  }
+  const names = typeof img.getAttributeNames === "function" ? img.getAttributeNames() : [];
+  for (const name of names) {
+    if (name.startsWith("data-force-dark")) continue;
+    if (name.startsWith("data-") && (LOGO_WORD.test(name) || LOGO_WORD.test(img.getAttribute(name) || ""))) return true;
+  }
+  if (/\bwikipedia\b/i.test(img.getAttribute("alt") || "")) return true;
+  const src = (img.getAttribute("src") || "").toLowerCase();
+  const isSvg = /\.svg($|[?#])/.test(src) || src.startsWith("data:image/svg");
+  return isSvg && typeof img.closest === "function" && img.closest('header, nav, [role="banner"]') !== null;
+}
+
+function classifyImageLogo(img, styles, rescanRoots, parseCssColor, getLuminance) {
+  if (!hasBroadLogoHint(img)) return null;
+  const verdict = sampledLogoVerdict(img);
+  if (verdict === LOGO_INVERT) return "invert";
+  if (verdict === LOGO_KEEP) return null;
+  if (verdict === LOGO_DEFER) {
+    rescanRoots.push(img); // sampled in a later slice; keep the current marker until then
+    return img.getAttribute(IMAGE_ATTR) === "invert" ? "invert" : null;
+  }
+  return hasLogoNameHint(img) && isDarkGraphicStyle(styles, parseCssColor, getLuminance) ? "invert" : null;
+}
+
+// Capture-phase load listener: an image that was a candidate before it loaded is re-evaluated now.
+function onImageLoad(target) {
+  if (!target || String(target.tagName || "").toLowerCase() !== "img" || !logoAwaitingLoad.has(target)) return;
+  logoAwaitingLoad.delete(target);
+  logoVerdicts.delete(target);
+  scheduleScan(target, SCAN_SHALLOW);
+}
+
+function applyScanUpdate({ element, surfaceAttr, textAttr, borderAttr, imageAttr }) {
+  if (surfaceAttr) {
+    element.setAttribute(SURFACE_ATTR, surfaceAttr);
+  } else {
+    element.removeAttribute(SURFACE_ATTR);
+  }
+
+  if (textAttr) {
+    element.setAttribute(TEXT_ATTR, "true");
+  } else {
+    element.removeAttribute(TEXT_ATTR);
+  }
+
+  if (borderAttr) {
+    element.setAttribute(BORDER_ATTR, "true");
+  } else {
+    element.removeAttribute(BORDER_ATTR);
+  }
+
+  if (imageAttr) {
+    element.setAttribute(IMAGE_ATTR, imageAttr);
+  } else {
+    element.removeAttribute(IMAGE_ATTR);
+  }
 }
 
 // Site pack fixes. Each fix is re-validated here (the pack data is trusted, but the
@@ -572,7 +1004,14 @@ function applyCustomPalette(config) {
   rootStyle.setProperty("--force-dark-input", palette.input);
   rootStyle.setProperty("--force-dark-selection", palette.selection);
 
-  const dim = config && Number.isFinite(config.imageDim) ? Math.min(60, Math.max(0, config.imageDim)) : 0;
+  setImageDim(config && config.imageDim);
+}
+
+// Image dimming in percent, clamped to 0-60; 0 or no number turns it off. Also called on its own when only the
+// dimming changed (the side panel slider), so the page is never torn down for it.
+function setImageDim(value) {
+  const rootStyle = document.documentElement.style;
+  const dim = Number.isFinite(value) ? Math.min(60, Math.max(0, value)) : 0;
   if (dim > 0) {
     rootStyle.setProperty(IMAGE_BRIGHTNESS_PROPERTY, `${100 - dim}%`);
     document.documentElement.setAttribute(IMAGE_DIM_ATTR, "true");

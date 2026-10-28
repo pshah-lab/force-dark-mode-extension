@@ -361,6 +361,19 @@ test("popup has the Site CSS link and builds options.html#css= with encodeURICom
   assert.ok(/getURL\("src\/options\/options\.html"\)\s*\+\s*"#css="\s*\+\s*encodeURIComponent\(host\)/.test(js));
 });
 
+test("Site CSS link is a full-size footer button, not tiny text", () => {
+  const html = read("src/popup/popup.html");
+  const tag = html.match(/<a id="site-css-link"[^>]*>/)[0];
+  assert.ok(/class="[^"]*\bfooter-btn\b/.test(tag), "uses the footer-btn style");
+  assert.ok(/\.popup-footer[^{]*\{[^}]*flex-direction:\s*column/.test(read("src/popup/popup.css")) || /\.footer-btn-wide/.test(read("src/popup/popup.css")), "sits on its own full-width row");
+});
+
+test("Site CSS tutorial is hosted on the project site, not bundled in the extension", () => {
+  const html = read("src/popup/popup.html");
+  assert.ok(/id="site-css-tutorial-link" href="https:\/\/darkmode\.pshah\.fun\/site-css-tutorial\.html"/.test(html));
+  assert.ok(!fs.existsSync(new URL("../src/options/siteCssTutorial.mp4", import.meta.url)), "no video in the package");
+});
+
 test("canSaveCss: host validity, empty CSS, forbidden constructs, 6000 vs 6001", () => {
   assert.strictEqual(CT.canSaveCss("", "a{color:red}").ok, false);
   assert.strictEqual(CT.canSaveCss("   ", "").ok, false);

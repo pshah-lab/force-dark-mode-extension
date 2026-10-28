@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **PDF detection by content type**: PDFs without ".pdf" in the address open in the dark viewer, including embedded PDFs and redirected downloads.
 - **Site CSS** is a full-width button in the side panel, with a link to a short tutorial video on the website.
 
+### Fixed
+- The document viewer can no longer be hung by a crafted spreadsheet (a flood of merged-cell entries) or a crafted Markdown file (one line that made heading matching extremely slow).
+
 ### Changed
 - Pages restored from the back/forward cache re-read your settings, and the CSS engine scans pages in smaller chunks so heavy pages stay responsive.
 

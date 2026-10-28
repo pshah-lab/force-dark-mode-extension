@@ -55,6 +55,19 @@ user) until `EXTENSION_ID` is changed and redeployed. Confirm the ID on the stor
 3. Schedule `supabase/purge.sql` (pg_cron or a Supabase scheduled function). It deletes heartbeats older
    than 400 days (13 months); change the interval if you want a different retention. Not scheduled automatically.
 
+## Owner dashboard (private)
+
+`supabase/daily_stats.sql` builds one aggregate row per UTC day (`daily_stats`: active, new and returning installs,
+versions, engines, sites-darkened buckets, theme/OS/Chrome/language, broken-site reports; counts only, no install IDs)
+and schedules `rollup_daily_stats()` nightly at 00:30 UTC with pg_cron. Run it once in the SQL editor (it also backfills
+existing days). The rows are not purged with the raw heartbeats, so history outlives the 13-month retention.
+
+`GET /api/darkmode-dashboard` serves the page; it asks for the token and calls `POST /api/darkmode-dashboard-data`
+with `{"token": ...}`. Set env var `DASHBOARD_TOKEN` (a random string of at least 32 characters) in the Vercel project;
+without it the data endpoint answers 503. The token is sent in the body (these functions never read request headers),
+kept in memory only, and the page has no external resources. Nothing is shown publicly: the public page still uses
+`public_stats()` with its small-group suppression.
+
 ## Endpoints
 
 - `OPTIONS` on either path: CORS preflight, 204, no body read and no store access.

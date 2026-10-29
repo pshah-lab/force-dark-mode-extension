@@ -59,6 +59,8 @@ let currentObjectUrl = "";
 let currentPdfSource = null;
 let currentPdfName = "";
 let renderGeneration = 0;
+let currentPdf = null;
+let printRoot = null;
 let rerenderDebounceTimer = null;
 let spreadsheetRerenderTimer = null;
 // Parsed workbook + tab state, kept so colour/mode changes can re-render the grid.
@@ -164,6 +166,7 @@ async function openPdf(source, name, fallbackSource = source) {
   pdfStatus.hidden = false;
   pdfStatus.textContent = "Loading PDF...";
   pdfPages.replaceChildren();
+  currentPdf = null;
   pdfFrame.removeAttribute("src");
 
   try {
@@ -171,6 +174,7 @@ async function openPdf(source, name, fallbackSource = source) {
     const pdf = await task.promise;
 
     if (generation !== renderGeneration) return;
+    currentPdf = pdf;
 
     pdfStatus.textContent = `Rendering ${pdf.numPages} page${pdf.numPages === 1 ? "" : "s"}...`;
 
@@ -186,6 +190,55 @@ async function openPdf(source, name, fallbackSource = source) {
     openPdfFallback(fallbackSource, name);
   }
 }
+
+// The page canvases hold recolored pixels, so CSS cannot undo them for print.
+// Render untouched copies first, show only those in print, then call print.
+async function printPdfOriginal() {
+  const pdf = currentPdf;
+  if (!pdf || viewer.dataset.mode === "original") return window.print();
+
+  cleanupPrintCopies();
+  printRoot = document.createElement("div");
+  printRoot.className = "pdf-print-root";
+  document.body.appendChild(printRoot);
+
+  try {
+    for (let n = 1; n <= pdf.numPages; n += 1) {
+      const page = await pdf.getPage(n);
+      const viewport = page.getViewport({ scale: 2 });
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      await page.render({
+        canvasContext: canvas.getContext("2d"),
+        viewport,
+        background: "rgb(255, 255, 255)",
+      }).promise;
+      printRoot.appendChild(canvas);
+    }
+  } catch (error) {
+    console.debug("[ForceDark] Print copy unavailable:", error);
+    cleanupPrintCopies();
+    return window.print();
+  }
+
+  document.body.classList.add("printing-original");
+  window.print();
+}
+
+function cleanupPrintCopies() {
+  document.body.classList.remove("printing-original");
+  printRoot?.remove();
+  printRoot = null;
+}
+
+window.addEventListener("afterprint", cleanupPrintCopies);
+window.addEventListener("keydown", (event) => {
+  if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return;
+  if (event.key.toLowerCase() !== "p" || !currentPdf) return;
+  event.preventDefault();
+  printPdfOriginal();
+});
 
 function openPdfFallback(source, name) {
   if (typeof source === "string" && !isSafeDocumentUrl(source)) {

@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- **Printing and Save as PDF** no longer carry dark mode onto paper: the engines switch off while the page prints and back on afterwards, and the document viewer prints without its dark filters.
+- **Printing and Save as PDF** no longer carry dark mode onto paper: the engines switch off while the page prints and back on afterwards, and the document viewer prints PDFs from untouched white page copies (Cmd/Ctrl+P).
 
 ---
 

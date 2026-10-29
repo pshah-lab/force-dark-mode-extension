@@ -499,3 +499,18 @@ body {
 @media print {
   .viewer #pdf-frame { filter: none !important; }
 }
+
+/* Untouched page copies, built by printPdfOriginal() and shown only when printing. */
+.pdf-print-root { display: none; }
+@media print {
+  body.printing-original { background: #fff; }
+  body.printing-original > :not(.pdf-print-root) { display: none !important; }
+  body.printing-original .pdf-print-root { display: block; }
+  .pdf-print-root canvas {
+    display: block;
+    width: 100%;
+    height: auto;
+    break-after: page;
+    background: #fff;
+  }
+}

@@ -469,6 +469,14 @@ test("print: the document viewer prints without its dark filters", () => {
   assert.ok(/@media print[\s\S]*filter:\s*none\s*!important/.test(css));
 });
 
+test("print: viewer PDF pages print from untouched copies, not the recolored canvases", () => {
+  const js = fs.readFileSync(path.join(rootDir, "src/viewer/viewer.js"), "utf8");
+  const css = fs.readFileSync(path.join(rootDir, "src/viewer/viewer.css"), "utf8");
+  assert.ok(/async function printPdfOriginal/.test(js) && /"afterprint", cleanupPrintCopies/.test(js));
+  assert.ok(/event\.key\.toLowerCase\(\) !== "p"/.test(js), "Cmd/Ctrl+P is routed through the copies");
+  assert.ok(/body\.printing-original > :not\(\.pdf-print-root\)\s*\{\s*display:\s*none/.test(css));
+});
+
 console.log("\n=========================================");
 console.log(`${failed ? "❌" : "🎉"} Startup Results: ${passed} passed, ${failed} failed`);
 console.log("=========================================\n");

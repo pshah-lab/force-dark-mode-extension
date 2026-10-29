@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [2.2.0] - 2026-10-28
+## [2.2.0] - 2026-10-29
 
 ### Added
 - **No white flash on load**: sites you use in dark mode paint dark before the page is shown. This keeps one small flag, `__fdm_pre`, in the site's own `localStorage` (documented in the privacy policy).

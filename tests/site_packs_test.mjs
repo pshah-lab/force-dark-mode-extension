@@ -48,7 +48,7 @@ test("every pack's match host is found by its own pack", () => {
 
 test("all packs validate", () => {
   const packs = T.getSitePacks();
-  assert.strictEqual(packs.length, 20);
+  assert.strictEqual(packs.length, 21);
   assert.strictEqual(new Set(packs.map((p) => p.id)).size, packs.length, "ids unique");
   for (const p of packs) {
     assert.ok(typeof p.id === "string" && p.id && typeof p.name === "string" && p.name);
@@ -68,13 +68,20 @@ test("getSitePacks returns copies that cannot alter the shared table", () => {
   a[0].name = "Hacked";
   a[0].match.push("evil.com");
   a.length = 0;
-  assert.strictEqual(T.getSitePacks().length, 20);
+  assert.strictEqual(T.getSitePacks().length, 21);
   assert.notStrictEqual(T.getSitePacks()[0].name, "Hacked");
   assert.strictEqual(T.findSitePack("evil.com"), null);
 });
 
+test("kasi.money pack flattens the white hero gradient and glow", () => {
+  const pack = T.findSitePack("kasi.money");
+  assert.ok(pack && pack.id === "kasi", "pack found");
+  assert.strictEqual(T.findSitePack("www.kasi.money").id, "kasi");
+  assert.strictEqual(JSON.stringify(pack.fixes), JSON.stringify([{ selector: "section.home-welcome", action: "flatten" }, { selector: ".home-welcome__top", action: "flatten" }]));
+});
+
 test("validateFix accepts good fixes and rejects bad ones", () => {
-  for (const action of ["invert-image", "keep-light", "surface:strong"]) {
+  for (const action of ["invert-image", "keep-light", "surface:strong", "flatten"]) {
     assert.strictEqual(T.validateFix({ action, selector: "img.logo, .a > .b[data-x=\"1\"]" }), true, action);
   }
   const ok = (selector) => ({ action: "keep-light", selector });

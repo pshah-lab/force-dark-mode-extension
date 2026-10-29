@@ -22,6 +22,7 @@
     ["mdn", "MDN Web Docs", "developer.mozilla.org"],
     ["reddit", "Reddit", "reddit.com"],
     ["hackernews", "Hacker News", "news.ycombinator.com"],
+    ["kasi", "Kasi", "kasi.money"],
   ];
 
   // Evidence-backed fixes per pack id (tools/site-audit, Auto engine, WAIT=9000).
@@ -32,10 +33,15 @@
     // Native mid-grey #main-menu bar keeps its grey while links turn blue: about 3.3:1 contrast (npr-auto-closed.png).
     npr: [{ selector: "#main-menu", action: "surface:strong" }],
     // Highlights carousel edge fade is a white linear-gradient background image left white on dark (guardian-auto-declined.png).
+    // Hero section paints a white linear-gradient background-image and .home-welcome__top::after a white glow shadow; the text turned light on white (kasi-auto.png).
+    kasi: [
+      { selector: "section.home-welcome", action: "flatten" },
+      { selector: ".home-welcome__top", action: "flatten" },
+    ],
     guardian: [{ selector: 'gu-island[name="ScrollableHighlights"] [aria-roledescription="carousel"] > span > div', action: "invert-image" }],
   };
 
-  const ACTIONS = ["invert-image", "keep-light", "surface:strong"];
+  const ACTIONS = ["invert-image", "keep-light", "surface:strong", "flatten"];
   const SELECTOR_PATTERN = /^[A-Za-z0-9_\-#.\[\]="':>*,()~+^$| ]+$/;
   const MAX_SELECTOR = 200;
 

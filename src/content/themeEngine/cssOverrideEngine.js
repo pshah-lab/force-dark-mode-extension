@@ -7,6 +7,7 @@ const TEXT_ATTR = "data-force-dark-text";
 const BORDER_ATTR = "data-force-dark-border";
 const IMAGE_ATTR = "data-force-dark-image";
 const KEEP_ATTR = "data-force-dark-keep";
+const FLAT_ATTR = "data-force-dark-flat";
 const MAX_PACK_FIXES = 50;
 const IMAGE_BRIGHTNESS_PROPERTY = "--force-dark-image-brightness";
 // Set on the root only while a theme dims images, so undimmed images keep filter: none.
@@ -88,7 +89,7 @@ let scanClassified = new WeakSet();
 let lastFullScanSignature = "";
 // Site pack fixes: validated {selector, action} entries, re-applied on every scan.
 let packFixes = [];
-let packFixMarks = { invert: new Set(), surface: new Set(), keep: new Set() };
+let packFixMarks = { invert: new Set(), surface: new Set(), keep: new Set(), flat: new Set() };
 
 function getColorUtils() {
   return window.ForceDarkColorUtils || {};
@@ -182,6 +183,14 @@ function enableDarkMode(config = {}) {
 
     :root[${ROOT_MODE_ATTR}="css"] [${SURFACE_ATTR}="strong"] {
       background-color: var(--force-dark-surface) !important;
+    }
+
+    /* flatten pack fix: a light gradient background-image or white glow shadow would otherwise paint over the dark page. */
+    :root[${ROOT_MODE_ATTR}="css"] [${FLAT_ATTR}],
+    :root[${ROOT_MODE_ATTR}="css"] [${FLAT_ATTR}]::before,
+    :root[${ROOT_MODE_ATTR}="css"] [${FLAT_ATTR}]::after {
+      background-image: none !important;
+      box-shadow: none !important;
     }
 
     :root[${ROOT_MODE_ATTR}="css"] [${SURFACE_ATTR}="soft"] {
@@ -953,7 +962,7 @@ function queryFixTargets(selector) {
 // Sets the fix markers and returns the marked elements. keep-light covers the
 // matched element and all its descendants.
 function markPackFixes() {
-  const marks = { invert: new Set(), surface: new Set(), keep: new Set() };
+  const marks = { invert: new Set(), surface: new Set(), keep: new Set(), flat: new Set() };
   packFixes.forEach(({ selector, action }) => {
     queryFixTargets(selector).forEach((element) => {
       if (action === "invert-image") {
@@ -962,6 +971,9 @@ function markPackFixes() {
       } else if (action === "surface:strong") {
         element.setAttribute(SURFACE_ATTR, "strong");
         marks.surface.add(element);
+      } else if (action === "flatten") {
+        element.setAttribute(FLAT_ATTR, "");
+        marks.flat.add(element);
       } else if (action === "keep-light") {
         element.setAttribute(KEEP_ATTR, "");
         marks.keep.add(element);
@@ -976,8 +988,9 @@ function markPackFixes() {
 function removePackFixMarkers() {
   packFixMarks.invert.forEach((element) => element.removeAttribute(IMAGE_ATTR));
   packFixMarks.surface.forEach((element) => element.removeAttribute(SURFACE_ATTR));
+  packFixMarks.flat.forEach((element) => element.removeAttribute(FLAT_ATTR));
   document.querySelectorAll(`[${KEEP_ATTR}]`).forEach((element) => element.removeAttribute(KEEP_ATTR));
-  packFixMarks = { invert: new Set(), surface: new Set(), keep: new Set() };
+  packFixMarks = { invert: new Set(), surface: new Set(), keep: new Set(), flat: new Set() };
 }
 
 function applyCustomPalette(config) {

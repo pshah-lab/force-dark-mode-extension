@@ -981,6 +981,28 @@ test("surface:strong fix marks matches", () => {
   }
 });
 
+test("flatten fix marks matches and drops background image and shadow", () => {
+  try {
+    const hero = transparentEl("section", "data-fix-hero"); // transparent colour over a white linear-gradient image
+    const other = transparentEl("div");
+    mockDoc.body.appendChild(hero);
+    mockDoc.body.appendChild(other);
+    enableDarkMode({ backgroundColor: "#0f1115", fixes: [{ selector: "[data-fix-hero]", action: "flatten" }] });
+    assert.ok(hero.hasAttribute("data-force-dark-flat"), "flat marker set");
+    assert.ok(!other.hasAttribute("data-force-dark-flat"));
+    rescan();
+    assert.ok(hero.hasAttribute("data-force-dark-flat"), "a rescan keeps the flat marker");
+    const css = mockDoc.getElementById("__force_dark_mode__").textContent;
+    const rule = css.split("}").find((b) => b.includes("[data-force-dark-flat]"));
+    assert.ok(rule && /background-image:\s*none\s*!important/.test(rule) && /box-shadow:\s*none\s*!important/.test(rule), "flat rule clears background-image and box-shadow");
+    assert.ok(css.includes("[data-force-dark-flat]::after"), "flat rule covers pseudo-elements");
+    disableDarkMode();
+    assert.ok(!hero.hasAttribute("data-force-dark-flat"), "marker removed with dark mode");
+  } finally {
+    resetFixTest();
+  }
+});
+
 test("keep-light skips scanning of the subtree", () => {
   try {
     const panel = mockDoc.createElement("section");

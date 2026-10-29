@@ -149,6 +149,11 @@ test("page has no external resources, never stores the token, sends it only in a
   assert.ok(!/innerHTML/.test(DASHBOARD_HTML), "values go in via textContent");
 });
 
+test("page marks releases and labels dates on both charts", () => {
+  assert.ok(/RELEASES = \[[^\]]*"2\.2\.0"/.test(DASHBOARD_HTML));
+  assert.strictEqual(DASHBOARD_HTML.split("\n  axisDates(g,").length - 1, 2, "line and stacked charts both use it");
+});
+
 // ---- SQL ----
 test("daily_stats.sql: counts only, owner-only, nightly cron", () => {
   const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/daily_stats.sql"), "utf8");

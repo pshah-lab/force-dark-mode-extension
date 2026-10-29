@@ -57,6 +57,25 @@ function el(tag, text, cls){ var e = document.createElement(tag); if (text !== u
 function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function sum(a){ return a.reduce(function(x, y){ return x + y; }, 0); }
 
+var RELEASES = [{ day: "2026-10-22", label: "2.1.0" }, { day: "2026-10-29", label: "2.2.0" }];
+
+// Date ticks along the bottom plus a dashed marker for each release inside the range. xAt(i) -> x of day i.
+function axisDates(g, days, xAt, h, T, B, left, right){
+  var step = Math.max(1, Math.ceil(days.length / 6)), lastX = -1e9;
+  g.fillStyle = css("--muted"); g.font = "11px system-ui";
+  for (var i = 0; i < days.length; i += step) {
+    var t = days[i].slice(5), x = Math.min(Math.max(xAt(i) - 14, left), right - 30);
+    if (x - lastX < 38) continue;
+    g.fillText(t, x, h - 5); lastX = x;
+  }
+  RELEASES.forEach(function(r){
+    var i = days.indexOf(r.day); if (i < 0) return;
+    var x = xAt(i); g.strokeStyle = css("--c"); g.lineWidth = 1; g.setLineDash([4, 3]);
+    g.beginPath(); g.moveTo(x, T); g.lineTo(x, h - B); g.stroke(); g.setLineDash([]);
+    g.fillStyle = css("--c"); g.fillText(r.label, Math.min(x + 3, right - g.measureText(r.label).width), T + 10);
+  });
+}
+
 function line(canvas, days, series){
   var dpr = window.devicePixelRatio || 1, w = canvas.clientWidth, h = canvas.clientHeight;
   canvas.width = w * dpr; canvas.height = h * dpr;
@@ -65,7 +84,7 @@ function line(canvas, days, series){
   var L = 36, B = 20, T = 6, R = 6, n = Math.max(days.length - 1, 1);
   g.strokeStyle = css("--line"); g.fillStyle = css("--muted"); g.font = "11px system-ui"; g.lineWidth = 1;
   [0, 0.5, 1].forEach(function(f){ var y = T + (h - T - B) * (1 - f); g.beginPath(); g.moveTo(L, y); g.lineTo(w - R, y); g.stroke(); g.fillText(Math.round(max * f), 2, y + 4); });
-  if (days.length) { g.fillText(days[0].slice(5), L, h - 5); var e = days[days.length - 1].slice(5); g.fillText(e, w - R - g.measureText(e).width, h - 5); }
+  axisDates(g, days, function(i){ return L + (w - L - R) * i / n; }, h, T, B, L, w - R);
   series.forEach(function(s){
     g.strokeStyle = css(s.c); g.lineWidth = 2; g.beginPath();
     s.v.forEach(function(v, i){ var x = L + (w - L - R) * i / n, y = T + (h - T - B) * (1 - v / max); if (i) g.lineTo(x, y); else g.moveTo(x, y); });
@@ -84,8 +103,7 @@ function stacked(canvas, days, keys, colors){
     var y = h - B;
     keys.forEach(function(k, j){ var hh = (h - T - B) * d.sites[k] / tot; y -= hh; g.fillStyle = css(colors[j]); g.fillRect(L + i * bw + 1, y, Math.max(bw - 2, 1), hh); });
   });
-  g.fillStyle = css("--muted");
-  if (days.length) { g.fillText(days[0].day.slice(5), L, h - 5); var e = days[days.length - 1].day.slice(5); g.fillText(e, w - L - g.measureText(e).width, h - 5); }
+  axisDates(g, days.map(function(d){ return d.day; }), function(i){ return L + i * bw + bw / 2; }, h, T, B, L, w - L);
 }
 
 function dist(title, map){

@@ -494,3 +494,8 @@ body {
     flex: 1;
   }
 }
+
+/* Printing or saving the viewer as PDF: no dark filters on the paper copy. */
+@media print {
+  .viewer #pdf-frame { filter: none !important; }
+}

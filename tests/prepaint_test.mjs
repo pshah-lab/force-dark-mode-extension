@@ -78,6 +78,7 @@ function loadContentScripts({ sync = {}, local = {}, bodyElements = 0, stored = 
     removeItem: (k) => { writes.push(["remove", k]); lsData.delete(k); },
   };
   const pending = [];
+  const windowListeners = {};
   const ctx = {};
   const doc = {
     readyState: "loading",
@@ -137,7 +138,7 @@ function loadContentScripts({ sync = {}, local = {}, bodyElements = 0, stored = 
     innerHeight: 768,
     getComputedStyle: computed,
     matchMedia: () => ({ matches: false }),
-    addEventListener() {},
+    addEventListener(type, fn) { (windowListeners[type] ||= []).push(fn); },
     removeEventListener() {},
     requestAnimationFrame: () => 1, // scans never run; these tests are about engine style lifecycles
     cancelAnimationFrame() {},
@@ -169,7 +170,7 @@ function loadContentScripts({ sync = {}, local = {}, bodyElements = 0, stored = 
   const engineStyle = () => doc.getElementById("__force_dark_mode__");
   const invertStyle = () => doc.getElementById("__force_dark_invert__");
   const prepaintStyle = () => doc.getElementById("__force_dark_prepaint__");
-  return { ctx, doc, calls, pending, settle, engineStyle, invertStyle, prepaintStyle, lsData, writes, timers };
+  return { ctx, doc, windowListeners, calls, pending, settle, engineStyle, invertStyle, prepaintStyle, lsData, writes, timers };
 }
 
 // Wraps the engine teardown functions so a test can count them.
@@ -424,6 +425,48 @@ test("only the __fdm_pre key is ever written to localStorage", () => {
   }
   assert.ok(all.length > 0);
   assert.ok(onlyFlagWrites(all), `unexpected write: ${JSON.stringify(all.find((w) => w[1] !== "__fdm_pre"))}`);
+});
+
+// Printing: the engines' light text and inverted pages must not reach paper or a PDF.
+const fire = (listeners, type) => (listeners[type] || []).forEach((fn) => fn());
+
+test("print: every engine style is switched off for printing and back on afterwards", () => {
+  for (const engine of ["css", "invert"]) {
+    const { settle, windowListeners, engineStyle, invertStyle, prepaintStyle } = loadContentScripts({ sync: { "example.com": { enabled: true, engine } } });
+    settle();
+    const style = engine === "css" ? engineStyle() : invertStyle();
+    assert.ok(style && !style.disabled, `${engine} applied`);
+    fire(windowListeners, "beforeprint");
+    assert.strictEqual(style.disabled, true, `${engine} style off while printing`);
+    if (prepaintStyle()) assert.strictEqual(prepaintStyle().disabled, true, "pre-paint style off while printing");
+    fire(windowListeners, "afterprint");
+    assert.strictEqual(style.disabled, false, `${engine} style restored after printing`);
+  }
+});
+
+test("print: a style that was already disabled stays disabled after printing", () => {
+  const { settle, windowListeners, engineStyle } = loadContentScripts({ sync: enabledCss });
+  settle();
+  engineStyle().disabled = true;
+  fire(windowListeners, "beforeprint");
+  fire(windowListeners, "afterprint");
+  assert.strictEqual(engineStyle().disabled, true);
+});
+
+test("print: afterprint without beforeprint, or repeated events, change nothing", () => {
+  const { settle, windowListeners, engineStyle } = loadContentScripts({ sync: enabledCss });
+  settle();
+  fire(windowListeners, "afterprint");
+  assert.strictEqual(engineStyle().disabled, false);
+  fire(windowListeners, "beforeprint");
+  fire(windowListeners, "beforeprint");
+  fire(windowListeners, "afterprint");
+  assert.strictEqual(engineStyle().disabled, false);
+});
+
+test("print: the document viewer prints without its dark filters", () => {
+  const css = fs.readFileSync(path.join(rootDir, "src/viewer/viewer.css"), "utf8");
+  assert.ok(/@media print[\s\S]*filter:\s*none\s*!important/.test(css));
 });
 
 console.log("\n=========================================");

@@ -277,6 +277,21 @@ function withEngineStylesSuspended(fn) {
   }
 }
 
+// Printing and "Save as PDF": the engines' light text and inverted pages are for the screen, so every engine
+// style is switched off while the page prints and back on afterwards. Only styles that were on are restored.
+let printSuspended = [];
+window.addEventListener("beforeprint", () => {
+  if (printSuspended.length) return;
+  printSuspended = [...ENGINE_STYLE_IDS, CUSTOM_CSS_STYLE_ID, PREPAINT_STYLE_ID]
+    .map((id) => document.getElementById(id))
+    .filter((style) => style && !style.disabled);
+  printSuspended.forEach((style) => { style.disabled = true; });
+});
+window.addEventListener("afterprint", () => {
+  printSuspended.forEach((style) => { style.disabled = false; });
+  printSuspended = [];
+});
+
 // Tells the service worker that dark mode was applied on this page, once per page load. The message carries the
 // engine name only: the worker takes the site from this tab itself and keeps just a count, and only if the user
 // opted in to the usage report. A missing worker or invalidated context is ignored.

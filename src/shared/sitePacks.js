@@ -33,6 +33,11 @@
     // Native mid-grey #main-menu bar keeps its grey while links turn blue: about 3.3:1 contrast (npr-auto-closed.png).
     npr: [{ selector: "#main-menu", action: "surface:strong" }],
     // Highlights carousel edge fade is a white linear-gradient background image left white on dark (guardian-auto-declined.png).
+    // Black wordmark and tagline <img> vanish on the dark header, and each sticky TOC/appearance panel ends in a white ::after fade gradient (wikipedia-auto.png).
+    wikipedia: [
+      { selector: "img.mw-logo-wordmark, img.mw-logo-tagline", action: "invert-image" },
+      { selector: ".vector-sticky-pinned-container", action: "flatten" },
+    ],
     // Hero section paints a white linear-gradient background-image and .home-welcome__top::after a white glow shadow; the text turned light on white (kasi-auto.png).
     kasi: [
       { selector: "section.home-welcome", action: "flatten" },

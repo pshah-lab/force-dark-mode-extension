@@ -80,6 +80,17 @@ test("kasi.money pack flattens the white hero gradient and glow", () => {
   assert.strictEqual(JSON.stringify(pack.fixes), JSON.stringify([{ selector: "section.home-welcome", action: "flatten" }, { selector: ".home-welcome__top", action: "flatten" }]));
 });
 
+test("wikipedia pack inverts the black wordmark and flattens the sticky-panel fade", () => {
+  const pack = T.findSitePack("en.wikipedia.org");
+  assert.strictEqual(
+    JSON.stringify(pack.fixes),
+    JSON.stringify([
+      { selector: "img.mw-logo-wordmark, img.mw-logo-tagline", action: "invert-image" },
+      { selector: ".vector-sticky-pinned-container", action: "flatten" },
+    ])
+  );
+});
+
 test("validateFix accepts good fixes and rejects bad ones", () => {
   for (const action of ["invert-image", "keep-light", "surface:strong", "flatten"]) {
     assert.strictEqual(T.validateFix({ action, selector: "img.logo, .a > .b[data-x=\"1\"]" }), true, action);

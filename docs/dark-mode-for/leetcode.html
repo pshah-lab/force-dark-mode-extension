@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dark Mode for LeetCode in Chrome (Real Before &amp; After)</title>
+    <meta name="description" content="See LeetCode's Two Sum problem page with ThemeSwitcher's CSS engine in Chrome: real before and after screenshots, how to turn it on, and what the code editor looks like." />
+    <link rel="canonical" href="https://darkmode.pshah.fun/dark-mode-for/leetcode.html" />
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#090b0e" />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://darkmode.pshah.fun/dark-mode-for/leetcode.html" />
+    <meta property="og:title" content="Dark Mode for LeetCode in Chrome (Real Before &amp; After)" />
+    <meta property="og:description" content="See LeetCode's Two Sum problem page with ThemeSwitcher's CSS engine in Chrome: real before and after screenshots, how to turn it on, and what the code editor looks like." />
+    <meta property="og:image" content="https://darkmode.pshah.fun/assets/og-image.jpg" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Dark Mode for LeetCode in Chrome (Real Before &amp; After)" />
+    <meta name="twitter:description" content="See LeetCode's Two Sum problem page with ThemeSwitcher's CSS engine in Chrome: real before and after screenshots, how to turn it on, and what the code editor looks like." />
+    <meta name="twitter:image" content="https://darkmode.pshah.fun/assets/og-image.jpg" />
+
+    <link rel="icon" type="image/svg+xml" href="../assets/icon.svg" />
+    <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/home.css" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Article",
+        "headline": "Dark mode for LeetCode in Chrome",
+        "description": "See LeetCode's Two Sum problem page with ThemeSwitcher's CSS engine in Chrome: real before and after screenshots, how to turn it on, and what the code editor looks like.",
+        "image": "https://darkmode.pshah.fun/assets/screenshots/leetcode-after.webp",
+        "author": {
+          "@type": "Person",
+          "name": "Pratham Shah",
+          "url": "https://pshah.fun"
+        },
+        "publisher": {
+          "@type": "Organization",
+          "name": "PshahLab"
+        },
+        "datePublished": "2026-10-30",
+        "dateModified": "2026-10-30"
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          {
+            "@type": "ListItem",
+            "position": 1,
+            "name": "Home",
+            "item": "https://darkmode.pshah.fun/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 2,
+            "name": "Dark mode for popular sites",
+            "item": "https://darkmode.pshah.fun/dark-mode-for/"
+          },
+          {
+            "@type": "ListItem",
+            "position": 3,
+            "name": "Dark mode for LeetCode",
+            "item": "https://darkmode.pshah.fun/dark-mode-for/leetcode.html"
+          }
+        ]
+      }
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Does the code editor turn dark too?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. In the screenshot the editor pane turns dark and the code keeps its syntax highlighting colours."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which engine was used for these screenshots?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The CSS engine. It recolors backgrounds and text by contrast. You pick it in the side panel, and ThemeSwitcher remembers it for leetcode.com."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does ThemeSwitcher read my code or submissions?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "No. Everything runs on your device, and ThemeSwitcher never sends page addresses, page content or anything you type. The optional usage report is off unless you turn it on and never includes sites. A broken-site report is sent only when you confirm it, and it contains just the domain, engine, theme label and version."
+            }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <header class="site-header" role="banner">
+      <div class="container nav-container">
+        <a href="../" class="logo-brand" aria-label="PshahLab Home">
+          <div class="logo-icon-wrapper chameleon-mark chameleon-mark--nav">
+            <svg viewBox="0 0 200 160" class="chameleon-mark-icon" aria-hidden="true">
+              <path d="M20 120 C -10 120, -10 80, 20 80 C 45 80, 45 105, 25 105 C 12 105, 12 92, 25 92" stroke="currentColor" stroke-width="10" stroke-linecap="round" fill="none"></path>
+              <ellipse cx="95" cy="90" rx="55" ry="38" fill="currentColor"></ellipse>
+              <path d="M60 58 L68 46 L76 58 M84 55 L92 42 L100 55 M108 55 L116 44 L124 55" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+              <ellipse cx="150" cy="75" rx="28" ry="24" fill="currentColor"></ellipse>
+              <circle cx="158" cy="65" r="10" fill="#fff"></circle>
+              <circle cx="160" cy="63" r="4.5" fill="#0b0e14"></circle>
+              <path d="M70 118 C 65 130, 55 132, 48 128" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"></path>
+              <path d="M120 122 C 122 134, 132 138, 140 134" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"></path>
+            </svg>
+          </div>
+          <span class="logo-lockup">
+            <span class="logo-parent">PshahLab</span>
+            <span class="logo-divider" aria-hidden="true">/</span>
+            <span class="logo-product">ThemeSwitcher</span>
+          </span>
+        </a>
+
+        <nav role="navigation" aria-label="Main Navigation">
+          <button class="mobile-toggle" aria-expanded="false" aria-label="Toggle navigation menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          <ul class="nav-menu">
+            <li><a href="../" class="nav-link">Home</a></li>
+            <li><a href="../features.html" class="nav-link">Features</a></li>
+            <li><a href="../how-it-works.html" class="nav-link">How It Works</a></li>
+            <li><a href="../blog/" class="nav-link active">Guides</a></li>
+            <li><a href="../support.html" class="nav-link">Support</a></li>
+            <li><a href="../about.html" class="nav-link">About</a></li>
+          </ul>
+        </nav>
+
+        <div class="nav-cta">
+          <a href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke" class="btn btn-primary btn-chrome-store" rel="noopener noreferrer" target="_blank">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
+            <span>Add to Chrome</span>
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main-content" class="container article-container">
+      <article class="article-header">
+        <nav class="badge" aria-label="Breadcrumb"><a href="./">Dark mode for popular sites</a></nav>
+        <h1>Dark mode for LeetCode in Chrome</h1>
+        <div class="article-meta">
+          <span>By Pratham Shah</span> •
+          <span>Screenshots taken September 2026</span> •
+          <span>Engine: CSS Engine</span>
+        </div>
+        <p class="hero-subtitle">A LeetCode problem page is split into a problem statement on the left and a code editor on the right. The screenshots show the Two Sum page, signed out, with ThemeSwitcher's CSS engine darkening both halves.</p>
+
+        <div class="article-content">
+          <h2>LeetCode before and after</h2>
+          <p>Real screenshots of the LeetCode Two Sum problem page, signed out, taken with the extension. They are not mockups.</p>
+          <div class="lo-pair">
+            <figure><img src="../assets/screenshots/leetcode-before.webp" alt="LeetCode Two Sum problem page in its default light theme" loading="lazy" width="2000" height="1112" /><figcaption>Before</figcaption></figure>
+            <figure><img src="../assets/screenshots/leetcode-after.webp" alt="Same LeetCode Two Sum problem page recolored dark by ThemeSwitcher's CSS engine" loading="lazy" width="2000" height="1112" /><figcaption>After</figcaption></figure>
+          </div>
+          <p class="lo-engine">Engine used: CSS Engine</p>
+
+          <h2>How to turn on dark mode for LeetCode</h2>
+          <ol>
+            <li>Add ThemeSwitcher to Chrome from the <a href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke" rel="noopener noreferrer" target="_blank">Chrome Web Store</a>. It is free, and the side panel needs Chrome 114 or newer.</li>
+            <li>Open <strong>leetcode.com</strong> in a tab.</li>
+            <li>Click the ThemeSwitcher icon in the toolbar to open the side panel.</li>
+            <li>Choose <strong>CSS Engine</strong> and turn dark mode on. ThemeSwitcher remembers both for leetcode.com. <kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd> toggles it from the keyboard.</li>
+            <li>If something looks wrong, press <strong>Report this site as broken</strong>. It shows the domain it will send, and sends only after you press Send report.</li>
+          </ol>
+
+          <h2>What changes on LeetCode</h2>
+          <ul>
+            <li>Both panes turn dark: the problem statement, examples and constraints on the left, and the code editor on the right.</li>
+            <li>Code in the editor keeps its syntax highlighting colours on the dark background.</li>
+            <li>The Easy difficulty tag, the orange Premium badge and the green Submit button stay coloured.</li>
+            <li>The sign-in prompt under the editor (You need to log in / sign up to run or submit) turns into a dark blue bar with readable text.</li>
+          </ul>
+
+          <h2>Frequently asked questions</h2>
+          <h3>Does the code editor turn dark too?</h3>
+          <p>Yes. In the screenshot the editor pane turns dark and the code keeps its syntax highlighting colours.</p>
+          <h3>Which engine was used for these screenshots?</h3>
+          <p>The CSS engine. It recolors backgrounds and text by contrast. You pick it in the side panel, and ThemeSwitcher remembers it for leetcode.com.</p>
+          <h3>Does ThemeSwitcher read my code or submissions?</h3>
+          <p>No. Everything runs on your device, and ThemeSwitcher never sends page addresses, page content or anything you type. The optional usage report is off unless you turn it on and never includes sites. A broken-site report is sent only when you confirm it, and it contains just the domain, engine, theme label and version.</p>
+
+          <h2>More guides</h2>
+          <ul>
+            <li><a href="examtopics.html">Dark mode for ExamTopics</a></li>
+            <li><a href="notion.html">Dark mode for Notion</a></li>
+            <li><a href="youtube.html">Dark mode for YouTube</a></li>
+            <li><a href="wikipedia.html">Dark mode for Wikipedia</a></li>
+            <li><a href="github.html">Dark mode for GitHub</a></li>
+            <li><a href="hackernews.html">Dark mode for Hacker News</a></li>
+            <li><a href="./">All sites with real screenshots</a></li>
+            <li><a href="../blog/dark-mode-pdf-guide.html">Reading PDFs in dark mode</a></li>
+            <li><a href="../blog/themeswitcher-vs-dark-reader.html">ThemeSwitcher vs Dark Reader</a></li>
+            <li><a href="../">ThemeSwitcher home</a></li>
+          </ul>
+        </div>
+
+        <section class="cta-banner" aria-labelledby="cta-heading">
+          <div class="cta-content">
+            <h2 id="cta-heading">Try it on your own pages</h2>
+            <p>ThemeSwitcher is free and open source, and it recolors pages on your device.</p>
+            <a href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke" class="btn btn-primary btn-lg btn-chrome-store" rel="noopener noreferrer" target="_blank">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="4"></circle><line x1="21.17" y1="8" x2="12" y2="8"></line><line x1="3.95" y1="6.06" x2="8.54" y2="14"></line><line x1="10.88" y1="21.94" x2="15.46" y2="14"></line></svg>
+              <span>Add to Chrome — Free on Web Store</span>
+            </a>
+          </div>
+        </section>
+      </article>
+    </main>
+
+    <footer class="site-footer" role="contentinfo">
+      <div class="container footer-grid">
+        <div class="footer-brand">
+          <div class="logo-brand">
+            <div class="logo-icon-wrapper">
+              <img src="../assets/icon.svg" alt="" class="logo-icon" width="28" height="28" />
+            </div>
+            <span>ThemeSwitcher</span>
+          </div>
+          <p>
+            Force Dark Mode - ThemeSwitcher is a lightweight, privacy-focused browser extension providing intelligent dark themes for websites and PDF documents.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <ul class="footer-links">
+            <li><a href="../">Home</a></li>
+            <li><a href="../features.html">Features</a></li>
+            <li><a href="../how-it-works.html">How It Works</a></li>
+            <li><a href="../support.html">Support</a></li>
+            <li><a href="../about.html">About Developer</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Dark mode for sites</h4>
+          <ul class="footer-links">
+            <li><a href="examtopics.html">ExamTopics</a></li>
+            <li><a href="notion.html">Notion</a></li>
+            <li><a href="youtube.html">YouTube</a></li>
+            <li><a href="leetcode.html">LeetCode</a></li>
+            <li><a href="wikipedia.html">Wikipedia</a></li>
+            <li><a href="github.html">GitHub</a></li>
+            <li><a href="hackernews.html">Hacker News</a></li>
+            <li><a href="./">All sites</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Support &amp; Community</h4>
+          <ul class="footer-links">
+            <li><a href="../privacy.html">Privacy Policy</a></li>
+            <li><a href="../stats.html">Usage statistics</a></li>
+            <li><a href="../support.html#feedback">Feedback &amp; Suggestions</a></li>
+            <li><a href="https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke" target="_blank" rel="noopener noreferrer">Chrome Web Store</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="container footer-bottom">
+        <div>&copy; 2026 PshahLab. Force Dark Mode - ThemeSwitcher is open source under the MIT License.</div>
+        <div class="footer-live-status">
+          <span>No tracking. Anonymous usage stats are opt-in.</span>
+        </div>
+      </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+    <script src="../js/clarity-consent.js"></script>
+  </body>
+</html>

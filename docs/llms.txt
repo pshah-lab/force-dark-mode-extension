@@ -41,3 +41,15 @@
 - Guide, forcing dark mode in Chrome: https://darkmode.pshah.fun/blog/how-to-force-dark-mode-chrome.html
 - Guide, dark mode for PDFs: https://darkmode.pshah.fun/blog/dark-mode-pdf-guide.html
 - Comparison with Dark Reader: https://darkmode.pshah.fun/blog/themeswitcher-vs-dark-reader.html
+
+## Site guides
+<!-- pseo:start -->
+- Hub, dark mode for popular sites (real before/after screenshots): https://darkmode.pshah.fun/dark-mode-for/
+- Dark mode for ExamTopics: https://darkmode.pshah.fun/dark-mode-for/examtopics.html (CSS Engine, screenshots of an ExamTopics exam question page (AWS Certified Cloud Practitioner CLF-C02, Topic 1))
+- Dark mode for Notion: https://darkmode.pshah.fun/dark-mode-for/notion.html (CSS Engine, screenshots of Notion's public marketing homepage (not the Notion workspace app))
+- Dark mode for YouTube: https://darkmode.pshah.fun/dark-mode-for/youtube.html (Auto Engine, screenshots of the YouTube homepage feed)
+- Dark mode for LeetCode: https://darkmode.pshah.fun/dark-mode-for/leetcode.html (CSS Engine, screenshots of the LeetCode Two Sum problem page, signed out)
+- Dark mode for Wikipedia: https://darkmode.pshah.fun/dark-mode-for/wikipedia.html (Auto Engine, screenshots of the English Wikipedia article "Dark mode", logged out)
+- Dark mode for GitHub: https://darkmode.pshah.fun/dark-mode-for/github.html (Auto Engine, screenshots of a public GitHub repository page (this project's own), logged out)
+- Dark mode for Hacker News: https://darkmode.pshah.fun/dark-mode-for/hackernews.html (Auto Engine, screenshots of a Hacker News comment thread (item 8863, from 2007))
+<!-- pseo:end -->

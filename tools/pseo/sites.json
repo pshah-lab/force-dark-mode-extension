@@ -1,0 +1,251 @@
+{
+  "_comment": "One entry per site page. Only facts backed by the screenshots in docs/assets/screenshots or by the extension's code. Sites without real before/after screenshots must not be added. Build: node tools/pseo/build.mjs",
+  "published": "2026-10-30",
+  "sites": [
+    {
+      "slug": "examtopics",
+      "name": "ExamTopics",
+      "host": "examtopics.com",
+      "engine": "css",
+      "shot": "examtopics",
+      "width": 2000,
+      "height": 1112,
+      "captured": "an ExamTopics exam question page (AWS Certified Cloud Practitioner CLF-C02, Topic 1)",
+      "altBefore": "ExamTopics exam question page in its default light theme",
+      "altAfter": "Same ExamTopics exam question page recolored dark by ThemeSwitcher's CSS engine",
+      "title": "Dark Mode for ExamTopics in Chrome (Real Before & After)",
+      "description": "Read ExamTopics exam questions in dark mode in Chrome. Real before and after screenshots, the engine to pick, and what stays coloured on the page.",
+      "intro": "ExamTopics question pages are long white columns of text, and a study session can run for hours. In these screenshots, ThemeSwitcher's CSS engine turns the page dark and leaves the coloured section bars readable.",
+      "notes": [
+        "The page background and the white question cards turn dark grey, and the question and answer text turns light.",
+        "The teal \"Topic\" bar and the blue \"Question #\" headers keep their colours, with white text on top.",
+        "The blue Reveal Solution button, the grey Discussion button and the blue search button keep their colours.",
+        "The ExamTopics logo is left as it is. The black bar at the very top was already dark and stays dark."
+      ],
+      "faq": [
+        [
+          "Which ThemeSwitcher engine works best on ExamTopics?",
+          "The screenshots on this page were taken with the CSS engine. It recolors backgrounds and text by contrast and keeps the site's coloured headers and buttons. ThemeSwitcher remembers the engine you pick for examtopics.com."
+        ],
+        [
+          "Will the coloured question headers still be readable?",
+          "Yes. In the screenshot the teal topic bar and the blue question headers keep their colours, and their white text stays on top of them."
+        ],
+        [
+          "Does ThemeSwitcher see which exams I study?",
+          "The page is recolored on your device. ThemeSwitcher never sends page addresses or page content. The optional usage report is off unless you turn it on and never includes sites. A broken-site report is sent only if you press Report this site as broken and confirm it, and it contains just the domain, engine, theme label and version."
+        ]
+      ]
+    },
+    {
+      "slug": "notion",
+      "name": "Notion",
+      "host": "notion.so",
+      "engine": "css",
+      "shot": "notion",
+      "width": 2000,
+      "height": 1112,
+      "captured": "Notion's public marketing homepage (not the Notion workspace app)",
+      "altBefore": "Notion marketing homepage in its default light theme",
+      "altAfter": "Same Notion marketing homepage recolored dark by ThemeSwitcher's CSS engine",
+      "title": "Dark Mode for Notion's Website in Chrome (Before & After)",
+      "description": "What ThemeSwitcher's CSS engine does to Notion's homepage in Chrome: real before and after screenshots, the steps, and the parts that stay light.",
+      "intro": "These screenshots show Notion's public homepage, not the Notion workspace where you write. We haven't published screenshots of the workspace yet, so this page only describes what the homepage looks like with ThemeSwitcher's CSS engine.",
+      "notes": [
+        "The white page background turns near-black and the large headline and body text turn light.",
+        "The blue Get Notion free buttons keep their colour. The pale Request a demo button and the green Scale pill turn dark, with their text still readable.",
+        "The product preview in the middle of the page is a picture, so it stays light. ThemeSwitcher doesn't recolor photos and screenshots.",
+        "Limitation: the strip of customer logos at the bottom (OpenAI, Figma, NVIDIA and others) is drawn in dark ink and nearly disappears on the dark background. The screenshot was taken before version 2.2.0, whose logo detection has not been re-tested here."
+      ],
+      "faq": [
+        [
+          "Does this work in the Notion workspace, not just the homepage?",
+          "We have only published screenshots of Notion's homepage, so we don't make claims about the workspace yet. You can try it there: open the side panel on your Notion page and pick an engine. If something looks wrong, use Report this site as broken."
+        ],
+        [
+          "Why does the product picture on the homepage stay light?",
+          "It is an image. ThemeSwitcher recolors backgrounds and text but keeps photos and screenshots in their own colours, so the picture keeps its light look."
+        ],
+        [
+          "Are my Notion pages sent anywhere?",
+          "No. The page is recolored on your device, and ThemeSwitcher never sends page addresses or page content. The optional usage report is off unless you turn it on and never includes sites. A broken-site report is sent only when you confirm it, and it holds only the domain, engine, theme label and version."
+        ]
+      ]
+    },
+    {
+      "slug": "youtube",
+      "name": "YouTube",
+      "host": "youtube.com",
+      "engine": "auto",
+      "shot": "youtube",
+      "width": 2000,
+      "height": 1140,
+      "captured": "the YouTube homepage feed",
+      "altBefore": "YouTube homepage feed in its default light theme",
+      "altAfter": "Same YouTube homepage feed recolored dark by ThemeSwitcher's Auto engine",
+      "title": "Dark Mode for YouTube in Chrome: Real Before & After",
+      "description": "YouTube's homepage feed with ThemeSwitcher's Auto engine in Chrome: real before and after screenshots, how to turn it on, and why thumbnails keep their colours.",
+      "intro": "On YouTube the Auto engine was enough. It samples the page and picks an approach by itself. The screenshots below show the homepage feed, where the white background gives way to a near-black one and every thumbnail keeps its own colours.",
+      "notes": [
+        "The white feed background turns near-black, and video titles, channel names and view counts turn light.",
+        "Video thumbnails and the game cover art in the Top live games row keep their original colours. ThemeSwitcher doesn't recolor images or video.",
+        "Duration badges on the thumbnails, channel avatars and the blue View all link look the same as before.",
+        "The Top live games heading and its Auto-generated by YouTube caption turn light, like the rest of the feed text."
+      ],
+      "faq": [
+        [
+          "Which engine should I use on YouTube?",
+          "These screenshots were taken with the Auto engine, which samples the page and picks an approach itself. You can switch to the CSS or Invert engine in the side panel, and ThemeSwitcher remembers the choice for youtube.com."
+        ],
+        [
+          "Will videos and thumbnails look inverted?",
+          "No. In the screenshot every thumbnail keeps its original colours. ThemeSwitcher recolors the page around images and video, not the images themselves."
+        ],
+        [
+          "What happens if a page is already dark?",
+          "When a page is already dark, the side panel shows This site is already dark and ThemeSwitcher leaves it alone, so nothing is darkened twice. Press Theme it anyway if you want ThemeSwitcher's theme instead."
+        ]
+      ]
+    },
+    {
+      "slug": "leetcode",
+      "name": "LeetCode",
+      "host": "leetcode.com",
+      "engine": "css",
+      "shot": "leetcode",
+      "width": 2000,
+      "height": 1112,
+      "captured": "the LeetCode Two Sum problem page, signed out",
+      "altBefore": "LeetCode Two Sum problem page in its default light theme",
+      "altAfter": "Same LeetCode Two Sum problem page recolored dark by ThemeSwitcher's CSS engine",
+      "title": "Dark Mode for LeetCode in Chrome (Real Before & After)",
+      "description": "See LeetCode's Two Sum problem page with ThemeSwitcher's CSS engine in Chrome: real before and after screenshots, how to turn it on, and what the code editor looks like.",
+      "intro": "A LeetCode problem page is split into a problem statement on the left and a code editor on the right. The screenshots show the Two Sum page, signed out, with ThemeSwitcher's CSS engine darkening both halves.",
+      "notes": [
+        "Both panes turn dark: the problem statement, examples and constraints on the left, and the code editor on the right.",
+        "Code in the editor keeps its syntax highlighting colours on the dark background.",
+        "The Easy difficulty tag, the orange Premium badge and the green Submit button stay coloured.",
+        "The sign-in prompt under the editor (You need to log in / sign up to run or submit) turns into a dark blue bar with readable text."
+      ],
+      "faq": [
+        [
+          "Does the code editor turn dark too?",
+          "Yes. In the screenshot the editor pane turns dark and the code keeps its syntax highlighting colours."
+        ],
+        [
+          "Which engine was used for these screenshots?",
+          "The CSS engine. It recolors backgrounds and text by contrast. You pick it in the side panel, and ThemeSwitcher remembers it for leetcode.com."
+        ],
+        [
+          "Does ThemeSwitcher read my code or submissions?",
+          "No. Everything runs on your device, and ThemeSwitcher never sends page addresses, page content or anything you type. The optional usage report is off unless you turn it on and never includes sites. A broken-site report is sent only when you confirm it, and it contains just the domain, engine, theme label and version."
+        ]
+      ]
+    },
+    {
+      "slug": "wikipedia",
+      "name": "Wikipedia",
+      "host": "wikipedia.org",
+      "engine": "auto",
+      "shot": "wikipedia",
+      "width": 2000,
+      "height": 1113,
+      "captured": "the English Wikipedia article \"Dark mode\", logged out",
+      "altBefore": "Wikipedia article in its default light theme",
+      "altAfter": "Same Wikipedia article recolored dark by ThemeSwitcher's Auto engine",
+      "title": "Dark Mode for Wikipedia in Chrome (Real Before & After)",
+      "description": "Read Wikipedia in dark mode in Chrome. Real before and after screenshots of an article page, the engine used, and what the page looks like.",
+      "intro": "Wikipedia articles are long, bright pages with a lot of small text. These screenshots show the English article on dark mode, logged out, recolored by ThemeSwitcher's Auto engine.",
+      "notes": [
+        "The white page and the side panels turn near-black and the article text turns light.",
+        "Links turn a light blue that stays readable on the dark background, and the Contents and Appearance panels keep their layout.",
+        "The photos inside the article are pictures, so they stay light. ThemeSwitcher doesn't recolor photos and screenshots.",
+        "The Wikipedia wordmark and its tagline are dark artwork that ThemeSwitcher inverts so they stay visible on the dark header."
+      ],
+      "faq": [
+        [
+          "Which ThemeSwitcher engine works best on Wikipedia?",
+          "The screenshots on this page were taken with the Auto engine, which picked its CSS mode on this page and recolors backgrounds and text by contrast. ThemeSwitcher remembers the engine you pick for wikipedia.org."
+        ],
+        [
+          "Does this work on every Wikipedia language and page?",
+          "We only published screenshots of one English article, so we don't make claims about other pages. Wikipedia sites share the same layout, and you can switch engine in the side panel if a page looks wrong. If something looks wrong, use Report this site as broken."
+        ],
+        [
+          "Does ThemeSwitcher see which articles I read?",
+          "The page is recolored on your device. ThemeSwitcher never sends page addresses or page content. The optional usage report is off unless you turn it on and never includes sites. A broken-site report is sent only if you press Report this site as broken and confirm it, and it contains just the domain, engine, theme label and version."
+        ]
+      ]
+    },
+    {
+      "slug": "github",
+      "name": "GitHub",
+      "host": "github.com",
+      "engine": "auto",
+      "shot": "github",
+      "width": 2000,
+      "height": 1113,
+      "captured": "a public GitHub repository page (this project's own), logged out",
+      "altBefore": "GitHub repository page in its default light theme",
+      "altAfter": "Same GitHub repository page recolored dark by ThemeSwitcher's Auto engine",
+      "title": "Dark Mode for GitHub in Chrome (Real Before & After)",
+      "description": "Use GitHub in dark mode in Chrome. Real before and after screenshots of a public repository page and what changes on it.",
+      "intro": "These screenshots show a public GitHub repository page while logged out, not the signed-in dashboard. We haven't published screenshots of signed-in pages, so this page only describes what the repository page looks like.",
+      "notes": [
+        "The white and light-grey page areas turn dark grey and the file list and About sidebar text turn light.",
+        "File names and commit messages keep a readable light colour, and blue links turn a lighter blue.",
+        "The black GitHub header was already dark and stays dark. The green Code button turns dark grey in this screenshot instead of keeping its green.",
+        "The author photo is a picture, so it keeps its original colours."
+      ],
+      "faq": [
+        [
+          "Which ThemeSwitcher engine works best on GitHub?",
+          "The screenshots on this page were taken with the Auto engine, which picked its CSS mode on this page and recolors backgrounds and text by contrast. ThemeSwitcher remembers the engine you pick for github.com."
+        ],
+        [
+          "Does this work when I'm signed in?",
+          "We only published screenshots of a logged-out repository page, so we don't make claims about signed-in pages. You can try it by opening the side panel on your GitHub page and picking an engine. If something looks wrong, use Report this site as broken."
+        ],
+        [
+          "Does ThemeSwitcher see which repositories I open?",
+          "The page is recolored on your device. ThemeSwitcher never sends page addresses or page content. The optional usage report is off unless you turn it on and never includes sites. A broken-site report is sent only if you press Report this site as broken and confirm it, and it contains just the domain, engine, theme label and version."
+        ]
+      ]
+    },
+    {
+      "slug": "hackernews",
+      "name": "Hacker News",
+      "host": "news.ycombinator.com",
+      "engine": "auto",
+      "shot": "hackernews",
+      "width": 2000,
+      "height": 1113,
+      "captured": "a Hacker News comment thread (item 8863, from 2007)",
+      "altBefore": "Hacker News comment thread in its default light theme",
+      "altAfter": "Same Hacker News comment thread recolored dark by ThemeSwitcher's Auto engine",
+      "title": "Dark Mode for Hacker News in Chrome (Real Before & After)",
+      "description": "Read Hacker News in dark mode in Chrome. Real before and after screenshots of a comment thread, the engine used, and what stays orange.",
+      "intro": "Hacker News is plain beige text on a white-ish page. These screenshots show an old comment thread, which doesn't change, recolored by ThemeSwitcher's Auto engine.",
+      "notes": [
+        "The beige page and comment area turn near-black and the comment text turns white.",
+        "The orange header bar keeps its colour, and the Y logo box keeps its border.",
+        "Usernames, dates and the navigation links turn light blue. On the orange bar this blue has lower contrast than the white text elsewhere.",
+        "The grey vote arrows stay grey."
+      ],
+      "faq": [
+        [
+          "Which ThemeSwitcher engine works best on Hacker News?",
+          "The screenshots on this page were taken with the Auto engine, which picked its CSS mode on this page and recolors backgrounds and text by contrast. ThemeSwitcher remembers the engine you pick for news.ycombinator.com."
+        ],
+        [
+          "Will the orange header stay orange?",
+          "Yes. In the screenshot the orange bar keeps its colour. The navigation links on it turn light blue, which is readable but has less contrast than the rest of the page."
+        ],
+        [
+          "Does ThemeSwitcher see which stories I read?",
+          "The page is recolored on your device. ThemeSwitcher never sends page addresses or page content. The optional usage report is off unless you turn it on and never includes sites. A broken-site report is sent only if you press Report this site as broken and confirm it, and it contains just the domain, engine, theme label and version."
+        ]
+      ]
+    }
+  ]
+}

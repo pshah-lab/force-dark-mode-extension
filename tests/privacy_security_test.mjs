@@ -462,6 +462,7 @@ test("all website HTML files include nosniff and strict-origin-when-cross-origin
     "docs/blog/dark-mode-vs-night-mode.html",
     "docs/blog/best-dark-mode-extension-guide.html",
     "docs/blog/themeswitcher-vs-dark-reader.html",
+    ...fs.readdirSync(path.join(rootDir, "docs/dark-mode-for")).filter((f) => f.endsWith(".html")).map((f) => `docs/dark-mode-for/${f}`),
   ];
 
   for (const relPath of websiteFiles) {

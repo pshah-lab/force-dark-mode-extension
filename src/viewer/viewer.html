@@ -51,6 +51,26 @@
           accept=".pdf,.txt,.md,.markdown,.rtf,.docx,.pptx,.xlsx,.csv,.doc,.ppt,.xls,application/pdf,text/plain,text/markdown,application/rtf,text/rtf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,application/msword,application/vnd.ms-powerpoint,application/vnd.ms-excel"
           hidden
         />
+
+        <div class="export-group" role="group" aria-label="Export">
+          <label>
+            Export
+            <select id="export-format" disabled>
+              <option value="">Open a file first</option>
+            </select>
+          </label>
+          <input
+            id="export-pages"
+            type="text"
+            inputmode="numeric"
+            placeholder="Pages: all or 1-3,5"
+            aria-label="Pages to export"
+            autocomplete="off"
+            hidden
+          />
+          <button id="export-button" type="button" disabled>Download</button>
+          <span id="export-status" class="export-status" role="status" aria-live="polite"></span>
+        </div>
       </div>
     </header>
 

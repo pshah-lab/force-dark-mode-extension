@@ -84,6 +84,12 @@ const EGRESS_SCANNED_FILES = [
   "src/viewer/spreadsheet/spreadsheetView.js",
   "src/viewer/spreadsheet/xlsxParser.js",
   "src/viewer/spreadsheet/xlsxStyles.js",
+  "src/viewer/convert/csvWriter.js",
+  "src/viewer/convert/docExport.js",
+  "src/viewer/convert/exportFormats.js",
+  "src/viewer/convert/pdfExport.js",
+  "src/viewer/convert/xlsxWriter.js",
+  "src/viewer/convert/zipWriter.js",
 ];
 
 test("zero outbound network calls in extension core code", () => {

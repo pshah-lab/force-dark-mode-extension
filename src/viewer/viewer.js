@@ -7,6 +7,22 @@ import { parseCsv } from "./spreadsheet/csvParser.js";
 import { isMemoryError } from "./spreadsheet/errors.js";
 import { renderSpreadsheet } from "./spreadsheet/spreadsheetRenderer.js";
 import { MAX_CSV_BYTES } from "./spreadsheet/spreadsheetLimits.js";
+import { detectDocumentKind, getExportFormats, exportFileName, EXPORT_MIME_TYPES } from "./convert/exportFormats.js";
+import {
+  docxToText,
+  docxToMarkdown,
+  docxToHtml,
+  pptxToText,
+  pptxToMarkdown,
+  pptxToHtml,
+  markdownToHtml,
+  plainTextToHtml,
+  rtfToPlainText,
+} from "./convert/docExport.js";
+import { hasExtractableText, pdfPagesToText, pdfPagesToMarkdown, parsePageRange, pngRenderScale } from "./convert/pdfExport.js";
+import { sheetToMatrix, toCsv, workbookToJson } from "./convert/csvWriter.js";
+import { createXlsx } from "./convert/xlsxWriter.js";
+import { createZip } from "./convert/zipWriter.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
   "src/viewer/vendor/pdf.worker.min.mjs"
@@ -54,6 +70,10 @@ const fontSizeInput = document.getElementById("font-size");
 const contrastInput = document.getElementById("contrast");
 const openFileButton = document.getElementById("open-file");
 const fileInput = document.getElementById("file-input");
+const exportFormatInput = document.getElementById("export-format");
+const exportPagesInput = document.getElementById("export-pages");
+const exportButton = document.getElementById("export-button");
+const exportStatus = document.getElementById("export-status");
 
 let currentObjectUrl = "";
 let currentPdfSource = null;
@@ -65,6 +85,9 @@ let rerenderDebounceTimer = null;
 let spreadsheetRerenderTimer = null;
 // Parsed workbook + tab state, kept so colour/mode changes can re-render the grid.
 let currentSpreadsheet = null;
+// What the Export control converts: { kind, name, data } for the open document, or null.
+let currentExport = null;
+let exportInProgress = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const settings = await getViewerSettings();
@@ -83,6 +106,9 @@ function bindControls() {
   openFileButton.onclick = () => {
     fileInput.click();
   };
+
+  exportFormatInput.onchange = updateExportControls;
+  exportButton.onclick = runExport;
 
   fileInput.onchange = () => {
     const [file] = fileInput.files || [];
@@ -118,6 +144,7 @@ async function openLocalFile(file) {
   revokeCurrentObjectUrl();
   currentPdfSource = null;
   currentSpreadsheet = null;
+  clearExportSource();
   renderGeneration += 1;
 
   if (isPdfFile(file) || isSpreadsheetFile(file) || isReadableDocument(file) || isOfficeDocument(file)) {
@@ -167,6 +194,7 @@ async function openPdf(source, name, fallbackSource = source) {
   pdfStatus.textContent = "Loading PDF...";
   pdfPages.replaceChildren();
   currentPdf = null;
+  clearExportSource();
   pdfFrame.removeAttribute("src");
 
   try {
@@ -175,6 +203,7 @@ async function openPdf(source, name, fallbackSource = source) {
 
     if (generation !== renderGeneration) return;
     currentPdf = pdf;
+    setExportSource("pdf", name, pdf);
 
     pdfStatus.textContent = `Rendering ${pdf.numPages} page${pdf.numPages === 1 ? "" : "s"}...`;
 
@@ -241,6 +270,7 @@ window.addEventListener("keydown", (event) => {
 });
 
 function openPdfFallback(source, name) {
+  clearExportSource();
   if (typeof source === "string" && !isSafeDocumentUrl(source)) {
     showEmptyState("Blocked unsafe document source");
     return;
@@ -261,6 +291,7 @@ function openPdfFallback(source, name) {
 function openTextDocument(text, name) {
   showPanel("document");
   documentName.textContent = name;
+  setExportSource(detectDocumentKind(name) || "text", name, text);
   if (isMarkdownName(name)) {
     renderMarkdownSafely(text, documentPanel);
     return;
@@ -344,6 +375,7 @@ async function openOfficeFile(file) {
 
     showPanel("document");
     renderDocxBlocksSafely(docxResult, documentPanel);
+    setExportSource("docx", file.name, docxResult);
     return;
   }
 
@@ -378,6 +410,7 @@ async function openOfficeFile(file) {
 
   showPanel("document");
   renderPptxSlidesSafely(result, documentPanel);
+  setExportSource("pptx", file.name, result);
 }
 
 async function openSpreadsheetFile(file) {
@@ -447,6 +480,7 @@ async function openSpreadsheetFile(file) {
   showPanel("spreadsheet");
   currentSpreadsheet = { workbook, state: { selected: 0 } };
   renderSpreadsheet(spreadsheetPanel, workbook, getCurrentSettings(), currentSpreadsheet.state);
+  setExportSource(isCsv ? "csv" : "xlsx", file.name, workbook);
 }
 
 // Re-draws the grid after a Mode/Background/Text change, keeping scroll position
@@ -490,6 +524,7 @@ function onColorInput() {
 
 function showEmptyState(message) {
   showPanel("empty");
+  clearExportSource();
   documentName.textContent = message;
   emptyStateHeading.textContent = message;
   emptyStateDescription.hidden = true;
@@ -808,12 +843,7 @@ function normalizeDocumentText(text, name) {
     return text;
   }
 
-  return text
-    .replace(/\\'[0-9a-f]{2}/gi, "")
-    .replace(/\\[a-z]+\d* ?/gi, "")
-    .replace(/[{}]/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return rtfToPlainText(text);
 }
 
 function isMarkdownName(name) {
@@ -1197,4 +1227,224 @@ function revokeCurrentObjectUrl() {
     URL.revokeObjectURL(currentObjectUrl);
     currentObjectUrl = "";
   }
+}
+
+// ---------------------------------------------------------------------------
+// Export: converts the open document locally and downloads the result.
+// Nothing leaves the browser: conversion runs in this page and the file is
+// handed to the browser's own download via a short-lived object URL.
+
+const NO_TEXT_MESSAGE = "No selectable text found; scanned PDFs are not supported.";
+
+function setExportStatus(message, tone = "info") {
+  exportStatus.textContent = message;
+  exportStatus.dataset.tone = tone;
+}
+
+function setExportSource(kind, name, data) {
+  currentExport = { kind, name, data };
+  const formats = getExportFormats(kind);
+  const options = formats.map((format) => {
+    const option = document.createElement("option");
+    option.value = format.id;
+    option.textContent = format.label;
+    return option;
+  });
+  if (options.length === 0) {
+    clearExportSource();
+    return;
+  }
+  exportFormatInput.replaceChildren(...options);
+  exportFormatInput.disabled = false;
+  setExportStatus("");
+  updateExportControls();
+}
+
+function clearExportSource() {
+  currentExport = null;
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = "Open a file first";
+  exportFormatInput.replaceChildren(placeholder);
+  exportFormatInput.disabled = true;
+  exportPagesInput.hidden = true;
+  exportButton.disabled = true;
+  setExportStatus("");
+}
+
+function updateExportControls() {
+  const isPng = currentExport?.kind === "pdf" && exportFormatInput.value === "png";
+  exportPagesInput.hidden = !(isPng && currentExport.data.numPages > 1);
+  exportButton.disabled = !currentExport || exportInProgress || !exportFormatInput.value;
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.rel = "noopener";
+  link.hidden = true;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  // Give the browser time to start the download before releasing the blob.
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+function downloadExport(content, name, ext) {
+  downloadBlob(new Blob([content], { type: EXPORT_MIME_TYPES[ext] }), exportFileName(name, ext));
+}
+
+async function runExport() {
+  const source = currentExport;
+  const formatId = exportFormatInput.value;
+  if (!source || !formatId || exportInProgress) return;
+
+  exportInProgress = true;
+  updateExportControls();
+  setExportStatus("Converting…");
+  try {
+    const done = await convertAndDownload(source, formatId);
+    if (currentExport !== source) return;
+    if (done) {
+      const data = source.data;
+      const truncated = !!data && (data.truncated === true || (Array.isArray(data.sheets) && data.sheets.some((sheet) => sheet.truncated)));
+      setExportStatus(truncated ? "Downloaded. The preview was truncated, so the export is too." : "Downloaded.");
+    }
+  } catch (error) {
+    console.warn("[ForceDark] Export failed:", error);
+    if (currentExport === source) {
+      setExportStatus(isOutOfMemoryError(error) ? "Not enough memory to export this file." : "Export failed for this file.", "error");
+    }
+  } finally {
+    exportInProgress = false;
+    updateExportControls();
+  }
+}
+
+// Returns true when a download was started, false when it stopped with a message.
+async function convertAndDownload(source, formatId) {
+  const { kind, name, data } = source;
+
+  if (kind === "pdf") {
+    if (formatId === "png") return exportPdfPages(source);
+    const pages = await extractPdfText(source);
+    if (!pages) return false;
+    if (!hasExtractableText(pages)) {
+      setExportStatus(NO_TEXT_MESSAGE, "error");
+      return false;
+    }
+    if (formatId === "txt") downloadExport(pdfPagesToText(pages), name, "txt");
+    else downloadExport(pdfPagesToMarkdown(pages), name, "md");
+    return true;
+  }
+
+  if (kind === "docx" || kind === "pptx") {
+    const isDocx = kind === "docx";
+    if (formatId === "txt") downloadExport(isDocx ? docxToText(data) : pptxToText(data), name, "txt");
+    else if (formatId === "md") downloadExport(isDocx ? docxToMarkdown(data) : pptxToMarkdown(data), name, "md");
+    else downloadExport(isDocx ? docxToHtml(data, name) : pptxToHtml(data, name), name, "html");
+    return true;
+  }
+
+  if (kind === "xlsx") {
+    if (formatId === "json") {
+      downloadExport(workbookToJson(data), name, "json");
+      return true;
+    }
+    const sheets = data.sheets || [];
+    if (sheets.length === 1) {
+      downloadExport(toCsv(sheetToMatrix(sheets[0])), name, "csv");
+      return true;
+    }
+    const used = new Set();
+    const entries = sheets.map((sheet, index) => {
+      let entryName = exportFileName(`${sheet.name || `Sheet${index + 1}`}.csv`, "csv");
+      for (let n = 2; used.has(entryName.toLowerCase()); n += 1) {
+        entryName = exportFileName(`${sheet.name || "Sheet"}-${n}.csv`, "csv");
+      }
+      used.add(entryName.toLowerCase());
+      return { name: entryName, data: toCsv(sheetToMatrix(sheet)) };
+    });
+    downloadExport(createZip(entries), name, "zip");
+    return true;
+  }
+
+  if (kind === "csv") {
+    const sheetName = String(name).replace(/\.[^.]*$/, "") || "Sheet1";
+    downloadExport(createXlsx([{ name: sheetName, rows: sheetToMatrix(data.sheets[0]) }]), name, "xlsx");
+    return true;
+  }
+
+  // Markdown, plain text and RTF all export to standalone HTML.
+  if (kind === "markdown") downloadExport(markdownToHtml(data, name), name, "html");
+  else if (kind === "rtf") downloadExport(plainTextToHtml(rtfToPlainText(data), name), name, "html");
+  else downloadExport(plainTextToHtml(data, name), name, "html");
+  return true;
+}
+
+async function extractPdfText(source) {
+  const pdf = source.data;
+  const pages = [];
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    if (currentExport !== source) return null;
+    setExportStatus(`Reading text ${pageNumber}/${pdf.numPages}…`);
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    pages.push({ items: content.items });
+  }
+  return pages;
+}
+
+async function renderPdfPageToPng(pdf, pageNumber) {
+  const page = await pdf.getPage(pageNumber);
+  const base = page.getViewport({ scale: 1 });
+  const viewport = page.getViewport({ scale: pngRenderScale(base.width, base.height) });
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.floor(viewport.width));
+  canvas.height = Math.max(1, Math.floor(viewport.height));
+  const context = canvas.getContext("2d", { alpha: false });
+  // Original page colors on a white sheet, like the printed document.
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  try {
+    await page.render({ canvasContext: context, viewport }).promise;
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("PNG encoding failed");
+    return new Uint8Array(await blob.arrayBuffer());
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+}
+
+async function exportPdfPages(source) {
+  const pdf = source.data;
+  const range = parsePageRange(exportPagesInput.hidden ? "" : exportPagesInput.value, pdf.numPages);
+  if (range.error) {
+    setExportStatus(range.error, "error");
+    return false;
+  }
+
+  const pad = String(pdf.numPages).length;
+  const images = [];
+  for (const [index, pageNumber] of range.pages.entries()) {
+    if (currentExport !== source) return false;
+    setExportStatus(`Rendering page ${index + 1}/${range.pages.length}…`);
+    images.push({ pageNumber, bytes: await renderPdfPageToPng(pdf, pageNumber) });
+  }
+
+  if (images.length === 1) {
+    const suffix = pdf.numPages > 1 ? `-page-${images[0].pageNumber}` : "";
+    downloadBlob(new Blob([images[0].bytes], { type: EXPORT_MIME_TYPES.png }), exportFileName(source.name, "png", suffix));
+    return true;
+  }
+
+  const entries = images.map(({ pageNumber, bytes }) => ({
+    name: exportFileName(source.name, "png", `-page-${String(pageNumber).padStart(pad, "0")}`),
+    data: bytes,
+  }));
+  downloadBlob(new Blob([createZip(entries)], { type: EXPORT_MIME_TYPES.zip }), exportFileName(source.name, "zip", "-pages"));
+  return true;
 }

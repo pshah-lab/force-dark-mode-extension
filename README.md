@@ -2,7 +2,7 @@
 
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-brightgreen.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-2.2.0-indigo.svg)](manifest.json)
+[![Version](https://img.shields.io/badge/version-2.3.0-indigo.svg)](manifest.json)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-Install_Free-blue.svg?logo=googlechrome)](https://chromewebstore.google.com/detail/force-dark-mode/kmhhphbakbhohiohagkhhgdgfbplkfke)
 [![Tests](https://img.shields.io/badge/tests-472%20passed-success.svg)](tests/)
 [![Website](https://img.shields.io/badge/website-live-cyan.svg)](https://darkmode.pshah.fun/)
@@ -24,6 +24,7 @@ Unlike crude global inverters that turn photos, videos, and layouts into neon ne
 - **Layout-Safe CSS Override Engine**: Recolors backgrounds, typography, forms, and borders with contrast-tested CSS custom properties while preserving media elements.
 - **Smart Logo Inversion**: Selectively inverts dark/black logos on dark backgrounds for crystal-clear readability.
 - **Built-in Offline Dark PDF & Document Reader**: Render online and local PDF files locally using bundled PDF.js with saturation-aware pixel conversion. Also supports Markdown (`.md`), Plain Text (`.txt`), and RTF.
+- **Export & convert (offline)**: in the document viewer, download the open file as another format: PDF to TXT, Markdown or PNG pages; DOCX/PPTX to TXT, Markdown or HTML; XLSX to CSV or JSON; CSV to XLSX; Markdown/TXT/RTF to HTML. Everything is converted on your device.
 - **Local Spreadsheet Viewer**: Open Excel (`.xlsx`) and CSV files as a read-only dark grid with sheet tabs, entirely on your device. Legacy `.xls` files must be converted to `.xlsx` first.
 - **Themes**: Eight built-in color themes chosen from the popup, ready-made settings for 20 popular sites, and a theme editor in Options with a live preview, a contrast check and JSON import/export.
 - **Per-Site Custom CSS**: Add your own CSS for a site in Options. It is validated before use and cannot introduce a URL.

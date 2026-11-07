@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [2.3.0] - 2026-11-08
+
+### Added
+- **Export & convert in the document viewer**: an Export menu downloads the open file in another format, converted entirely on your device. PDF to TXT, Markdown or PNG pages (single page or a zip, with a page range; scanned PDFs without text are reported, not converted); DOCX and PPTX to TXT, Markdown or HTML; XLSX to CSV or JSON; CSV to XLSX; Markdown, TXT and RTF to HTML. Exports follow what the viewer shows, so its size limits apply. No new permissions and no network use.
+
 ### Fixed
 - **Printing and Save as PDF** no longer carry dark mode onto paper: the engines switch off while the page prints and back on afterwards, and the document viewer prints PDFs from untouched white page copies (Cmd/Ctrl+P).
 

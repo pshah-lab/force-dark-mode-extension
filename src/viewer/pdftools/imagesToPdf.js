@@ -12,6 +12,53 @@ function detect(bytes) {
   return null;
 }
 
+const MAX_SIDE = 16384;
+const MAX_PIXELS = 40e6;
+
+// Returns null when OK, else a reason string. Header-only parse; guards embedPng against truncated data.
+function checkPng(b) {
+  const dv = new DataView(b.buffer, b.byteOffset, b.byteLength);
+  let pos = 8, first = true, idat = false, iend = false, w = 0, h = 0;
+  while (pos + 12 <= b.length) {
+    const len = dv.getUint32(pos);
+    const type = String.fromCharCode(b[pos + 4], b[pos + 5], b[pos + 6], b[pos + 7]);
+    if (pos + 12 + len > b.length) return "is truncated or corrupt";
+    if (first) {
+      if (type !== "IHDR" || len !== 13) return "is truncated or corrupt";
+      w = dv.getUint32(pos + 8);
+      h = dv.getUint32(pos + 12);
+      first = false;
+    } else if (type === "IDAT") idat = true;
+    else if (type === "IEND") { iend = true; break; }
+    pos += 12 + len;
+  }
+  if (first || !idat || !iend) return "is truncated or corrupt";
+  return tooBig(w, h);
+}
+
+function tooBig(w, h) {
+  if (!w || !h) return "is truncated or corrupt";
+  return w > MAX_SIDE || h > MAX_SIDE || w * h > MAX_PIXELS ? "is too large to convert" : null;
+}
+
+// JPEG: scan markers up to the first SOF for dimensions.
+function checkJpg(b) {
+  let pos = 2;
+  while (pos + 4 <= b.length) {
+    if (b[pos] !== 0xff) return "is truncated or corrupt";
+    const m = b[pos + 1];
+    if (m === 0xff) { pos++; continue; }
+    if (m === 0xd8 || m === 0x01 || (m >= 0xd0 && m <= 0xd7)) { pos += 2; continue; }
+    const len = (b[pos + 2] << 8) | b[pos + 3];
+    if (m >= 0xc0 && m <= 0xcf && m !== 0xc4 && m !== 0xc8 && m !== 0xcc) {
+      if (pos + 9 > b.length) return "is truncated or corrupt";
+      return tooBig((b[pos + 7] << 8) | b[pos + 8], (b[pos + 5] << 8) | b[pos + 6]);
+    }
+    pos += 2 + len;
+  }
+  return "is truncated or corrupt";
+}
+
 export async function imagesToPdf(images, options = {}) {
   if (!Array.isArray(images) || images.length === 0) throw new Error("Add at least one image (JPG or PNG).");
   const mode = options.pageSize in PAGE_SIZES ? options.pageSize : "fit";
@@ -21,6 +68,11 @@ export async function imagesToPdf(images, options = {}) {
     const kind = detect(img && img.bytes);
     if (!kind) {
       warnings.push(`Skipped ${img && img.name}: not a JPG or PNG image.`);
+      continue;
+    }
+    const bad = kind === "png" ? checkPng(img.bytes) : checkJpg(img.bytes);
+    if (bad) {
+      warnings.push(`Skipped ${img.name}: the image ${bad}.`);
       continue;
     }
     let embedded;

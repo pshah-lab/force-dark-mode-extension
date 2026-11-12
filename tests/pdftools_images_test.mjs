@@ -39,4 +39,44 @@ assert.ok(/bad\.png/.test(r.warnings[1]));
 await assert.rejects(() => imagesToPdf([{ name: "x.txt", bytes: enc.encode("no") }], { pageSize: "fit" }), (e) => e instanceof Error && /No usable images/.test(e.message));
 await assert.rejects(() => imagesToPdf([], { pageSize: "fit" }), (e) => e instanceof Error && /Add at least one image/.test(e.message));
 
+// Regression: truncated / oversized PNGs must be skipped fast (embedPng can hang on truncated IDAT)
+import zlib from "zlib";
+const crcTable = Array.from({ length: 256 }, (_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
+const crc32 = (buf) => { let c = 0xffffffff; for (const b of buf) c = crcTable[(c ^ b) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
+function chunk(type, data) {
+  const out = Buffer.alloc(12 + data.length);
+  out.writeUInt32BE(data.length, 0);
+  out.write(type, 4, "ascii");
+  data.copy(out, 8);
+  out.writeUInt32BE(crc32(out.subarray(4, 8 + data.length)), 8 + data.length);
+  return out;
+}
+function makePng(w, h, rawRows) {
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(w, 0); ihdr.writeUInt32BE(h, 4); ihdr[8] = 8; ihdr[9] = 2;
+  return new Uint8Array(Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), chunk("IHDR", ihdr), chunk("IDAT", zlib.deflateSync(rawRows)), chunk("IEND", Buffer.alloc(0))]));
+}
+const rows = Buffer.alloc(64 * (1 + 64 * 3));
+let seed = 12345;
+for (let i = 0; i < rows.length; i++) { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; rows[i] = seed >>> 24; }
+for (let y = 0; y < 64; y++) rows[y * (1 + 192)] = 0;
+const BIG = makePng(64, 64, rows);
+assert.ok(BIG.length > 4000, "fixture is multi-KB");
+let t0 = Date.now();
+r = await imagesToPdf([{ name: "big.png", bytes: BIG }], { pageSize: "fit" });
+assert.deepStrictEqual(await sizes(r.files[0]), [[64, 64]]);
+for (const [label, len] of [["400", 400], ["half", BIG.length >> 1]]) {
+  t0 = Date.now();
+  r = await imagesToPdf([{ name: "ok.png", bytes: PNG }, { name: `cut-${label}.png`, bytes: BIG.slice(0, len) }], { pageSize: "fit" });
+  assert.ok(Date.now() - t0 < 2000, "truncated PNG must not hang");
+  assert.strictEqual((await sizes(r.files[0])).length, 1);
+  assert.strictEqual(r.warnings.length, 1);
+  assert.ok(new RegExp(`cut-${label}\\.png`).test(r.warnings[0]));
+}
+// oversized dimensions skipped
+const huge = makePng(100000, 1, Buffer.alloc(1 + 300000));
+r = await imagesToPdf([{ name: "ok.png", bytes: PNG }, { name: "huge.png", bytes: huge }], { pageSize: "fit" });
+assert.strictEqual((await sizes(r.files[0])).length, 1);
+assert.ok(/huge\.png/.test(r.warnings[0]));
+
 console.log("pdftools_images_test: all passed");

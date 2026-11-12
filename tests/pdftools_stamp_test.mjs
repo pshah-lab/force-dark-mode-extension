@@ -1,7 +1,7 @@
 // tests/pdftools_stamp_test.mjs - page numbers and watermark
 import assert from "assert";
 import zlib from "zlib";
-import { PDFDocument, PDFName, PDFRawStream, PDFArray } from "../src/viewer/vendor/pdf-lib.min.mjs";
+import { PDFDocument, PDFName, PDFRawStream, PDFArray, StandardFonts, degrees } from "../src/viewer/vendor/pdf-lib.min.mjs";
 import { addPageNumbers, addWatermark } from "../src/viewer/pdftools/stampTools.js";
 import { PDF_MIME } from "../src/viewer/pdftools/result.js";
 
@@ -93,4 +93,61 @@ await rejects(() => addWatermark(src, { text: "A", opacity: NaN, size: 30, diago
 await rejects(() => addWatermark(src, { text: "   ", opacity: 0.5, size: 30, diagonal: false }), /text/i);
 await rejects(() => addWatermark(src, { text: "A", opacity: 0.5, size: 0, diagonal: false }), /size/i);
 assert.strictEqual(Buffer.from(src.bytes).toString("hex"), before, "input untouched");
+
+// ---- placement on rotated pages, offset MediaBox and CropBox ----
+async function geoFixture(rotation, media, crop) {
+  const d = await PDFDocument.create();
+  const pg = d.addPage([media[2], media[3]]);
+  pg.setMediaBox(...media);
+  if (crop) pg.setCropBox(...crop);
+  pg.setRotation(degrees(rotation));
+  return { name: "g.pdf", bytes: await d.save() };
+}
+// Last "a b c d e f Tm" on page 1: text origin and angle (degrees) in unrotated page space.
+function lastTm(doc) {
+  const all = [...content(doc, 0).matchAll(/(\S+) (\S+) (\S+) (\S+) (\S+) (\S+) Tm/g)];
+  assert.ok(all.length, "has a Tm");
+  const [, a, b, , , e, f] = all[all.length - 1].map(Number);
+  return { x: e, y: f, angle: ((Math.round((Math.atan2(b, a) * 180) / Math.PI) % 360) + 360) % 360 };
+}
+// Unrotated point -> what the viewer sees (origin bottom-left of the displayed visible box).
+function toView(pt, box, rot) {
+  const x = pt.x - box[0], y = pt.y - box[1], W = box[2], H = box[3];
+  return rot === 0 ? { u: x, v: y } : rot === 90 ? { u: y, v: W - x } : rot === 180 ? { u: W - x, v: H - y } : { u: H - y, v: x };
+}
+const helv = await (await PDFDocument.create()).embedFont(StandardFonts.Helvetica);
+const cases = [
+  { media: [0, 0, 300, 400], crop: null, vis: [0, 0, 300, 400] },
+  { media: [100, 100, 400, 600], crop: null, vis: [100, 100, 400, 600] },
+  { media: [0, 0, 600, 800], crop: [50, 50, 200, 300], vis: [50, 50, 200, 300] },
+];
+for (const c of cases) for (const rot of [0, 90, 180, 270]) {
+  const tag = `rot ${rot} box ${c.vis}`;
+  const swap = rot === 90 || rot === 270;
+  const Wd = swap ? c.vis[3] : c.vis[2], Hd = swap ? c.vis[2] : c.vis[3];
+  const f = await geoFixture(rot, c.media, c.crop);
+  const label = "7";
+  const wl = helv.widthOfTextAtSize(label, 10);
+  for (const [pos, uWant, vWant] of [
+    ["bottom-center", (Wd - wl) / 2, 28], ["bottom-right", Wd - 28 - wl, 28],
+    ["top-center", (Wd - wl) / 2, Hd - 28 - 10], ["top-right", Wd - 28 - wl, Hd - 28 - 10],
+  ]) {
+    const res = await addPageNumbers(f, { position: pos, startAt: 7, format: "n" });
+    const tm = lastTm(await PDFDocument.load(res.files[0].bytes));
+    const v = toView(tm, c.vis, rot);
+    assert.ok(Math.abs(v.u - uWant) < 0.5 && Math.abs(v.v - vWant) < 0.5, `${tag} ${pos}: got ${v.u},${v.v} want ${uWant},${vWant}`);
+    assert.strictEqual(tm.angle, rot, `${tag} ${pos} text angle`);
+  }
+  for (const diagonal of [true, false]) {
+    const res = await addWatermark(f, { text: "DRAFT", opacity: 0.5, size: 40, diagonal });
+    const tm = lastTm(await PDFDocument.load(res.files[0].bytes));
+    const want = (rot + (diagonal ? 45 : 0)) % 360;
+    assert.strictEqual(tm.angle, want, `${tag} watermark angle`);
+    const w = helv.widthOfTextAtSize("DRAFT", 40), h = helv.heightAtSize(40, { descender: false });
+    const r = (tm.angle * Math.PI) / 180;
+    const centre = { x: tm.x + (w / 2) * Math.cos(r) - (h / 2) * Math.sin(r), y: tm.y + (w / 2) * Math.sin(r) + (h / 2) * Math.cos(r) };
+    const v = toView(centre, c.vis, rot);
+    assert.ok(Math.abs(v.u - Wd / 2) < 0.5 && Math.abs(v.v - Hd / 2) < 0.5, `${tag} watermark centre (diag ${diagonal}): ${v.u},${v.v}`);
+  }
+}
 console.log("pdftools_stamp_test passed");

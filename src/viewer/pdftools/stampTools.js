@@ -24,6 +24,32 @@ function toEncodable(font, text) {
   return { text: out, replaced };
 }
 
+// Geometry of what the viewer sees: the visible box (CropBox if valid, else MediaBox) and the page
+// rotation. place() maps a point in the viewer's upright frame (origin bottom-left of the displayed
+// page) to unrotated page space, and returns the text angle that reads upright to the viewer.
+function viewGeometry(page) {
+  let box = page.getMediaBox();
+  const crop = page.getCropBox();
+  if (crop && crop.width > 0 && crop.height > 0) box = crop;
+  const { x: x0, y: y0, width: W, height: H } = box;
+  const raw = Math.round(page.getRotation().angle / 90) * 90;
+  const rot = ((raw % 360) + 360) % 360;
+  const swap = rot === 90 || rot === 270;
+  return {
+    rot,
+    width: swap ? H : W,
+    height: swap ? W : H,
+    place(u, v, visualAngle = 0) {
+      let x, y;
+      if (rot === 0) [x, y] = [u, v];
+      else if (rot === 90) [x, y] = [W - v, u];
+      else if (rot === 180) [x, y] = [W - u, H - v];
+      else [x, y] = [v, H - u];
+      return { x: x0 + x, y: y0 + y, angle: visualAngle + rot };
+    },
+  };
+}
+
 function checkNumber(value, label, min, max) {
   if (typeof value !== "number" || !Number.isFinite(value) || value < min || value > max) {
     throw new Error(`${label} must be a number between ${min} and ${max}.`);
@@ -47,11 +73,12 @@ export async function addPageNumbers(input, options = {}) {
   pages.forEach((page, i) => {
     const n = startAt + i;
     const label = format === "n-of-total" ? `${n} of ${startAt + total - 1}` : String(n);
-    const { width, height } = page.getSize();
+    const g = viewGeometry(page);
     const w = font.widthOfTextAtSize(label, size);
-    const x = position.endsWith("center") ? (width - w) / 2 : width - MARGIN - w;
-    const y = position.startsWith("bottom") ? MARGIN : height - MARGIN - size;
-    page.drawText(label, { x, y, size, font, color: rgb(0.2, 0.2, 0.2) });
+    const u = position.endsWith("center") ? (g.width - w) / 2 : g.width - MARGIN - w;
+    const v = position.startsWith("bottom") ? MARGIN : g.height - MARGIN - size;
+    const { x, y, angle } = g.place(u, v);
+    page.drawText(label, { x, y, size, font, color: rgb(0.2, 0.2, 0.2), rotate: degrees(angle) });
   });
   return makeResult([{ name: exportFileName(input.name, "pdf", "-numbered"), bytes: await doc.save(), mime: PDF_MIME }]);
 }
@@ -83,16 +110,13 @@ export async function addWatermark(input, options = {}) {
   const h = font.heightAtSize(size, { descender: false });
   for (const p of targets) {
     const page = doc.getPage(p - 1);
-    const { width, height } = page.getSize();
-    if (diagonal) {
-      const a = Math.PI / 4;
-      // Place the text's center at the page center after rotating about its left baseline point.
-      const x = width / 2 - (w / 2) * Math.cos(a) + (h / 2) * Math.sin(a);
-      const y = height / 2 - (w / 2) * Math.sin(a) - (h / 2) * Math.cos(a);
-      page.drawText(text, { x, y, size, font, color: rgb(0.5, 0.5, 0.5), opacity, rotate: degrees(45) });
-    } else {
-      page.drawText(text, { x: (width - w) / 2, y: (height - h) / 2, size, font, color: rgb(0.5, 0.5, 0.5), opacity });
-    }
+    const g = viewGeometry(page);
+    const a = diagonal ? Math.PI / 4 : 0;
+    // Baseline-left origin that puts the text's centre at the visible centre.
+    const u = g.width / 2 - (w / 2) * Math.cos(a) + (h / 2) * Math.sin(a);
+    const v = g.height / 2 - (w / 2) * Math.sin(a) - (h / 2) * Math.cos(a);
+    const { x, y, angle } = g.place(u, v, diagonal ? 45 : 0);
+    page.drawText(text, { x, y, size, font, color: rgb(0.5, 0.5, 0.5), opacity, rotate: degrees(angle) });
   }
   return makeResult([{ name: exportFileName(input.name, "pdf", "-watermarked"), bytes: await doc.save(), mime: PDF_MIME }], warnings);
 }

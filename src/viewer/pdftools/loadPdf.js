@@ -1,10 +1,10 @@
 // Safe PDF loading for the offline PDF tools. DOM-free, no network.
 import { PDFDocument } from "../vendor/pdf-lib.min.mjs";
 
-export async function loadPdf(bytes, name) {
+export async function loadPdf(bytes, name, options) {
   const label = String(name || "this file");
   try {
-    return await PDFDocument.load(bytes);
+    return await PDFDocument.load(bytes, options);
   } catch (e) {
     const msg = String((e && e.message) || e);
     if (/encrypt/i.test(msg)) {

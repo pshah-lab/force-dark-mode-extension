@@ -5,9 +5,7 @@ import * as pdfjsLib from "../viewer/vendor/pdf.min.mjs";
 import { TOOLS, getTool, toolFromHash, readValues, runTool, zipEntryNames, acceptsFile, skipMessage, needsInspection } from "./toolRegistry.js";
 import { downloadBlob } from "./download.js";
 import { el, buildOptionFields, rawOptionValues } from "./optionFields.js";
-import { loadPdf } from "../viewer/pdftools/loadPdf.js";
-import { convertPixels } from "../viewer/pdftools/pixelModes.js";
-import { MAX_PNG_PAGES, pngRenderScale } from "../viewer/convert/pdfExport.js";
+import { renderColorCopyPages } from "./colorCopyRender.js";
 import { createZip } from "../viewer/convert/zipWriter.js";
 import { exportFileName, EXPORT_MIME_TYPES } from "../viewer/convert/exportFormats.js";
 
@@ -15,7 +13,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
   "src/viewer/vendor/pdf.worker.min.mjs"
 );
 
-const JPEG_QUALITY = 0.85;
 const ACCEPT = {
   pdf: "application/pdf,.pdf",
   images: "image/jpeg,image/png,.jpg,.jpeg,.png",
@@ -227,67 +224,15 @@ async function showInspection(token) {
 
 // ------------------------------------------------------------------ rendering for the color copy
 
-const yieldToEventLoop = () => new Promise((resolve) => setTimeout(resolve, 0));
-
-function pdfjsMessage(error, name) {
-  if (error && error.name === "PasswordException") {
-    return `${name} is password-protected or encrypted, so it can't be edited. Remove the password first.`;
-  }
-  return `${name} could not be read. It may be corrupt or not a PDF.`;
-}
-
-async function renderPageToJpeg(page, mode) {
-  const base = page.getViewport({ scale: 1 });
-  const viewport = page.getViewport({ scale: pngRenderScale(base.width, base.height) });
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.floor(viewport.width));
-  canvas.height = Math.max(1, Math.floor(viewport.height));
-  const context = canvas.getContext("2d", { alpha: false, willReadFrequently: true });
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  try {
-    await page.render({ canvasContext: context, viewport }).promise;
-    const image = context.getImageData(0, 0, canvas.width, canvas.height);
-    convertPixels(image.data, mode);
-    context.putImageData(image, 0, 0);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", JPEG_QUALITY));
-    if (!blob) throw new Error("JPEG encoding failed");
-    // Scale 1 viewport size is in PDF points and already accounts for page rotation.
-    return { width: base.width, height: base.height, jpegBytes: new Uint8Array(await blob.arrayBuffer()) };
-  } finally {
-    canvas.width = 0;
-    canvas.height = 0;
-  }
-}
-
 // Returns { name, pages, totalPages } or throws a readable Error.
-async function renderForColorCopy(file, mode, label, token) {
-  await loadPdf(file.bytes, file.name); // engine's readable encrypted / corrupt message
-  let pdf;
-  try {
-    pdf = await pdfjsLib.getDocument({ data: file.bytes.slice(), verbosity: pdfjsLib.VerbosityLevel?.ERRORS ?? 0 }).promise;
-  } catch (error) {
-    throw new Error(pdfjsMessage(error, file.name));
-  }
-  try {
-    const total = pdf.numPages;
-    const count = Math.min(total, MAX_PNG_PAGES);
-    const pages = [];
-    for (let n = 1; n <= count; n++) {
-      if (token !== generation) throw new Error("Cancelled.");
-      setProgress(`${label}Page ${n} of ${count}`);
-      const page = await pdf.getPage(n);
-      try {
-        pages.push(await renderPageToJpeg(page, mode));
-      } finally {
-        page.cleanup();
-      }
-      await yieldToEventLoop();
-    }
-    return { name: file.name, pages, totalPages: total };
-  } finally {
-    await pdf.destroy();
-  }
+function renderForColorCopy(file, mode, label, token) {
+  return renderColorCopyPages(pdfjsLib, {
+    name: file.name,
+    bytes: file.bytes,
+    mode,
+    onProgress: (message) => setProgress(`${label}${message}`),
+    isCurrent: () => token === generation,
+  });
 }
 
 // ------------------------------------------------------------------ run and results

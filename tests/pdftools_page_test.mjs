@@ -315,13 +315,16 @@ test("color copy rendering: bundled PDF.js, page by page, capped, yields, JPEG v
   const src = read("src/tools/tools.js");
   assert.ok(src.includes('from "../viewer/vendor/pdf.min.mjs"'));
   assert.ok(/GlobalWorkerOptions\.workerSrc = chrome\.runtime\.getURL\(\s*"src\/viewer\/vendor\/pdf\.worker\.min\.mjs"/.test(src));
-  assert.ok(/pngRenderScale/.test(src), "reuses the 40 MP scale cap");
-  assert.ok(/MAX_PNG_PAGES/.test(src), "caps at 50 pages");
-  assert.ok(/convertPixels\(/.test(src));
-  assert.ok(/getImageData\(/.test(src), "converts canvas ImageData (Uint8ClampedArray)");
-  assert.ok(/toBlob\([^)]*"image\/jpeg"/.test(src));
-  assert.ok(/Page \$\{[^}]+\} of \$\{[^}]+\}/.test(src), "progress line Page N of M");
-  assert.ok(/new Promise\(\(resolve\) => setTimeout\(resolve, 0\)\)/.test(src), "yields a macrotask between pages");
+  // Rendering moved to the shared helper used by tools.js and the viewer; same assertions, re-pointed.
+  assert.ok(src.includes('from "./colorCopyRender.js"'), "tools.js uses the shared colour-copy renderer");
+  const render = read("src/tools/colorCopyRender.js");
+  assert.ok(/pngRenderScale/.test(render), "reuses the 40 MP scale cap");
+  assert.ok(/MAX_PNG_PAGES/.test(render), "caps at 50 pages");
+  assert.ok(/convertPixels\(/.test(render));
+  assert.ok(/getImageData\(/.test(render), "converts canvas ImageData (Uint8ClampedArray)");
+  assert.ok(/toBlob\([^)]*"image\/jpeg"/.test(render));
+  assert.ok(/Page \$\{[^}]+\} of \$\{[^}]+\}/.test(render), "progress line Page N of M");
+  assert.ok(/new Promise\(\(resolve\) => setTimeout\(resolve, 0\)\)/.test(render), "yields a macrotask between pages");
 });
 
 test("popup has a PDF tools button that opens the tools page in a tab", () => {

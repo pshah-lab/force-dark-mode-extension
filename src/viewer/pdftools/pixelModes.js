@@ -1,7 +1,8 @@
 // Pixel recoloring for dark / sepia / gray PDF export. Pure, DOM-free.
 // "dark" and "sepia" port the viewer's per-pixel transforms (viewer.js
-// transformSmartPixel / transformSepiaPixel) with the viewer's default palette,
-// so the export matches what the user sees there.
+// transformSmartPixel / transformSepiaPixel), applying the viewer's default
+// dark / sepia palette to rendered page images. Results may differ slightly from
+// the on-screen Smart Dark view (which uses the user's own colours and settings).
 import {
   applyContrast,
   dimColor,

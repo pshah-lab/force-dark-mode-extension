@@ -86,7 +86,7 @@ No host permissions are declared. The reports and deletion request reach the dev
 - **XSS Defense:** Markdown viewer refactored from `innerHTML` to safe DOM construction (`createElement`, `textContent`, `replaceChildren`).
 - **Iframe Sandboxing:** Fallback iframe hardened to `sandbox="allow-scripts"` with `allow-same-origin` strictly omitted.
 - **Message Validation:** Every listener asserts `sender.id === chrome.runtime.id`.
-- **Supply-Chain Security:** Only trusted, offline vendor files (PDF.js v4.5.136) bundled. Clean `package.json` created with 47 automated security and regression tests passing.
+- **Supply-Chain Security:** Only trusted, offline vendor files (PDF.js v4.5.136) bundled. Clean `package.json` created with 1074 automated security and regression tests passing.
 
 ---
 
@@ -272,7 +272,7 @@ Comprehensive STRIDE and Privacy threat model completed in `docs/security/threat
 - [x] Safe DOM node creation; zero `innerHTML` in extension.
 - [x] Fallback iframe strictly sandboxed without `allow-same-origin`.
 - [x] Prototype pollution protection on storage keys.
-- [x] Automated test suite passing (47/47 tests).
+- [x] Automated test suite passing (1074/1074 tests).
 - [x] Privacy Policy matches code implementation exactly.
 - [x] User data portability (JSON export) and erasure (one-click wipe) functional.
 - [x] Security contact and grievance redressal established (`pshah.lab@gmail.com`).

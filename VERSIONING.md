@@ -5,7 +5,7 @@
 **Target Platform:** Google Chrome Web Store (Manifest V3)  
 **Latest Published Version:** `2.1.0`  
 **Current Active Release:** `2.4.0`  
-**Last Updated:** 2026-10-28  
+**Last Updated:** 2026-11-12  
 
 ---
 

@@ -134,11 +134,51 @@ test("viewer.js runs tools with stale-run guards and hands off multi-file tools"
   assert.ok(/warnings/.test(run), "shows warnings");
   assert.ok(/chrome\.runtime\.getURL\(toolsPagePath\(/.test(js), "More tools links via chrome.runtime.getURL");
   assert.ok(/target\s*=\s*"_blank"|target: "_blank"/.test(js) || /target="_blank"/.test(html), "opens in a new tab");
-  assert.ok(/MAX_PNG_PAGES/.test(js), "50-page cap for image copies");
-  assert.ok(/pngRenderScale/.test(js), "40 MP scale cap");
-  assert.ok(/convertPixels\(/.test(js), "dark / sepia / gray pixel conversion");
-  assert.ok(/toBlob\([^)]*"image\/jpeg"/.test(js), "JPEG pages");
+  // Colour-copy rendering lives in the shared helper used by both pages (re-pointed from viewer.js).
+  const render = read("src/tools/colorCopyRender.js");
+  assert.ok(js.includes('from "../tools/colorCopyRender.js"'), "viewer uses the shared colour-copy renderer");
+  assert.ok(/MAX_PNG_PAGES/.test(render), "50-page cap for image copies");
+  assert.ok(/pngRenderScale/.test(render), "40 MP scale cap");
+  assert.ok(/convertPixels\(/.test(render), "dark / sepia / gray pixel conversion");
+  assert.ok(/toBlob\([^)]*"image\/jpeg"/.test(render), "JPEG pages");
   assert.ok(/tool\.description|\.description\b/.test(run + js), "shows the registry's description copy");
+});
+
+test("colour copy renders from its own PDF.js document, cleans up pages and destroys it", () => {
+  const render = read("src/tools/colorCopyRender.js");
+  assert.ok(/export async function renderColorCopyPages\(pdfjsLib,/.test(render), "takes pdfjsLib");
+  assert.ok(/getDocument\(\{\s*data: bytes\.slice\(\)/.test(render), "own document from a copy of the bytes");
+  assert.ok(/page\.cleanup\(\)/.test(render), "page caches released after each page");
+  assert.ok(/finally\s*\{[^}]*\.destroy\(\)/.test(render), "document destroyed in finally (success and error)");
+  assert.ok(/loadingTask\.destroy\(\)/.test(render), "loading task destroyed when opening fails");
+  assert.ok(/canvas\.width = 0;\s*canvas\.height = 0;/.test(render), "canvas zeroed");
+  assert.ok(/getImageData\(/.test(render));
+  assert.ok(/isCurrent\(\)/.test(render), "stops when the run is stale");
+  assert.ok(!/\.innerHTML\b|insertAdjacentHTML|\bfetch\s*\(/.test(render));
+  // The viewer no longer renders colour copies on its shared, never-destroyed document.
+  assert.ok(!/function renderPdfPageToJpeg/.test(js), "no duplicated render code in viewer.js");
+  const run = js.slice(js.indexOf("async function runViewerTool"), js.indexOf("function showViewerToolOutcome"));
+  assert.ok(/renderColorCopyPages\(pdfjsLib, \{[^}]*bytes: source\.bytes/.test(run), "renders from the held bytes");
+  assert.ok(!/source\.pdf\b/.test(run), "does not use the viewer's open document");
+  const tools = read("src/tools/tools.js");
+  assert.ok(tools.includes('from "./colorCopyRender.js"'), "tools.js uses the shared renderer");
+  assert.ok(!/function renderPageToJpeg/.test(tools), "no duplicated render code in tools.js");
+});
+
+test("a run cancelled by a view or file change says so in the status line", () => {
+  const MSG = "Cancelled because the view changed.";
+  assert.ok(js.includes(MSG), "message text");
+  const set = js.slice(js.indexOf("function setToolsSource"), js.indexOf("function clearToolsSource"));
+  const clear = js.slice(js.indexOf("function clearToolsSource"), js.indexOf("function setToolsTitle"));
+  for (const [label, body] of [["setToolsSource", set], ["clearToolsSource", clear]]) {
+    assert.ok(/if \(toolsRunning\) noteToolsCancelled\(\)/.test(body), `${label} notes a cancelled run`);
+    assert.ok(/showToolsCancelNotice\(\)/.test(body), `${label} keeps the notice visible after resetting`);
+  }
+  const run = js.slice(js.indexOf("async function runViewerTool"), js.indexOf("function showViewerToolOutcome"));
+  assert.ok(/if \(toolsSource !== source\) \{\s*noteToolsCancelled\(\);/.test(run), "a run that outlived its source reports the cancel");
+  const note = js.slice(js.indexOf("function noteToolsCancelled"), js.indexOf("function noteToolsCancelled") + 400);
+  assert.ok(note.includes("setToolsStatus(TOOLS_CANCELLED_MESSAGE"), "written to the aria-live status line");
+  assert.ok(/id="tools-status"[^>]*aria-live="polite"/.test(html));
 });
 
 test("tools.js and the viewer share the option-row helper", () => {
@@ -158,6 +198,7 @@ test("new modules are egress-scanned", () => {
   const privacy = read("tests/privacy_security_test.mjs");
   assert.ok(privacy.includes('"src/tools/viewerToolMenu.js"'));
   assert.ok(privacy.includes('"src/tools/optionFields.js"'));
+  assert.ok(privacy.includes('"src/tools/colorCopyRender.js"'));
 });
 
 test("manifest permissions unchanged", () => {

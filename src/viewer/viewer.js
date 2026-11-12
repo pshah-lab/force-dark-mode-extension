@@ -19,12 +19,11 @@ import {
   plainTextToHtml,
   rtfToPlainText,
 } from "./convert/docExport.js";
-import { hasExtractableText, pdfPagesToText, pdfPagesToMarkdown, parsePageRange, pngRenderScale, MAX_PNG_PAGES } from "./convert/pdfExport.js";
-import { loadPdf } from "./pdftools/loadPdf.js";
-import { convertPixels } from "./pdftools/pixelModes.js";
+import { hasExtractableText, pdfPagesToText, pdfPagesToMarkdown, parsePageRange, pngRenderScale } from "./convert/pdfExport.js";
 import { readValues, runTool } from "../tools/toolRegistry.js";
 import { VIEWER_TOOLS, HANDOFF_TOOLS, toolsPagePath, viewerToolsState } from "../tools/viewerToolMenu.js";
 import { el, buildOptionFields, rawOptionValues } from "../tools/optionFields.js";
+import { renderColorCopyPages } from "../tools/colorCopyRender.js";
 import { sheetToMatrix, toCsv, workbookToJson } from "./convert/csvWriter.js";
 import { createXlsx } from "./convert/xlsxWriter.js";
 import { createZip } from "./convert/zipWriter.js";
@@ -107,6 +106,8 @@ let toolsSource = null;
 let toolsRunning = false;
 // Bumps on file change, tool switch and each run, so stale results and downloads are dropped.
 let toolsGeneration = 0;
+// Set when a running tool was dropped because the open document was re-opened or replaced.
+let toolsCancelNoticePending = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const settings = await getViewerSettings();
@@ -129,7 +130,10 @@ function bindControls() {
   exportFormatInput.onchange = updateExportControls;
   exportButton.onclick = runExport;
 
-  toolsToolInput.onchange = selectViewerTool;
+  toolsToolInput.onchange = () => {
+    toolsCancelNoticePending = false;
+    selectViewerTool();
+  };
   toolsRunButton.onclick = runViewerTool;
   toolsOptions.onsubmit = (event) => event.preventDefault();
   buildMoreToolsList();
@@ -1481,11 +1485,21 @@ async function exportPdfPages(source) {
 // chosen with Open file); nothing is fetched, stored or sent anywhere. Multi-file
 // tools open the Tools page in a new tab.
 
-const TOOL_JPEG_QUALITY = 0.85;
+const TOOLS_CANCELLED_MESSAGE = "Cancelled because the view changed.";
 
 function setToolsStatus(message, tone = "info") {
   toolsStatus.textContent = message;
   toolsStatus.dataset.tone = tone;
+}
+
+// A view setting change re-opens the PDF, which drops a running tool: say so instead of going quiet.
+function noteToolsCancelled() {
+  toolsCancelNoticePending = true;
+  setToolsStatus(TOOLS_CANCELLED_MESSAGE, "error");
+}
+
+function showToolsCancelNotice() {
+  if (toolsCancelNoticePending) setToolsStatus(TOOLS_CANCELLED_MESSAGE, "error");
 }
 
 // The open PDF's file data, held only for PDFs chosen with Open file.
@@ -1504,27 +1518,33 @@ function buildMoreToolsList() {
 }
 
 function setToolsSource(kind, name, data, bytes) {
+  if (toolsRunning) noteToolsCancelled();
   toolsGeneration += 1;
   const hasBytes = bytes instanceof Uint8Array && bytes.length > 0;
   const state = viewerToolsState(kind, hasBytes);
   if (!state.enabled) {
     toolsSource = null;
     showToolsPlaceholder(state);
+    showToolsCancelNotice();
     return;
   }
-  toolsSource = { name, pdf: data, bytes };
+  toolsSource = { name, bytes };
   const options = VIEWER_TOOLS.map((tool) => el("option", { value: tool.id, text: tool.title }));
   toolsToolInput.replaceChildren(el("option", { value: "", text: "Choose a tool" }), ...options);
   toolsToolInput.value = "";
   toolsToolInput.disabled = false;
   setToolsTitle("");
   selectViewerTool();
+  showToolsCancelNotice();
+  toolsCancelNoticePending = false;
 }
 
 function clearToolsSource() {
+  if (toolsRunning) noteToolsCancelled();
   toolsGeneration += 1;
   toolsSource = null;
   showToolsPlaceholder(viewerToolsState(null, false));
+  showToolsCancelNotice();
 }
 
 function setToolsTitle(title) {
@@ -1606,6 +1626,7 @@ async function runViewerTool() {
   const isCurrent = () => token === toolsGeneration && source === toolsSource;
 
   toolsRunning = true;
+  toolsCancelNoticePending = false;
   updateToolsControls();
   toolsInspect.hidden = true;
   toolsMessages.replaceChildren();
@@ -1613,10 +1634,18 @@ async function runViewerTool() {
   let outcome;
   try {
     if (tool.render) {
-      const rendered = await renderViewerColorCopy(source, values.mode, isCurrent);
-      if (!isCurrent()) return;
-      setToolsStatus("Building PDF…");
-      outcome = await runTool(tool, [rendered], values);
+      // Its own PDF.js document from the held bytes, destroyed when done; pages cleaned up as it goes.
+      const rendered = await renderColorCopyPages(pdfjsLib, {
+        name: source.name,
+        bytes: source.bytes,
+        mode: values.mode,
+        onProgress: (message) => setToolsStatus(message),
+        isCurrent,
+      });
+      if (isCurrent()) {
+        setToolsStatus("Building PDF…");
+        outcome = await runTool(tool, [rendered], values);
+      }
     } else {
       outcome = await runTool(tool, [{ name: source.name, bytes: source.bytes }], values, (message) => {
         if (isCurrent()) setToolsStatus(message);
@@ -1632,8 +1661,13 @@ async function runViewerTool() {
     toolsRunning = false;
     updateToolsControls();
   }
-  // A new file, another tool or another run since this one started: drop the result, no download.
-  if (toolsSource !== source || token !== toolsGeneration) return;
+  // The document was re-opened (view setting change) or replaced: drop the result and say so.
+  if (toolsSource !== source) {
+    noteToolsCancelled();
+    return;
+  }
+  // Another tool or another run since this one started: drop the result, no download.
+  if (token !== toolsGeneration) return;
   showViewerToolOutcome(outcome);
 }
 
@@ -1654,46 +1688,4 @@ function showViewerToolOutcome({ outputs, errors }) {
   }
   const what = files.length === 1 ? files[0].name : `${files.length} files`;
   setToolsStatus(warnings.length ? `Downloaded ${what}. See the warnings below.` : `Downloaded ${what}.`);
-}
-
-// Dark / sepia / grayscale image copy: renders pages of the already-open PDF, page by page,
-// capped at MAX_PNG_PAGES pages and the 40 MP pngRenderScale limit, yielding between pages.
-async function renderViewerColorCopy(source, mode, isCurrent) {
-  await loadPdf(source.bytes, source.name); // same readable encrypted / corrupt message as the Tools page
-  const pdf = source.pdf;
-  const total = pdf.numPages;
-  const count = Math.min(total, MAX_PNG_PAGES);
-  const pages = [];
-  for (let n = 1; n <= count; n += 1) {
-    if (!isCurrent()) throw new Error("Cancelled.");
-    setToolsStatus(`Page ${n} of ${count}`);
-    const page = await pdf.getPage(n);
-    pages.push(await renderPdfPageToJpeg(page, mode));
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  }
-  return { name: source.name, pages, totalPages: total };
-}
-
-async function renderPdfPageToJpeg(page, mode) {
-  const base = page.getViewport({ scale: 1 });
-  const viewport = page.getViewport({ scale: pngRenderScale(base.width, base.height) });
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.floor(viewport.width));
-  canvas.height = Math.max(1, Math.floor(viewport.height));
-  const context = canvas.getContext("2d", { alpha: false, willReadFrequently: true });
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  try {
-    await page.render({ canvasContext: context, viewport }).promise;
-    const image = context.getImageData(0, 0, canvas.width, canvas.height);
-    convertPixels(image.data, mode);
-    context.putImageData(image, 0, 0);
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", TOOL_JPEG_QUALITY));
-    if (!blob) throw new Error("JPEG encoding failed");
-    // Scale 1 viewport size is in PDF points and already accounts for page rotation.
-    return { width: base.width, height: base.height, jpegBytes: new Uint8Array(await blob.arrayBuffer()) };
-  } finally {
-    canvas.width = 0;
-    canvas.height = 0;
-  }
 }

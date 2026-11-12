@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Tools</title>
+    <link rel="stylesheet" href="tools.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <div class="title-group">
+        <h1>PDF Tools</h1>
+        <p>Runs offline in this tab. Your files never leave your device and are not saved.</p>
+      </div>
+    </header>
+
+    <main class="layout">
+      <nav class="tool-nav" aria-label="Tools">
+        <ul id="tool-list" class="tool-list"></ul>
+      </nav>
+
+      <section class="workspace" aria-labelledby="tool-title">
+        <h2 id="tool-title">Choose a tool</h2>
+        <p id="tool-description" class="tool-description"></p>
+
+        <div id="drop-zone" class="drop-zone">
+          <p id="drop-hint">Drop files here or</p>
+          <label class="file-button">
+            Choose files
+            <input id="file-input" type="file" />
+          </label>
+        </div>
+
+        <ul id="file-list" class="file-list" aria-label="Chosen files"></ul>
+        <div id="inspect" class="inspect" hidden></div>
+
+        <form id="options" class="options" novalidate></form>
+
+        <div class="run-row">
+          <button id="run" type="button" disabled>Run</button>
+          <button id="clear" type="button">Clear files</button>
+          <span id="progress" class="progress" role="status" aria-live="polite"></span>
+        </div>
+
+        <div id="results" class="results" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <script type="module" src="tools.js"></script>
+  </body>
+</html>

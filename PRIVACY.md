@@ -95,7 +95,7 @@ These preferences are synchronized through your Google Chrome account using Goog
 ---
 
 ## 3. Document & PDF Viewer
-The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF documents **100% locally on your machine** using local browser APIs and bundled client-side rendering engines (PDF.js). Your documents are never uploaded, analyzed, or sent to any remote server, and they are never part of a report or usage statistics.
+The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF documents **100% locally on your machine** using local browser APIs and bundled client-side rendering engines (PDF.js). The PDF tools (merge, split, rotate, watermark and the rest) also run entirely on your device, using the bundled pdf-lib library. Your documents are never uploaded, analyzed, or sent to any remote server, and they are never part of a report or usage statistics.
 
 ---
 

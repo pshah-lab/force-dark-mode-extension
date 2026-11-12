@@ -11,6 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.4.0] - 2026-11-12
+
+### Added
+- **PDF Tools page**, opened from a new "PDF tools" button in the side panel: merge, split, extract pages, remove pages, reorder pages, rotate pages, images to PDF (JPG/PNG), page numbers, text watermark, strip metadata (Info fields and XMP metadata only), and dark, sepia or grayscale image copies of a PDF (image-only: the text is not selectable; at most 50 pages).
+- **Tools control in the document viewer**, beside Export, for the single-file tools on PDFs chosen with Open file. PDFs opened directly from a URL do not get it yet.
+- Everything runs on your device. No new permissions and no network use.
+
+### Notes
+- Encrypted PDFs are not supported (a clear message is shown). There is no OCR and no compression.
+- Watermark and page-number text supports only the standard Latin character set; other characters are replaced with "?" and a warning is shown.
+- Bundles pdf-lib 1.17.1 (MIT), about 0.5 MB added to the package.
+
+---
+
 ## [2.3.0] - 2026-11-08
 
 ### Added

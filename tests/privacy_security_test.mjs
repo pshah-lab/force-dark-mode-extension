@@ -47,6 +47,8 @@ console.log("1. Network Isolation & Egress Verification");
 const EGRESS_SCANNED_FILES = [
   "src/viewer/pdftools/ranges.js",
   "src/viewer/pdftools/result.js",
+  "src/viewer/pdftools/loadPdf.js",
+  "src/viewer/pdftools/pageTools.js",
   "src/background/serviceWorker.js",
   "src/background/siteReportSender.js",
   "src/background/usageMessages.js",

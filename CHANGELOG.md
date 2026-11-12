@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Notes
 - Encrypted PDFs are not supported (a clear message is shown). There is no OCR and no compression.
 - Watermark and page-number text supports only the standard Latin character set; other characters are replaced with "?" and a warning is shown.
-- Bundles pdf-lib 1.17.1 (MIT), about 0.5 MB added to the package.
+- Bundles pdf-lib 1.17.1 (MIT), about 0.5 MB of code, adding about 0.23 MB to the zipped package.
 
 ---
 

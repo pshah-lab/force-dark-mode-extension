@@ -2,7 +2,7 @@
 // Everything runs in this tab. Files are held in memory only (never stored, never sent anywhere)
 // and are released when the page closes or the user clears them.
 import * as pdfjsLib from "../viewer/vendor/pdf.min.mjs";
-import { TOOLS, getTool, toolFromHash, readValues, runTool, zipEntryNames } from "./toolRegistry.js";
+import { TOOLS, getTool, toolFromHash, readValues, runTool, zipEntryNames, acceptsFile, skipMessage, needsInspection } from "./toolRegistry.js";
 import { downloadBlob } from "./download.js";
 import { loadPdf } from "../viewer/pdftools/loadPdf.js";
 import { convertPixels } from "../viewer/pdftools/pixelModes.js";
@@ -101,6 +101,10 @@ function selectTool(tool) {
     renderFiles();
   }
   buildOptions(tool);
+  // Strip metadata shows what it found before running, also for files added under another tool.
+  inspectBox.hidden = true;
+  inspectBox.replaceChildren();
+  if (needsInspection(tool, files)) showInspection(generation);
 }
 
 function buildOptions(tool) {
@@ -149,7 +153,12 @@ async function addFiles(fileListLike) {
   setProgress("Reading files…");
   const added = [];
   const failed = [];
+  const skipped = [];
   for (const file of incoming) {
+    if (!acceptsFile(currentTool, file)) {
+      skipped.push(skipMessage(currentTool, file && file.name));
+      continue;
+    }
     try {
       added.push({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()), size: file.size });
     } catch {
@@ -160,8 +169,10 @@ async function addFiles(fileListLike) {
   files = files.concat(added);
   clearResults();
   renderFiles();
-  setProgress(failed.length ? `Could not read: ${failed.join(", ")}` : "", failed.length ? "error" : "info");
-  if (currentTool.inspect) showInspection(token);
+  const problems = [...skipped];
+  if (failed.length) problems.push(`Could not read: ${failed.join(", ")}`);
+  setProgress(problems.join(". "), problems.length ? "error" : "info");
+  if (needsInspection(currentTool, files)) showInspection(token);
 }
 
 function moveFile(index, delta) {

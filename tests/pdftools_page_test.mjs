@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { PDFDocument, StandardFonts } from "../src/viewer/vendor/pdf-lib.min.mjs";
-import { TOOLS, getTool, toolFromHash, readValues, runTool, zipEntryNames } from "../src/tools/toolRegistry.js";
+import { TOOLS, getTool, toolFromHash, readValues, runTool, zipEntryNames, acceptsFile, skipMessage, needsInspection } from "../src/tools/toolRegistry.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => fs.readFileSync(path.join(rootDir, rel), "utf8");
@@ -219,6 +219,58 @@ test("color copy run takes pre-rendered pages, names the file after the source, 
 
 test("zipEntryNames makes download names unique for the zip", () => {
   assert.deepStrictEqual(zipEntryNames(["a.pdf", "a.pdf", "b.pdf", "A.pdf"]), ["a.pdf", "a-2.pdf", "b.pdf", "A-3.pdf"]);
+});
+
+// ---------------------------------------------------------------- file type filtering (fix round 1)
+test("acceptsFile filters by tool.accepts using extension or mime, case-insensitive", () => {
+  const pdf = getTool("merge");
+  const img = getTool("images-to-pdf");
+  assert.strictEqual(acceptsFile(pdf, { name: "REPORT.PDF", type: "" }), true);
+  assert.strictEqual(acceptsFile(pdf, { name: "download", type: "application/pdf" }), true);
+  assert.strictEqual(acceptsFile(pdf, { name: "x", type: "Application/PDF" }), true);
+  assert.strictEqual(acceptsFile(pdf, { name: "photo.png", type: "image/png" }), false);
+  assert.strictEqual(acceptsFile(pdf, { name: "a.pdf.exe", type: "" }), false);
+  assert.strictEqual(acceptsFile(img, { name: "doc.pdf", type: "application/pdf" }), false);
+  assert.strictEqual(acceptsFile(img, { name: "a.JPEG", type: "" }), true);
+  assert.strictEqual(acceptsFile(img, { name: "a.jpg", type: "" }), true);
+  assert.strictEqual(acceptsFile(img, { name: "b.Png", type: "" }), true);
+  assert.strictEqual(acceptsFile(img, { name: "noext", type: "image/jpeg" }), true);
+  assert.strictEqual(acceptsFile(img, { name: "c.gif", type: "image/gif" }), false);
+  // Folders: no type, no extension; must not throw.
+  assert.strictEqual(acceptsFile(pdf, { name: "", type: "" }), false);
+  assert.strictEqual(acceptsFile(img, { name: "My Folder", type: "" }), false);
+  assert.strictEqual(acceptsFile(pdf, {}), false);
+  assert.strictEqual(acceptsFile(pdf, null), false);
+});
+
+test("skipMessage names the file safely and says why", () => {
+  assert.strictEqual(skipMessage(getTool("merge"), "photo.png"), "Skipped photo.png: not a PDF");
+  assert.strictEqual(skipMessage(getTool("images-to-pdf"), "doc.pdf"), "Skipped doc.pdf: not a JPG or PNG image");
+  const weird = skipMessage(getTool("merge"), "evil‮gnp.pdf\u0000\n<b>x</b>.png");
+  assert.ok(!/[\u0000-\u001f‪-‮⁦-⁩]/.test(weird), "control and bidi characters removed");
+  assert.ok(weird.includes("<b>x</b>"), "text is shown literally (textContent), not stripped as HTML");
+  const long = skipMessage(getTool("merge"), `${"a".repeat(300)}.png`);
+  assert.ok(long.length < 140, "long names are truncated");
+  assert.ok(long.includes("…"));
+  assert.strictEqual(skipMessage(getTool("merge"), ""), "Skipped an unnamed item: not a PDF");
+});
+
+test("needsInspection: only for a tool with inspect and loaded files", () => {
+  assert.strictEqual(needsInspection(getTool("strip-metadata"), [{ name: "a.pdf" }]), true);
+  assert.strictEqual(needsInspection(getTool("strip-metadata"), []), false);
+  assert.strictEqual(needsInspection(getTool("merge"), [{ name: "a.pdf" }]), false);
+  assert.strictEqual(needsInspection(null, [{ name: "a.pdf" }]), false);
+});
+
+test("tools.js filters in addFiles and inspects on tool switch", () => {
+  const src = read("src/tools/tools.js");
+  const add = src.slice(src.indexOf("async function addFiles"), src.indexOf("function moveFile"));
+  assert.ok(/acceptsFile\(currentTool, file\)/.test(add), "addFiles filters by tool");
+  assert.ok(/skipMessage\(currentTool, /.test(add), "addFiles reports skipped files");
+  const select = src.slice(src.indexOf("function selectTool"), src.indexOf("function buildOptions"));
+  assert.ok(/needsInspection\(tool, files\)/.test(select), "selectTool checks for inspection");
+  assert.ok(/showInspection\(/.test(select), "selectTool runs the inspection");
+  assert.ok(/inspectBox\.hidden = true/.test(select), "selectTool clears the box for tools without inspect");
 });
 
 // ---------------------------------------------------------------- source-level wiring

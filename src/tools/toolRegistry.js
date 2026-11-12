@@ -296,6 +296,37 @@ export async function runTool(tool, files, values, onProgress = () => {}) {
   return { outputs, errors };
 }
 
+const ACCEPTED = {
+  pdf: { exts: [".pdf"], mimes: ["application/pdf"], reason: "not a PDF" },
+  images: { exts: [".jpg", ".jpeg", ".png"], mimes: ["image/jpeg", "image/png"], reason: "not a JPG or PNG image" },
+};
+
+// Does this dropped / chosen file match what the tool takes? {name, type} like a DOM File. Never throws.
+export function acceptsFile(tool, file) {
+  const rule = tool && ACCEPTED[tool.accepts];
+  if (!rule || !file) return false;
+  const name = String(file.name == null ? "" : file.name).toLowerCase();
+  const type = String(file.type == null ? "" : file.type).toLowerCase();
+  return rule.mimes.includes(type) || rule.exts.some((ext) => name.endsWith(ext) && name.length > ext.length);
+}
+
+const MAX_SHOWN_NAME = 80;
+
+// Status text for a rejected file. Control / bidi characters removed and long names truncated;
+// the caller shows it with textContent.
+export function skipMessage(tool, name) {
+  const rule = (tool && ACCEPTED[tool.accepts]) || ACCEPTED.pdf;
+  let shown = String(name == null ? "" : name).replace(/[\u0000-\u001f\u007f‎‏‪-‮⁦-⁩]/g, "").trim();
+  const chars = Array.from(shown);
+  if (chars.length > MAX_SHOWN_NAME) shown = `${chars.slice(0, MAX_SHOWN_NAME).join("")}…`;
+  return `Skipped ${shown || "an unnamed item"}: ${rule.reason}`;
+}
+
+// Whether the selected tool should show what it found in the loaded files (strip metadata).
+export function needsInspection(tool, files) {
+  return !!(tool && typeof tool.inspect === "function" && Array.isArray(files) && files.length > 0);
+}
+
 // Unique names for a zip: "a.pdf", "a.pdf" -> "a.pdf", "a-2.pdf" (case-insensitive, like file systems).
 export function zipEntryNames(names) {
   const used = new Set();

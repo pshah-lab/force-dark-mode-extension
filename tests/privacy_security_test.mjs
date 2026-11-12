@@ -49,6 +49,7 @@ const EGRESS_SCANNED_FILES = [
   "src/viewer/pdftools/result.js",
   "src/viewer/pdftools/loadPdf.js",
   "src/viewer/pdftools/pageTools.js",
+  "src/viewer/pdftools/imagesToPdf.js",
   "src/background/serviceWorker.js",
   "src/background/siteReportSender.js",
   "src/background/usageMessages.js",

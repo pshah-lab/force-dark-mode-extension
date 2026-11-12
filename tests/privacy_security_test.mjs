@@ -45,6 +45,8 @@ console.log("1. Network Isolation & Egress Verification");
 
 // Single source of truth for the egress scan; the exhaustive src/ walk in section 8 reuses it.
 const EGRESS_SCANNED_FILES = [
+  "src/viewer/pdftools/ranges.js",
+  "src/viewer/pdftools/result.js",
   "src/background/serviceWorker.js",
   "src/background/siteReportSender.js",
   "src/background/usageMessages.js",

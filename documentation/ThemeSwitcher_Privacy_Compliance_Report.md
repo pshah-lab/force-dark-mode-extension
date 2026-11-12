@@ -86,7 +86,7 @@ No host permissions are declared. The reports and deletion request reach the dev
 - **XSS Defense:** Markdown viewer refactored from `innerHTML` to safe DOM construction (`createElement`, `textContent`, `replaceChildren`).
 - **Iframe Sandboxing:** Fallback iframe hardened to `sandbox="allow-scripts"` with `allow-same-origin` strictly omitted.
 - **Message Validation:** Every listener asserts `sender.id === chrome.runtime.id`.
-- **Supply-Chain Security:** Only trusted, offline vendor files (PDF.js v4.5.136) bundled. Clean `package.json` created with over 1,000 automated security and regression tests passing.
+- **Supply-Chain Security:** Only trusted, offline vendor files (PDF.js v4.5.136, pdf-lib v1.17.1) bundled. Clean `package.json` created with over 1,000 automated security and regression tests passing.
 
 ---
 

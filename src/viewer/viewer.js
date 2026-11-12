@@ -19,7 +19,12 @@ import {
   plainTextToHtml,
   rtfToPlainText,
 } from "./convert/docExport.js";
-import { hasExtractableText, pdfPagesToText, pdfPagesToMarkdown, parsePageRange, pngRenderScale } from "./convert/pdfExport.js";
+import { hasExtractableText, pdfPagesToText, pdfPagesToMarkdown, parsePageRange, pngRenderScale, MAX_PNG_PAGES } from "./convert/pdfExport.js";
+import { loadPdf } from "./pdftools/loadPdf.js";
+import { convertPixels } from "./pdftools/pixelModes.js";
+import { readValues, runTool } from "../tools/toolRegistry.js";
+import { VIEWER_TOOLS, HANDOFF_TOOLS, toolsPagePath, viewerToolsState } from "../tools/viewerToolMenu.js";
+import { el, buildOptionFields, rawOptionValues } from "../tools/optionFields.js";
 import { sheetToMatrix, toCsv, workbookToJson } from "./convert/csvWriter.js";
 import { createXlsx } from "./convert/xlsxWriter.js";
 import { createZip } from "./convert/zipWriter.js";
@@ -74,6 +79,15 @@ const exportFormatInput = document.getElementById("export-format");
 const exportPagesInput = document.getElementById("export-pages");
 const exportButton = document.getElementById("export-button");
 const exportStatus = document.getElementById("export-status");
+const toolsToolInput = document.getElementById("tools-tool");
+const toolsRunButton = document.getElementById("tools-run");
+const toolsStatus = document.getElementById("tools-status");
+const toolsMoreList = document.getElementById("tools-more-list");
+const toolsPanel = document.getElementById("tools-panel");
+const toolsDescription = document.getElementById("tools-description");
+const toolsOptions = document.getElementById("tools-options");
+const toolsInspect = document.getElementById("tools-inspect");
+const toolsMessages = document.getElementById("tools-messages");
 
 let currentObjectUrl = "";
 let currentPdfSource = null;
@@ -88,6 +102,11 @@ let currentSpreadsheet = null;
 // What the Export control converts: { kind, name, data } for the open document, or null.
 let currentExport = null;
 let exportInProgress = false;
+// What the Tools control works on: { name, pdf, bytes } for the open PDF, or null.
+let toolsSource = null;
+let toolsRunning = false;
+// Bumps on file change, tool switch and each run, so stale results and downloads are dropped.
+let toolsGeneration = 0;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const settings = await getViewerSettings();
@@ -109,6 +128,11 @@ function bindControls() {
 
   exportFormatInput.onchange = updateExportControls;
   exportButton.onclick = runExport;
+
+  toolsToolInput.onchange = selectViewerTool;
+  toolsRunButton.onclick = runViewerTool;
+  toolsOptions.onsubmit = (event) => event.preventDefault();
+  buildMoreToolsList();
 
   fileInput.onchange = () => {
     const [file] = fileInput.files || [];
@@ -1258,6 +1282,7 @@ function setExportSource(kind, name, data) {
   exportFormatInput.disabled = false;
   setExportStatus("");
   updateExportControls();
+  setToolsSource(kind, name, data, kind === "pdf" ? currentPdfBytes() : null);
 }
 
 function clearExportSource() {
@@ -1270,6 +1295,7 @@ function clearExportSource() {
   exportPagesInput.hidden = true;
   exportButton.disabled = true;
   setExportStatus("");
+  clearToolsSource();
 }
 
 function updateExportControls() {
@@ -1447,4 +1473,227 @@ async function exportPdfPages(source) {
   }));
   downloadBlob(new Blob([createZip(entries)], { type: EXPORT_MIME_TYPES.zip }), exportFileName(source.name, "zip", "-pages"));
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// PDF tools: runs a single-file tool from the Tools page registry on the open PDF
+// and downloads the result. Uses only the bytes the viewer already holds (PDFs
+// chosen with Open file); nothing is fetched, stored or sent anywhere. Multi-file
+// tools open the Tools page in a new tab.
+
+const TOOL_JPEG_QUALITY = 0.85;
+
+function setToolsStatus(message, tone = "info") {
+  toolsStatus.textContent = message;
+  toolsStatus.dataset.tone = tone;
+}
+
+// The open PDF's file data, held only for PDFs chosen with Open file.
+function currentPdfBytes() {
+  return currentPdfSource instanceof Uint8Array ? currentPdfSource : null;
+}
+
+function buildMoreToolsList() {
+  const items = HANDOFF_TOOLS.map((tool) => {
+    const link = el("a", { href: chrome.runtime.getURL(toolsPagePath(tool.id)), text: tool.title });
+    link.target = "_blank";
+    link.rel = "noopener";
+    return el("li", {}, link);
+  });
+  toolsMoreList.replaceChildren(...items);
+}
+
+function setToolsSource(kind, name, data, bytes) {
+  toolsGeneration += 1;
+  const hasBytes = bytes instanceof Uint8Array && bytes.length > 0;
+  const state = viewerToolsState(kind, hasBytes);
+  if (!state.enabled) {
+    toolsSource = null;
+    showToolsPlaceholder(state);
+    return;
+  }
+  toolsSource = { name, pdf: data, bytes };
+  const options = VIEWER_TOOLS.map((tool) => el("option", { value: tool.id, text: tool.title }));
+  toolsToolInput.replaceChildren(el("option", { value: "", text: "Choose a tool" }), ...options);
+  toolsToolInput.value = "";
+  toolsToolInput.disabled = false;
+  setToolsTitle("");
+  selectViewerTool();
+}
+
+function clearToolsSource() {
+  toolsGeneration += 1;
+  toolsSource = null;
+  showToolsPlaceholder(viewerToolsState(null, false));
+}
+
+function setToolsTitle(title) {
+  // A disabled select shows no tooltip in some browsers, so the label carries it too.
+  toolsToolInput.title = title;
+  if (toolsToolInput.parentElement) toolsToolInput.parentElement.title = title;
+}
+
+function showToolsPlaceholder(state) {
+  toolsToolInput.replaceChildren(el("option", { value: "", text: state.placeholder }));
+  toolsToolInput.disabled = true;
+  setToolsTitle(state.title);
+  resetToolsPanel();
+  toolsPanel.hidden = true;
+  setToolsStatus("");
+  updateToolsControls();
+}
+
+function resetToolsPanel() {
+  toolsDescription.textContent = "";
+  toolsOptions.replaceChildren();
+  toolsInspect.hidden = true;
+  toolsInspect.replaceChildren();
+  toolsMessages.replaceChildren();
+}
+
+function selectedViewerTool() {
+  return VIEWER_TOOLS.find((tool) => tool.id === toolsToolInput.value) || null;
+}
+
+function updateToolsControls() {
+  toolsRunButton.disabled = !toolsSource || toolsRunning || !selectedViewerTool();
+}
+
+function selectViewerTool() {
+  toolsGeneration += 1;
+  const tool = selectedViewerTool();
+  resetToolsPanel();
+  setToolsStatus("");
+  if (!tool || !toolsSource) {
+    toolsPanel.hidden = true;
+    updateToolsControls();
+    return;
+  }
+  // The registry's description is the Tools page copy (image-only notice, 50-page cap, Info/XMP only).
+  toolsDescription.textContent = tool.description;
+  toolsOptions.replaceChildren(...buildOptionFields(tool, "viewer-tool-opt-"));
+  toolsPanel.hidden = false;
+  updateToolsControls();
+  if (typeof tool.inspect === "function") showToolsInspection(tool, toolsSource, toolsGeneration);
+}
+
+// Strip metadata: show what was found before running.
+async function showToolsInspection(tool, source, token) {
+  let blocks;
+  try {
+    const found = await tool.inspect(source.bytes);
+    if (found.length === 0) {
+      blocks = [el("p", { text: "No Info fields or XMP metadata found." })];
+    } else {
+      const list = el("dl");
+      for (const entry of found) list.append(el("dt", { text: entry.field }), el("dd", { text: entry.value }));
+      blocks = [el("h3", { text: `Found in ${source.name}` }), list];
+    }
+  } catch (error) {
+    blocks = [el("p", { className: "error", text: String((error && error.message) || error).replace(/^this file/, source.name) })];
+  }
+  if (token !== toolsGeneration || source !== toolsSource) return;
+  toolsInspect.replaceChildren(...blocks);
+  toolsInspect.hidden = false;
+}
+
+async function runViewerTool() {
+  const source = toolsSource;
+  const tool = selectedViewerTool();
+  if (!source || !tool || toolsRunning) return;
+  const values = readValues(tool, rawOptionValues(tool, toolsOptions));
+  const token = ++toolsGeneration;
+  const isCurrent = () => token === toolsGeneration && source === toolsSource;
+
+  toolsRunning = true;
+  updateToolsControls();
+  toolsInspect.hidden = true;
+  toolsMessages.replaceChildren();
+  setToolsStatus("Working…");
+  let outcome;
+  try {
+    if (tool.render) {
+      const rendered = await renderViewerColorCopy(source, values.mode, isCurrent);
+      if (!isCurrent()) return;
+      setToolsStatus("Building PDF…");
+      outcome = await runTool(tool, [rendered], values);
+    } else {
+      outcome = await runTool(tool, [{ name: source.name, bytes: source.bytes }], values, (message) => {
+        if (isCurrent()) setToolsStatus(message);
+      });
+    }
+  } catch (error) {
+    console.warn("[ForceDark] PDF tool failed:", error);
+    const message = isOutOfMemoryError(error)
+      ? "Not enough memory to run this tool on this file."
+      : String((error && error.message) || error);
+    outcome = { outputs: [], errors: [{ name: source.name, message }] };
+  } finally {
+    toolsRunning = false;
+    updateToolsControls();
+  }
+  // A new file, another tool or another run since this one started: drop the result, no download.
+  if (toolsSource !== source || token !== toolsGeneration) return;
+  showViewerToolOutcome(outcome);
+}
+
+function showViewerToolOutcome({ outputs, errors }) {
+  const messages = [];
+  const warnings = outputs.flatMap((output) => output.warnings || []);
+  for (const warning of warnings) messages.push(el("p", { className: "warning", text: `Warning: ${warning}` }));
+  for (const error of errors) messages.push(el("p", { className: "error", text: error.message }));
+  toolsMessages.replaceChildren(...messages);
+
+  const files = outputs.flatMap((output) => output.files);
+  if (files.length === 0) {
+    setToolsStatus("Nothing was produced. See the message below.", "error");
+    return;
+  }
+  for (const file of files) {
+    downloadBlob(new Blob([file.bytes], { type: file.mime || "application/pdf" }), file.name);
+  }
+  const what = files.length === 1 ? files[0].name : `${files.length} files`;
+  setToolsStatus(warnings.length ? `Downloaded ${what}. See the warnings below.` : `Downloaded ${what}.`);
+}
+
+// Dark / sepia / grayscale image copy: renders pages of the already-open PDF, page by page,
+// capped at MAX_PNG_PAGES pages and the 40 MP pngRenderScale limit, yielding between pages.
+async function renderViewerColorCopy(source, mode, isCurrent) {
+  await loadPdf(source.bytes, source.name); // same readable encrypted / corrupt message as the Tools page
+  const pdf = source.pdf;
+  const total = pdf.numPages;
+  const count = Math.min(total, MAX_PNG_PAGES);
+  const pages = [];
+  for (let n = 1; n <= count; n += 1) {
+    if (!isCurrent()) throw new Error("Cancelled.");
+    setToolsStatus(`Page ${n} of ${count}`);
+    const page = await pdf.getPage(n);
+    pages.push(await renderPdfPageToJpeg(page, mode));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  return { name: source.name, pages, totalPages: total };
+}
+
+async function renderPdfPageToJpeg(page, mode) {
+  const base = page.getViewport({ scale: 1 });
+  const viewport = page.getViewport({ scale: pngRenderScale(base.width, base.height) });
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.floor(viewport.width));
+  canvas.height = Math.max(1, Math.floor(viewport.height));
+  const context = canvas.getContext("2d", { alpha: false, willReadFrequently: true });
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  try {
+    await page.render({ canvasContext: context, viewport }).promise;
+    const image = context.getImageData(0, 0, canvas.width, canvas.height);
+    convertPixels(image.data, mode);
+    context.putImageData(image, 0, 0);
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", TOOL_JPEG_QUALITY));
+    if (!blob) throw new Error("JPEG encoding failed");
+    // Scale 1 viewport size is in PDF points and already accounts for page rotation.
+    return { width: base.width, height: base.height, jpegBytes: new Uint8Array(await blob.arrayBuffer()) };
+  } finally {
+    canvas.width = 0;
+    canvas.height = 0;
+  }
 }

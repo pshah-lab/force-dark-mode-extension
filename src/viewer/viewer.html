@@ -71,8 +71,30 @@
           <button id="export-button" type="button" disabled>Download</button>
           <span id="export-status" class="export-status" role="status" aria-live="polite"></span>
         </div>
+
+        <div class="tools-group" role="group" aria-label="PDF tools">
+          <label>
+            Tools
+            <select id="tools-tool" disabled>
+              <option value="">Open a file first</option>
+            </select>
+          </label>
+          <button id="tools-run" type="button" disabled>Download</button>
+          <details id="tools-more" class="tools-more">
+            <summary>More tools…</summary>
+            <ul id="tools-more-list" class="tools-more-list"></ul>
+          </details>
+          <span id="tools-status" class="export-status" role="status" aria-live="polite"></span>
+        </div>
       </div>
     </header>
+
+    <section id="tools-panel" class="tools-panel" aria-label="PDF tool options" hidden>
+      <p id="tools-description" class="tools-description"></p>
+      <form id="tools-options" class="tools-options" novalidate></form>
+      <div id="tools-inspect" class="tools-inspect" hidden></div>
+      <div id="tools-messages" class="tools-messages"></div>
+    </section>
 
     <main id="viewer" class="viewer" data-mode="smart">
       <section id="empty-state" class="empty-state">

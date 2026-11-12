@@ -57,6 +57,8 @@ const EGRESS_SCANNED_FILES = [
   "src/tools/toolRegistry.js",
   "src/tools/tools.js",
   "src/tools/download.js",
+  "src/tools/viewerToolMenu.js",
+  "src/tools/optionFields.js",
   "src/background/serviceWorker.js",
   "src/background/siteReportSender.js",
   "src/background/usageMessages.js",

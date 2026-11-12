@@ -1,7 +1,7 @@
 // tests/pdftools_metadata_test.mjs - strip metadata (Info dict, XMP) and inspect it
 import assert from "assert";
 import zlib from "zlib";
-import { PDFDocument, PDFName, PDFString } from "../src/viewer/vendor/pdf-lib.min.mjs";
+import { PDFDocument, PDFName, PDFString, PDFRef, PDFDict, PDFArray, PDFStream } from "../src/viewer/vendor/pdf-lib.min.mjs";
 import { stripMetadata, inspectMetadata } from "../src/viewer/pdftools/stripMetadata.js";
 import { PDF_MIME } from "../src/viewer/pdftools/result.js";
 
@@ -88,6 +88,62 @@ for (const objectStreams of [false, true]) {
   const r = await stripMetadata({ name: "a.pdf", bytes });
   assert.deepStrictEqual(await inspectMetadata(r.files[0].bytes), []);
   assert.ok(!has(r.files[0].bytes, "pdf-lib"));
+}
+
+// Outline items carry /Title: they must survive intact (no dangling refs).
+async function danglingRefs(bytes) {
+  const d = await PDFDocument.load(bytes, { updateMetadata: false });
+  const bad = [];
+  const walk = (o) => {
+    if (o instanceof PDFRef) { if (!d.context.lookup(o)) bad.push(String(o)); return; }
+    const dict = o instanceof PDFDict ? o : o instanceof PDFStream ? o.dict : null;
+    if (dict) for (const [, v] of dict.entries()) walk(v);
+    else if (o instanceof PDFArray) for (let i = 0; i < o.size(); i++) walk(o.get(i));
+  };
+  for (const [, o] of d.context.enumerateIndirectObjects()) walk(o);
+  walk(d.catalog);
+  return bad;
+}
+{
+  const d = await PDFDocument.create({ updateMetadata: false });
+  const page = d.addPage([300, 400]);
+  const ctx = d.context;
+  const outlines = ctx.nextRef(), i1 = ctx.nextRef(), i2 = ctx.nextRef(), i3 = ctx.nextRef();
+  const dest = (r) => ctx.obj([page.ref, "Fit"].map((x) => (typeof x === "string" ? PDFName.of(x) : x)));
+  ctx.assign(i1, ctx.obj({ Title: PDFString.of("Chapter One"), Parent: outlines, Next: i2, First: i3, Last: i3, Dest: dest() }));
+  ctx.assign(i3, ctx.obj({ Title: PDFString.of("Section 1.1"), Parent: i1, Dest: dest() }));
+  ctx.assign(i2, ctx.obj({ Title: PDFString.of("Chapter Two"), Parent: outlines, Prev: i1, Dest: dest() }));
+  ctx.assign(outlines, ctx.obj({ Type: "Outlines", First: i1, Last: i2, Count: 3 }));
+  d.catalog.set(PDFName.of("Outlines"), outlines);
+  d.setAuthor("Jane Q Secret");
+  // Info dict also referenced from elsewhere (unusual): must not dangle.
+  d.catalog.set(PDFName.of("OddInfoPointer"), ctx.trailerInfo.Info);
+  for (const useObjectStreams of [false, true]) {
+    const bytes = await d.save({ useObjectStreams });
+    const out = (await stripMetadata({ name: "o.pdf", bytes })).files[0].bytes;
+    assert.deepStrictEqual(await danglingRefs(out), [], "no dangling refs");
+    const re = await PDFDocument.load(out, { updateMetadata: false });
+    const ol = re.context.lookup(re.catalog.get(PDFName.of("Outlines")));
+    const first = re.context.lookup(ol.get(PDFName.of("First")));
+    const second = re.context.lookup(first.get(PDFName.of("Next")));
+    const nested = re.context.lookup(first.get(PDFName.of("First")));
+    assert.strictEqual(first.get(PDFName.of("Title")).decodeText(), "Chapter One");
+    assert.strictEqual(second.get(PDFName.of("Title")).decodeText(), "Chapter Two");
+    assert.strictEqual(nested.get(PDFName.of("Title")).decodeText(), "Section 1.1");
+    assert.ok(re.context.lookup(second.get(PDFName.of("Parent"))) && re.context.lookup(nested.get(PDFName.of("Parent"))));
+    assert.ok(!has(out, "Jane Q Secret"));
+  }
+}
+
+// Genuinely orphaned stale Info dict (e.g. from an old revision) is still removed.
+{
+  const d = await PDFDocument.create({ updateMetadata: false });
+  d.addPage([100, 100]);
+  d.context.register(d.context.obj({ Author: PDFString.of("StaleAuthorSecret"), Producer: PDFString.of("StaleProducer") }));
+  const bytes = await d.save();
+  assert.ok(has(bytes, "StaleAuthorSecret"));
+  const out = (await stripMetadata({ name: "s.pdf", bytes })).files[0].bytes;
+  assert.ok(!has(out, "StaleAuthorSecret") && !has(out, "StaleProducer"));
 }
 
 await assert.rejects(() => stripMetadata({ name: "bad.pdf", bytes: new Uint8Array([1, 2, 3]) }), (e) => e instanceof Error && /bad\.pdf/.test(e.message));

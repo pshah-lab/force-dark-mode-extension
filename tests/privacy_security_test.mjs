@@ -1030,6 +1030,7 @@ test("PRIVACY.md describes the 2.1.0 opt-in usage report truthfully and lists ex
   assert.ok(/delete/i.test(section) && /13 months/.test(section), "deletion and the 13-month purge");
   assert.ok(/does not store IP addresses/.test(section) && /request logs may transiently contain/.test(section) && /User-Agent/.test(section) && /Accept-Language/.test(section));
   assert.ok(/updated|sent again/i.test(section), "must say the day's report may be sent again");
+  assert.ok(/each day you use dark mode or the document viewer/.test(section), "must say a viewer-only day also sends the report");
   assert.ok(/hash/i.test(section) && /never leaves your device/i.test(section), "must describe the local site fingerprints");
   const fields = privacyDoc.match(/<!-- usage-fields:start -->([\s\S]*?)<!-- usage-fields:end -->/);
   assert.ok(fields, "PRIVACY.md must delimit the 2.1.0 usage fields with usage-fields markers");
@@ -1041,11 +1042,15 @@ test("the web privacy page and the store text cover the 2.1.0 usage report and d
   const html = fs.readFileSync(path.join(rootDir, "docs/privacy.html"), "utf8");
   assert.ok(/1\.2 Optional Usage Report \(Version 2\.1\.0 and Later\)/.test(html), "docs/privacy.html needs the 2.1.0 usage report section");
   assert.ok(/off by default/i.test(html) && /<code>sites<\/code>/.test(html) && /<code>engines\.auto<\/code>/.test(html));
+  assert.ok(/each day you use dark mode or the document viewer/.test(html), "docs/privacy.html must say a viewer-only day also sends the report");
+  assert.ok(/which viewer and export features are used \(counts only\)/.test(html), "docs/privacy.html purpose must include viewer and export feature counts");
   const cws = fs.readFileSync(path.join(rootDir, "CHROMEWEBSTORE.md"), "utf8");
   const row = (name) => cws.split("\n").find((l) => l.startsWith(`| ${name}`)) || "";
   assert.ok(/\|\s*Yes/.test(row("User activity")), "User activity must be declared in CHROMEWEBSTORE.md");
   assert.ok(/\|\s*Yes/.test(row("Web history")), "Web history must be declared in CHROMEWEBSTORE.md");
   assert.ok(/usage report/i.test(cws) && /off unless you turn it on/i.test(cws), "the store text must describe the opt-in usage report");
+  assert.ok(!/day you use dark mode(?! or the document viewer)|day the user uses dark mode(?! or the document viewer)/.test(cws), "the store text must say a viewer-only day also sends the report");
+  assert.ok(/which viewer and export features are used \(counts only\)/.test(row("User activity")), "User activity purpose must include viewer and export feature counts");
 });
 
 test("no public page or doc still says 2.1.0 has no usage report or sends only a broken-site report", () => {
@@ -1222,6 +1227,12 @@ test(".gitignore keeps backend docs tracked but ignores the backend node_modules
   assert.ok(gi.includes("!/backend/**/*.md"));
   assert.ok(gi.includes("backend/telemetry/node_modules/"));
   assert.ok(gi.indexOf("backend/telemetry/node_modules/") > gi.indexOf("!/backend/**/*.md"), "the node_modules rule must come after the .md negation");
+});
+
+test("the usage report purpose names viewer and export feature counts in the data inventory", () => {
+  const inv = fs.readFileSync(path.join(rootDir, "documentation/privacy/data-inventory.md"), "utf8");
+  const di10 = inv.split("\n").find((l) => l.startsWith("| **DI-10**")) || "";
+  assert.ok(/which viewer and export features are used \(counts only\)/.test(di10), "DI-10 purpose must include viewer and export feature counts");
 });
 
 // Final summary

@@ -61,6 +61,7 @@ test("the copy is plain: never anonymous, says off by default, may be updated, n
     assert.ok(!/anonym/i.test(text), `${key}: must not say anonymous`);
     assert.ok(!/telemetry|tracking/i.test(text), `${key}: no jargon`);
     assert.ok(/updated/i.test(card.intro), `${key}: must say the day's report may be updated`);
+    assert.ok(/each day you use dark mode or the document viewer/.test(card.intro), `${key}: must say a viewer-only day also sends the report`);
     assert.ok(/never receive the sites you visit, page content, or anything you type/i.test(card.note), `${key}: note`);
     assert.ok(/Options/.test(card.note) && /deletes what we hold for your ID/i.test(card.note), `${key}: how to turn off`);
   }
@@ -96,6 +97,7 @@ test("Options has an off-by-default toggle that sends USAGE_CONSENT and lists th
   const section = html.slice(html.indexOf('id="usage-card-options"'), html.indexOf("Privacy & Data Management"));
   for (const [re, label] of TOPICS) assert.ok(re.test(section), `options section must state ${label}`);
   assert.ok(!/anonym/i.test(section));
+  assert.ok(/each day you use dark mode or the document viewer/.test(section), "options must say a viewer-only day also sends the report");
   assert.ok(html.includes(`<li>${FEATURE_ITEM}</li>`), "options lists the feature line verbatim");
   for (const t of ["A random ID for this install", "The date and the extension version.", "Which engines you used that day", "How many sites dark mode was applied on that day"]) assert.ok(section.includes(t), t);
   const js = read("src/options/options.js");

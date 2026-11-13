@@ -74,6 +74,7 @@ as $$
        select e.key as k, sum((e.value #>> '{}')::int)::int as n
        from hb, jsonb_each(hb.feature_counts) e
        where hb.feature_counts is not null and jsonb_typeof(e.value) = 'number'
+         and (e.value #>> '{}') ~ '^[0-9]{1,3}$'
        group by 1) f)
   on conflict (day) do update set
     active = excluded.active, new_installs = excluded.new_installs, returning_installs = excluded.returning_installs,

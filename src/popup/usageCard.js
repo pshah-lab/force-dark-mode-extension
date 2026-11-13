@@ -11,7 +11,7 @@
   ];
   const NOTE =
     "We never receive the sites you visit, page content, or anything you type. Turn it off any time in Options: that stops reports and deletes what we hold for your ID.";
-  const UPDATED = "each day you use dark mode we receive the items below, and the day's report may be updated as the numbers change.";
+  const UPDATED = "each day you use dark mode or the document viewer we receive the items below, and the day's report may be updated as the numbers change.";
 
   const USAGE_COPY = {
     ask: {

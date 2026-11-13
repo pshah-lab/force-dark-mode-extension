@@ -193,6 +193,7 @@ test("daily_stats.sql rolls feature_counts up per day (summed, no install IDs) a
   const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/daily_stats.sql"), "utf8");
   assert.ok(/alter table daily_stats add column if not exists feature_uses jsonb/i.test(sql));
   assert.ok(/jsonb_each\(hb\.feature_counts\)/i.test(sql));
+  assert.ok(sql.includes("and (e.value #>> '{}') ~ '^[0-9]{1,3}$'"), "a non-integer stored value must not abort the rollup");
   assert.ok(/'featureUses', feature_uses/.test(sql));
   assert.ok(/feature_uses = excluded\.feature_uses/.test(sql));
 });

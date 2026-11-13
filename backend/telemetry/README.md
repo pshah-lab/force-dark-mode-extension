@@ -28,7 +28,9 @@ before the extension sends them. Setup, in this order: run `supabase/usage_v3.sq
 `heartbeats.feature_counts` jsonb column, which must be an object), then re-run `supabase/daily_stats.sql` (adds
 `daily_stats.feature_uses`, the per-day totals over all installs, and returns them from `owner_dashboard()` as
 `featureUses`), then deploy `api/darkmode-telemetry.js`, `lib/schema.js`, `lib/dashboardData.js` and
-`lib/dashboardPage.js`. The owner dashboard shows a "Top features" table: total uses per feature over the last 30 days,
+`lib/dashboardPage.js`. Between those two steps the old deployed owner dashboard rejects days that carry
+`featureUses`, so deploy the backend right after re-running `daily_stats.sql` (transient, owner-only; nothing public).
+The owner dashboard shows a "Top features" table: total uses per feature over the last 30 days,
 summed across installs (never per install); unknown keys are ignored. `public_stats()` never reads `feature_counts`
 (it publishes 2.0.x heartbeats only), so nothing about features is public.
 

@@ -1484,9 +1484,11 @@ async function exportPdfPages(source) {
 
 // ---------------------------------------------------------------------------
 // PDF tools: runs a single-file tool from the Tools page registry on the open PDF
-// and downloads the result. Uses only the bytes the viewer already holds (PDFs
-// chosen with Open file); nothing is fetched, stored or sent anywhere. Multi-file
-// tools open the Tools page in a new tab.
+// and downloads the result. Bytes come from the viewer's held file (Open file) or,
+// for a PDF opened by URL, lazily from the loaded PDF.js document when a tool runs
+// (PDF.js may finish loading it from the address it was opened from). No fetch of
+// our own; nothing is stored or sent anywhere. Multi-file tools open the Tools page
+// in a new tab.
 
 const TOOLS_CANCELLED_MESSAGE = "Cancelled because the view changed.";
 

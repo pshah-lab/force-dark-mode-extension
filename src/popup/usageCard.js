@@ -1,12 +1,13 @@
 // One-time consent card for the optional daily usage report. Off unless the user turns it on. The card says exactly
-// what is received, that the day's report may be updated, and how to turn it off. A 2.0.x opt-in sees the
-// "reconfirm" version because this version also counts how many sites dark mode was applied on.
+// what is received, that the day's report may be updated, and how to turn it off. An earlier opt-in (2.0 to 2.2)
+// sees the "reconfirm" version because this version also counts which viewer and export features were used.
 (function (root) {
   const ITEMS = [
     "A random ID for this install, not linked to your name or account.",
     "The date and the extension version.",
     "Which engines you used that day (Auto, CSS, Invert).",
     "How many sites dark mode was applied on that day. A number only, never the sites.",
+    "Which viewer and export features you used, as counts per day (for example 'exported a PDF to text'). Never file names or contents.",
   ];
   const NOTE =
     "We never receive the sites you visit, page content, or anything you type. Turn it off any time in Options: that stops reports and deletes what we hold for your ID.";
@@ -25,7 +26,7 @@
     reconfirm: {
       id: "reconfirm",
       title: "Usage report: please confirm",
-      intro: `You turned on the usage report in version 2.0. This version also counts how many sites dark mode was applied on each day (a number only). Nothing new is sent until you confirm. If you keep it on, ${UPDATED}`,
+      intro: `You turned on the usage report in an earlier version. This version also counts which viewer and export features were used, as counts per day (never file names or contents). Nothing new is sent until you confirm. If you keep it on, ${UPDATED}`,
       items: ITEMS,
       note: NOTE,
       yes: "Keep it on",

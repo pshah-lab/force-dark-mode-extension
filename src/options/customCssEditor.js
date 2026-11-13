@@ -118,6 +118,15 @@ export async function initCustomCssEditor({ showStatus }) {
     }
   }
 
+  // The only usage message sent from here: a bare counter key (no host, no CSS, no surface), never awaited.
+  function reportSiteCssSaved() {
+    try {
+      Promise.resolve(chrome.runtime.sendMessage({ type: "USAGE_FEATURE", key: "site_css_saved" })).catch(() => {});
+    } catch (err) {
+      // usage failures are ignored
+    }
+  }
+
   async function save() {
     if (saveBtn.disabled) return;
     const check = T.canSaveCss(hostInput.value, textArea.value);
@@ -137,6 +146,7 @@ export async function initCustomCssEditor({ showStatus }) {
       return;
     }
     hostInput.value = check.host;
+    if (textArea.value !== "") reportSiteCssSaved();
     await renderList();
     showStatus(
       textArea.value === ""

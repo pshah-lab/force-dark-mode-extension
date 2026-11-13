@@ -13,6 +13,7 @@ import {
 import { postJson } from "./network.js";
 import { createUsage } from "./usageSender.js";
 import { handleUsageMessage } from "./usageMessages.js";
+import { surfaceFor } from "../shared/usageReport.js";
 import { createReportSender } from "./siteReportSender.js";
 import { buildWelcomeState, WELCOME_KEY } from "./welcomeState.js";
 
@@ -77,7 +78,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 chrome.commands.onCommand.addListener((command, tab) => {
   if (command === "toggle-dark-mode") {
-    toggleForTab(tab);
+    toggleForTab(tab, "shortcut");
     return;
   }
 
@@ -116,7 +117,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId === "force-dark-mode-toggle") {
-    toggleForTab(tab);
+    toggleForTab(tab, "menu");
     return;
   }
 
@@ -130,9 +131,23 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 });
 
-function toggleForTab(tab) {
+// Shortcut and context-menu toggles are counted here, after the save worked. A toggle from the popup or side panel
+// arrives as a TOGGLE message (no source) and is counted by that page itself, so it is never counted here.
+const TOGGLE_SOURCE_KEYS = { shortcut: "shortcut_toggle", menu: "context_menu_toggle" };
+
+async function toggleForTab(tab, source) {
   if (!isTogglableUrl(tab?.url)) return;
-  handleToggleMessage({ type: "TOGGLE" }, tab.url);
+  try {
+    const enabled = await handleToggleMessage({ type: "TOGGLE" }, tab.url);
+    if (typeof enabled !== "boolean") return;
+    const sourceKey = TOGGLE_SOURCE_KEYS[source];
+    if (!sourceKey) return;
+    const surface = surfaceFor(tab.url);
+    await usage.recordFeature(enabled ? "toggle_on" : "toggle_off", surface);
+    await usage.recordFeature(sourceKey, surface);
+  } catch {
+    // a failed toggle, or a usage failure, never surfaces
+  }
 }
 
 function openFileViewer() {
@@ -247,7 +262,7 @@ async function handleToggleMessage(msg, tabUrl) {
       ? msg.host.trim().toLowerCase()
       : getHostFromUrl(msg.url || tabUrl);
 
-  if (!host || !isSafeKey(host)) return;
+  if (!host || !isSafeKey(host)) return undefined;
 
   const currentConfig = await getSiteConfig(host);
   const newEnabled =
@@ -297,5 +312,7 @@ async function handleToggleMessage(msg, tabUrl) {
   // CSS engine image dimming override (0-60); missing means the theme's value. Kept across every toggle.
   Object.assign(nextConfig, imageDimFieldsFor(msg, currentConfig));
 
-  await setSiteConfig(host, nextConfig);
+  // true/false: the new state when it was saved; undefined when nothing was saved.
+  const saved = await setSiteConfig(host, nextConfig);
+  return saved === true ? newEnabled : undefined;
 }

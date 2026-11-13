@@ -14,15 +14,18 @@ import {
   ENGINES,
   FEATURE_KEYS,
   MAX_FEATURE_COUNT,
+  MAX_SURFACE_ENTRIES,
+  surfaceKey,
 } from "../shared/usageReport.js";
 
 export const INGEST_URL = "https://pshah.fun/api/darkmode-telemetry";
 export const DELETE_URL = "https://pshah.fun/api/darkmode-telemetry-delete";
 
-// Same key as the 2.0.x opt-in, so people who opted in there keep their ID if they confirm. consentVersion 3 marks
-// consent given to what this version sends (including viewer/export feature counts); a state without it, or with an
-// older version (2.0.x had none, 2.1.x-2.3.x wrote 2), is an opt-in that has not confirmed yet and sends nothing.
-const CONSENT_VERSION = 3;
+// Same key as the 2.0.x opt-in, so people who opted in there keep their ID if they confirm. consentVersion 4 marks
+// consent given to what this version sends (feature counts, and those counts split by kind of surface); a state
+// without it, or with any other version (2.0.x had none, 2.1.x-2.3.x wrote 2, 2.4.x wrote 3), is an opt-in that has
+// not confirmed yet and sends nothing.
+const CONSENT_VERSION = 4;
 const STATE_KEY = "telemetryState";
 const CARD_KEY = "usageCardState";
 const MAX_PENDING_DELETES = 20;
@@ -47,6 +50,23 @@ const isFeatures = (f) =>
       (k) => FEATURE_KEYS.includes(k) && Number.isInteger(f[k]) && f[k] >= 1 && f[k] <= MAX_FEATURE_COUNT
     ));
 
+// A tally stored before surface counts existed (consent v3) has no `surfaces`; it is treated as `{}`. A present one must
+// hold only "<feature>__<surface>" keys of allow-listed halves with counts 1..MAX_FEATURE_COUNT, and at most
+// MAX_SURFACE_ENTRIES of them, otherwise the whole tally is discarded.
+const isSurfaceKey = (k) => {
+  const parts = k.split("__");
+  return parts.length === 2 && surfaceKey(parts[0], parts[1]) === k;
+};
+const isSurfaces = (s) => {
+  if (s === undefined) return true;
+  if (!isObject(s)) return false;
+  const keys = Object.keys(s);
+  return (
+    keys.length <= MAX_SURFACE_ENTRIES &&
+    keys.every((k) => isSurfaceKey(k) && Number.isInteger(s[k]) && s[k] >= 1 && s[k] <= MAX_FEATURE_COUNT)
+  );
+};
+
 const isTally = (t) =>
   isObject(t) &&
   typeof t.day === "string" &&
@@ -54,13 +74,22 @@ const isTally = (t) =>
   ENGINES.every((e) => typeof t.engines[e] === "boolean") &&
   Array.isArray(t.sites) &&
   t.sites.every((n) => Number.isInteger(n)) &&
-  isFeatures(t.features);
+  isFeatures(t.features) &&
+  isSurfaces(t.surfaces);
 
 const featureCount = (tally, k) => (isObject(tally.features) && Number.isInteger(tally.features[k]) ? tally.features[k] : 0);
+// Surface entries in sorted key order, so the same counts always give the same signature.
+const surfaceSig = (tally) =>
+  isObject(tally.surfaces)
+    ? Object.keys(tally.surfaces)
+        .sort()
+        .map((k) => `${k}=${tally.surfaces[k]}`)
+        .join(",")
+    : "";
 const signature = (tally) =>
   `${ENGINES.map((e) => (tally.engines[e] ? 1 : 0)).join("")}:${tally.sites.length}:${FEATURE_KEYS.map((k) =>
     featureCount(tally, k)
-  ).join(",")}`;
+  ).join(",")}:${surfaceSig(tally)}`;
 
 export function createUsage({
   storage,
@@ -156,11 +185,12 @@ export function createUsage({
     await record((base) => recordSite(recordEngine(base, engine), host));
   }
 
-  // Called when a viewer was opened or an export was made. Only allow-listed keys count; anything else is ignored
-  // without touching storage. Never rejects.
-  async function recordFeature(key) {
+  // Called when an allow-listed feature was used, optionally on one of the fixed surfaces (surface.js). Only
+  // allow-listed keys count; anything else is ignored without touching storage. An unknown surface counts only the
+  // total. Nothing is counted unless sending (consent v4). Never rejects.
+  async function recordFeature(key, surface) {
     if (typeof key !== "string" || !FEATURE_KEYS.includes(key)) return;
-    await record((base) => tallyFeature(base, key));
+    await record((base) => tallyFeature(base, key, surface));
   }
 
   // Which card, if any, the side panel should show. An opt-in at an older consent version is asked to confirm;

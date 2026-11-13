@@ -47,7 +47,7 @@ test("More tools link targets src/tools/tools.html#<id>, only for known tools", 
   assert.strictEqual(toolsPagePath(undefined), "src/tools/tools.html");
 });
 
-test("control is enabled only for an open PDF whose bytes the viewer holds", () => {
+test("control is enabled for any open PDF (URL or file), disabled for other kinds", () => {
   const { viewerToolsState } = need();
   const none = viewerToolsState(null, false);
   assert.strictEqual(none.enabled, false);
@@ -59,9 +59,10 @@ test("control is enabled only for an open PDF whose bytes the viewer holds", () 
     assert.ok(/PDF/.test(s.title), `${kind} explains why`);
   }
   const url = viewerToolsState("pdf", false);
-  assert.strictEqual(url.enabled, false, "URL-opened PDF without bytes: disabled, no fetch");
-  assert.ok(/Open file/.test(url.title), "tells the user how to enable it");
-  assert.ok(url.placeholder.length > 0);
+  assert.strictEqual(url.enabled, true, "URL-opened PDF without held bytes: enabled, bytes are read lazily on run");
+  assert.strictEqual(url.title, "");
+  assert.ok(!/Open file/.test(url.placeholder + url.title), "no 'Use Open file' state for PDFs");
+  assert.strictEqual(viewerToolsState("pdf").enabled, true, "bytes flag is irrelevant");
   const ok = viewerToolsState("pdf", true);
   assert.strictEqual(ok.enabled, true);
   assert.strictEqual(ok.title, "");
@@ -120,7 +121,37 @@ test("viewer.js gates the control on the document kind and on held bytes", () =>
   assert.ok(/setToolsSource\(kind/.test(exportSet), "Export source changes drive the Tools source (kind from detectDocumentKind / openPdf)");
   const exportClear = js.slice(js.indexOf("function clearExportSource"), js.indexOf("function updateExportControls"));
   assert.ok(/clearToolsSource\(\)/.test(exportClear), "clearing the open file clears the tool source");
-  assert.ok(/instanceof Uint8Array/.test(set) || /currentPdfBytes\(\)/.test(exportSet), "only bytes the viewer already holds");
+  assert.ok(/currentPdfBytes\(\)/.test(exportSet) || /instanceof Uint8Array/.test(js), "held Open-file bytes are used as they are");
+  assert.ok(!/viewerToolsState\([^)]*hasBytes/.test(set), "no longer gated on held bytes");
+});
+
+test("URL PDFs: bytes come lazily from the loaded PDF.js document, never at open/list time, no network", () => {
+  assert.ok(js.includes('from "../tools/lazyBytes.js"'), "uses the lazy getter");
+  assert.ok(/\.getData\(\)/.test(js), "reads from the loaded document");
+  assert.strictEqual((js.match(/\.getData\(/g) || []).length, 1, "single getData call site");
+  const getAt = js.indexOf(".getData(");
+  const enclosing = js.slice(js.lastIndexOf("function ", getAt), getAt);
+  assert.ok(/=>|function/.test(enclosing));
+  const open = js.slice(js.indexOf("async function openPdf"), js.indexOf("async function printPdfOriginal"));
+  assert.ok(!/getData/.test(open), "not at open time");
+  const set = js.slice(js.indexOf("function setToolsSource"), js.indexOf("function clearToolsSource"));
+  assert.ok(!/getData\(/.test(set) && !/await /.test(set), "not when listing tools");
+  assert.ok(/getBytes/.test(set), "toolsSource carries a getBytes function");
+  assert.ok(!/\bfetch\s*\(|XMLHttpRequest/.test(js), "no network code");
+});
+
+test("run path awaits getBytes first, with status, stale guard and readable error", () => {
+  const run = js.slice(js.indexOf("async function runViewerTool"), js.indexOf("function showViewerToolOutcome"));
+  const getAt = run.indexOf("getBytes()");
+  assert.ok(getAt > 0, "run awaits getBytes()");
+  assert.ok(/await\s+source\.getBytes\(\)/.test(run));
+  assert.ok(run.indexOf("READING_MESSAGE") > 0 && run.indexOf("READING_MESSAGE") < getAt, "Reading the PDF… shown before the read");
+  assert.ok(run.indexOf("renderColorCopyPages") > getAt, "colour copy runs after the bytes are read");
+  assert.ok(run.indexOf("runTool(") > getAt, "tools run after the bytes are read");
+  assert.ok(!/source\.bytes/.test(run), "no direct source.bytes");
+  assert.ok(/isCurrent\(\)/.test(run.slice(getAt, getAt + 400)), "stale check right after the read");
+  const inspect = js.slice(js.indexOf("async function showToolsInspection"), js.indexOf("async function runViewerTool"));
+  assert.ok(/await\s+source\.getBytes\(\)/.test(inspect) && !/source\.bytes/.test(inspect), "inspect reads through getBytes too");
 });
 
 test("viewer.js runs tools with stale-run guards and hands off multi-file tools", () => {
@@ -158,7 +189,7 @@ test("colour copy renders from its own PDF.js document, cleans up pages and dest
   // The viewer no longer renders colour copies on its shared, never-destroyed document.
   assert.ok(!/function renderPdfPageToJpeg/.test(js), "no duplicated render code in viewer.js");
   const run = js.slice(js.indexOf("async function runViewerTool"), js.indexOf("function showViewerToolOutcome"));
-  assert.ok(/renderColorCopyPages\(pdfjsLib, \{[^}]*bytes: source\.bytes/.test(run), "renders from the held bytes");
+  assert.ok(/const bytes = await source\.getBytes\(\)/.test(run) && /renderColorCopyPages\(pdfjsLib, \{[^}]*\bbytes,/.test(run), "renders from the bytes read through getBytes (own copy)");
   assert.ok(!/source\.pdf\b/.test(run), "does not use the viewer's open document");
   const tools = read("src/tools/tools.js");
   assert.ok(tools.includes('from "./colorCopyRender.js"'), "tools.js uses the shared renderer");

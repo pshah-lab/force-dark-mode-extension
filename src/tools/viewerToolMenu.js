@@ -21,18 +21,12 @@ export function toolsPagePath(id) {
 }
 
 // State of the viewer's Tools control for the open document.
-// kind: detectDocumentKind result ("pdf", "docx", ...) or null; hasBytes: the viewer holds the PDF's file data.
-export function viewerToolsState(kind, hasBytes) {
+// kind: detectDocumentKind result ("pdf", "docx", ...) or null. Any open PDF qualifies: the viewer reads its
+// file data lazily, when a tool runs (held bytes for Open file, the loaded PDF.js document otherwise).
+export function viewerToolsState(kind) {
   if (!kind) return { enabled: false, placeholder: "Open a file first", title: "" };
   if (kind !== "pdf") {
     return { enabled: false, placeholder: "PDFs only", title: "Tools work on PDFs. Open a PDF to use them." };
-  }
-  if (!hasBytes) {
-    return {
-      enabled: false,
-      placeholder: "Use Open file for tools",
-      title: "Tools need the PDF's file data, which the viewer keeps only for PDFs chosen with Open file. Save this PDF, then open it with Open file.",
-    };
   }
   return { enabled: true, placeholder: "", title: "" };
 }

@@ -23,6 +23,7 @@ import { hasExtractableText, pdfPagesToText, pdfPagesToMarkdown, parsePageRange,
 import { readValues, runTool } from "../tools/toolRegistry.js";
 import { VIEWER_TOOLS, HANDOFF_TOOLS, toolsPagePath, viewerToolsState } from "../tools/viewerToolMenu.js";
 import { el, buildOptionFields, rawOptionValues } from "../tools/optionFields.js";
+import { createLazyBytes, createHeldBytes, READING_MESSAGE } from "../tools/lazyBytes.js";
 import { renderColorCopyPages } from "../tools/colorCopyRender.js";
 import { sheetToMatrix, toCsv, workbookToJson } from "./convert/csvWriter.js";
 import { createXlsx } from "./convert/xlsxWriter.js";
@@ -1286,7 +1287,9 @@ function setExportSource(kind, name, data) {
   exportFormatInput.disabled = false;
   setExportStatus("");
   updateExportControls();
-  setToolsSource(kind, name, data, kind === "pdf" ? currentPdfBytes() : null);
+  // PDFs: held Open-file bytes, else the loaded document's own data, read only when a tool runs.
+  const held = currentPdfBytes();
+  setToolsSource(kind, name, kind === "pdf" ? (held ? createHeldBytes(held) : createLazyBytes(() => data.getData())) : null);
 }
 
 function clearExportSource() {
@@ -1517,18 +1520,17 @@ function buildMoreToolsList() {
   toolsMoreList.replaceChildren(...items);
 }
 
-function setToolsSource(kind, name, data, bytes) {
+function setToolsSource(kind, name, getBytes) {
   if (toolsRunning) noteToolsCancelled();
   toolsGeneration += 1;
-  const hasBytes = bytes instanceof Uint8Array && bytes.length > 0;
-  const state = viewerToolsState(kind, hasBytes);
+  const state = viewerToolsState(kind);
   if (!state.enabled) {
     toolsSource = null;
     showToolsPlaceholder(state);
     showToolsCancelNotice();
     return;
   }
-  toolsSource = { name, bytes };
+  toolsSource = { name, getBytes };
   const options = VIEWER_TOOLS.map((tool) => el("option", { value: tool.id, text: tool.title }));
   toolsToolInput.replaceChildren(el("option", { value: "", text: "Choose a tool" }), ...options);
   toolsToolInput.value = "";
@@ -1601,7 +1603,7 @@ function selectViewerTool() {
 async function showToolsInspection(tool, source, token) {
   let blocks;
   try {
-    const found = await tool.inspect(source.bytes);
+    const found = await tool.inspect(await source.getBytes());
     if (found.length === 0) {
       blocks = [el("p", { text: "No Info fields or XMP metadata found." })];
     } else {
@@ -1633,11 +1635,15 @@ async function runViewerTool() {
   setToolsStatus("Working…");
   let outcome;
   try {
+    setToolsStatus(READING_MESSAGE);
+    const bytes = await source.getBytes();
+    if (!isCurrent()) throw STALE_RUN;
+    setToolsStatus("Working…");
     if (tool.render) {
       // Its own PDF.js document from the held bytes, destroyed when done; pages cleaned up as it goes.
       const rendered = await renderColorCopyPages(pdfjsLib, {
         name: source.name,
-        bytes: source.bytes,
+        bytes,
         mode: values.mode,
         onProgress: (message) => setToolsStatus(message),
         isCurrent,
@@ -1647,13 +1653,13 @@ async function runViewerTool() {
         outcome = await runTool(tool, [rendered], values);
       }
     } else {
-      outcome = await runTool(tool, [{ name: source.name, bytes: source.bytes }], values, (message) => {
+      outcome = await runTool(tool, [{ name: source.name, bytes }], values, (message) => {
         if (isCurrent()) setToolsStatus(message);
       });
     }
   } catch (error) {
-    console.warn("[ForceDark] PDF tool failed:", error);
-    const message = isOutOfMemoryError(error)
+    if (error !== STALE_RUN) console.warn("[ForceDark] PDF tool failed:", error);
+    const message = error === STALE_RUN ? "" : isOutOfMemoryError(error)
       ? "Not enough memory to run this tool on this file."
       : String((error && error.message) || error);
     outcome = { outputs: [], errors: [{ name: source.name, message }] };
@@ -1670,6 +1676,8 @@ async function runViewerTool() {
   if (token !== toolsGeneration) return;
   showViewerToolOutcome(outcome);
 }
+
+const STALE_RUN = Symbol("stale-run");
 
 function showViewerToolOutcome({ outputs, errors }) {
   const messages = [];

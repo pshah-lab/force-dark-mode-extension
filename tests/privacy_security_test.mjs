@@ -90,6 +90,7 @@ const EGRESS_SCANNED_FILES = [
   "src/viewer/convert/pdfExport.js",
   "src/viewer/convert/xlsxWriter.js",
   "src/viewer/convert/zipWriter.js",
+  "src/viewer/usageFeatures.js",
 ];
 
 test("zero outbound network calls in extension core code", () => {

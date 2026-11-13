@@ -7,17 +7,22 @@ import {
   emptyTally,
   recordEngine,
   recordSite,
+  recordFeature as tallyFeature,
   buildReport,
   validateReport,
   isUuid,
   ENGINES,
+  FEATURE_KEYS,
+  MAX_FEATURE_COUNT,
 } from "../shared/usageReport.js";
 
 export const INGEST_URL = "https://pshah.fun/api/darkmode-telemetry";
 export const DELETE_URL = "https://pshah.fun/api/darkmode-telemetry-delete";
 
-// Same key as the 2.0.x opt-in, so people who opted in there keep their ID if they confirm. consentVersion 2 marks
-// consent given to what this version sends; a state without it is a 2.0.x opt-in that has not confirmed yet.
+// Same key as the 2.0.x opt-in, so people who opted in there keep their ID if they confirm. consentVersion 3 marks
+// consent given to what this version sends (including viewer/export feature counts); a state without it, or with an
+// older version (2.0.x had none, 2.1.x-2.3.x wrote 2), is an opt-in that has not confirmed yet and sends nothing.
+const CONSENT_VERSION = 3;
 const STATE_KEY = "telemetryState";
 const CARD_KEY = "usageCardState";
 const MAX_PENDING_DELETES = 20;
@@ -25,13 +30,22 @@ const REFRESH_AFTER_SUCCESS_MS = 60 * 60 * 1000;
 const RETRY_AFTER_FAILURE_MS = 5 * 60 * 1000;
 
 const isObject = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
-const isSending = (s) => isObject(s) && s.enabled === true && isUuid(s.id) && s.consentVersion === 2;
+const isSending = (s) => isObject(s) && s.enabled === true && isUuid(s.id) && s.consentVersion === CONSENT_VERSION;
 const isLegacyOptIn = (s) =>
-  isObject(s) && s.enabled === true && typeof s.id === "string" && s.id.length > 0 && s.consentVersion !== 2;
+  isObject(s) && s.enabled === true && typeof s.id === "string" && s.id.length > 0 && s.consentVersion !== CONSENT_VERSION;
 const pendingIds = (s) =>
   isObject(s) && Array.isArray(s.pendingDeleteIds)
     ? [...new Set(s.pendingDeleteIds.filter((x) => typeof x === "string" && x.length > 0))]
     : [];
+
+// A tally stored before feature counts existed has no `features`; it is treated as `{}`. A present one must hold only
+// allow-listed keys with counts 1..MAX_FEATURE_COUNT, otherwise the whole tally is discarded.
+const isFeatures = (f) =>
+  f === undefined ||
+  (isObject(f) &&
+    Object.keys(f).every(
+      (k) => FEATURE_KEYS.includes(k) && Number.isInteger(f[k]) && f[k] >= 1 && f[k] <= MAX_FEATURE_COUNT
+    ));
 
 const isTally = (t) =>
   isObject(t) &&
@@ -39,9 +53,14 @@ const isTally = (t) =>
   isObject(t.engines) &&
   ENGINES.every((e) => typeof t.engines[e] === "boolean") &&
   Array.isArray(t.sites) &&
-  t.sites.every((n) => Number.isInteger(n));
+  t.sites.every((n) => Number.isInteger(n)) &&
+  isFeatures(t.features);
 
-const signature = (tally) => `${ENGINES.map((e) => (tally.engines[e] ? 1 : 0)).join("")}:${tally.sites.length}`;
+const featureCount = (tally, k) => (isObject(tally.features) && Number.isInteger(tally.features[k]) ? tally.features[k] : 0);
+const signature = (tally) =>
+  `${ENGINES.map((e) => (tally.engines[e] ? 1 : 0)).join("")}:${tally.sites.length}:${FEATURE_KEYS.map((k) =>
+    featureCount(tally, k)
+  ).join(",")}`;
 
 export function createUsage({
   storage,
@@ -112,8 +131,8 @@ export function createUsage({
     return inFlight;
   }
 
-  // Called by the worker when a page had dark mode applied. Never rejects.
-  async function recordDarkApplied({ engine, host } = {}) {
+  // Applies `update` to today's tally (only while sending) and sends if the rules allow. Never rejects.
+  async function record(update) {
     try {
       const current = now();
       const today = utcDay(current);
@@ -121,7 +140,7 @@ export function createUsage({
         const state = await storage.get(STATE_KEY);
         if (!isSending(state)) return false;
         const base = isTally(state.tally) && state.tally.day === today ? state.tally : emptyTally(today);
-        const tally = recordSite(recordEngine(base, engine), host);
+        const tally = update(base);
         const next = { ...state, tally };
         await storage.set(STATE_KEY, next);
         return shouldSend(next, tally, today, current.getTime());
@@ -132,8 +151,20 @@ export function createUsage({
     }
   }
 
-  // Which card, if any, the side panel should show. A 2.0.x opt-in is asked to confirm; everyone else who has not
-  // decided is asked once.
+  // Called by the worker when a page had dark mode applied. Never rejects.
+  async function recordDarkApplied({ engine, host } = {}) {
+    await record((base) => recordSite(recordEngine(base, engine), host));
+  }
+
+  // Called when a viewer was opened or an export was made. Only allow-listed keys count; anything else is ignored
+  // without touching storage. Never rejects.
+  async function recordFeature(key) {
+    if (typeof key !== "string" || !FEATURE_KEYS.includes(key)) return;
+    await record((base) => tallyFeature(base, key));
+  }
+
+  // Which card, if any, the side panel should show. An opt-in at an older consent version is asked to confirm;
+  // everyone else who has not decided is asked once.
   async function status() {
     try {
       const state = await storage.get(STATE_KEY);
@@ -198,7 +229,7 @@ export function createUsage({
       if (isSending(prev)) return;
       const pending = pendingIds(prev);
       if (isLegacyOptIn(prev)) {
-        await storage.set(STATE_KEY, { ...prev, consentVersion: 2 });
+        await storage.set(STATE_KEY, { ...prev, consentVersion: CONSENT_VERSION });
         return;
       }
       let id = randomUUID();
@@ -206,7 +237,7 @@ export function createUsage({
       await storage.set(STATE_KEY, {
         enabled: true,
         id,
-        consentVersion: 2,
+        consentVersion: CONSENT_VERSION,
         lastSentDay: null,
         tally: null,
         ...(pending.length ? { pendingDeleteIds: pending } : {}),
@@ -253,5 +284,5 @@ export function createUsage({
     }
   }
 
-  return { setConsent, recordDarkApplied, status, retryPendingDelete };
+  return { setConsent, recordDarkApplied, recordFeature, status, retryPendingDelete };
 }

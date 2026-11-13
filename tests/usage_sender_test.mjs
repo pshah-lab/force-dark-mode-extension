@@ -60,7 +60,7 @@ test("consent creates one id; turning on again keeps it", async () => {
   const s = map.get("telemetryState");
   assert.strictEqual(s.enabled, true);
   assert.strictEqual(s.id, ID);
-  assert.strictEqual(s.consentVersion, 2);
+  assert.strictEqual(s.consentVersion, 3);
   await usage.setConsent(true);
   assert.strictEqual(map.get("telemetryState").id, ID);
 });
@@ -196,7 +196,7 @@ test("a 2.0.x opt-in sends nothing until they confirm, then keeps their id", asy
   assert.deepStrictEqual(await usage.status(), { enabled: false, consentNeeded: "reconfirm" });
   await usage.setConsent(true);
   assert.strictEqual(map.get("telemetryState").id, ID);
-  assert.strictEqual(map.get("telemetryState").consentVersion, 2);
+  assert.strictEqual(map.get("telemetryState").consentVersion, 3);
   await usage.recordDarkApplied(dark());
   assert.strictEqual(ingests().length, 1);
   assert.strictEqual(ingests()[0].body.id, ID);
@@ -274,7 +274,7 @@ test("pending ids are all sent; only the failures are kept", async () => {
 });
 
 test("retryPendingDelete with nothing pending makes no request", async () => {
-  const { usage, calls } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 2 } } });
+  const { usage, calls } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 3 } } });
   await usage.retryPendingDelete();
   assert.strictEqual(calls.length, 0);
 });
@@ -284,6 +284,147 @@ test("garbage state sends nothing and is cleared on opt-out", async () => {
   await usage.setConsent(false);
   assert.strictEqual(calls.length, 0);
   assert.strictEqual(map.has("telemetryState"), false);
+});
+
+test("a consentVersion 2 opt-in is asked to reconfirm and sends nothing", async () => {
+  const before = { enabled: true, id: ID, consentVersion: 2, lastSentDay: "2026-10-19", tally: null };
+  const { usage, calls, map } = setup({ initial: { telemetryState: before } });
+  assert.deepStrictEqual(await usage.status(), { enabled: false, consentNeeded: "reconfirm" });
+  await usage.recordDarkApplied(dark());
+  await usage.recordFeature("viewer_pdf");
+  assert.strictEqual(calls.length, 0);
+  assert.deepStrictEqual(map.get("telemetryState"), before);
+  await usage.setConsent(true);
+  assert.strictEqual(map.get("telemetryState").consentVersion, 3);
+  assert.strictEqual(map.get("telemetryState").id, ID);
+  await usage.recordFeature("viewer_pdf");
+  assert.strictEqual(calls.length, 1);
+});
+
+test("recordFeature while sending counts the feature and sends a valid report with featureUses", async () => {
+  const { usage, ingests, map } = setup();
+  await usage.setConsent(true);
+  await usage.recordFeature("viewer_pdf");
+  assert.deepStrictEqual(map.get("telemetryState").tally.features, { viewer_pdf: 1 });
+  assert.strictEqual(ingests().length, 1);
+  const body = ingests()[0].body;
+  assert.deepStrictEqual(Object.keys(body).sort(), ["day", "engines", "featureUses", "id", "sites", "version"]);
+  assert.deepStrictEqual(body.featureUses, { viewer_pdf: 1 });
+  assert.strictEqual(body.sites, 0);
+  assert.strictEqual(body.day, "2026-10-20");
+  assert.ok(validateReport(body));
+  await usage.recordFeature("viewer_pdf");
+  await usage.recordFeature("export_xlsx_csv");
+  assert.deepStrictEqual(map.get("telemetryState").tally.features, { viewer_pdf: 2, export_xlsx_csv: 1 });
+  assert.ok(!JSON.stringify(map.get("telemetryState")).includes("example"));
+});
+
+test("recordFeature writes and sends nothing when off, at consentVersion 2, or with no state", async () => {
+  const states = [
+    undefined,
+    { enabled: false, pendingDeleteIds: [ID] },
+    { enabled: true, id: ID, consentVersion: 2, tally: null },
+    { enabled: true, id: ID, tally: null },
+  ];
+  for (const st of states) {
+    const { usage, calls, map } = setup({ initial: st === undefined ? {} : { telemetryState: st } });
+    const res = await usage.recordFeature("viewer_pdf");
+    assert.strictEqual(res, undefined);
+    assert.strictEqual(calls.length, 0, JSON.stringify(st));
+    if (st === undefined) assert.strictEqual(map.has("telemetryState"), false);
+    else assert.deepStrictEqual(map.get("telemetryState"), st);
+  }
+  const { usage, calls, map } = setup();
+  await usage.setConsent(true);
+  await usage.setConsent(false);
+  const n = calls.length;
+  await usage.recordFeature("viewer_pdf");
+  assert.strictEqual(calls.length, n);
+  assert.strictEqual(map.has("telemetryState"), false);
+});
+
+test("recordFeature ignores unknown keys entirely", async () => {
+  const { usage, calls, map } = setup();
+  await usage.setConsent(true);
+  const before = map.get("telemetryState");
+  for (const k of ["bogus", "__proto__", "constructor", "", null, undefined, 5, "a.example.com"]) {
+    await usage.recordFeature(k);
+  }
+  assert.strictEqual(calls.length, 0);
+  assert.deepStrictEqual(map.get("telemetryState"), before);
+});
+
+test("recordFeature never rejects on storage failure", async () => {
+  const broken = createUsage({
+    storage: { get: async () => { throw new Error("x"); }, set: async () => { throw new Error("x"); }, remove: async () => { throw new Error("x"); } },
+    post: async () => { throw new Error("must not post"); }, now: () => new Date(), version: "2.1.0", randomUUID: () => ID,
+  });
+  assert.strictEqual(await broken.recordFeature("viewer_pdf"), undefined);
+});
+
+test("a stored tally without features still works for sites and features", async () => {
+  const tally = { day: "2026-10-20", engines: { auto: true, css: false, invert: false }, sites: [123] };
+  const { usage, ingests, map } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 3, lastSentDay: null, tally } } });
+  await usage.recordFeature("viewer_docx");
+  const t = map.get("telemetryState").tally;
+  assert.deepStrictEqual(t.sites, [123]);
+  assert.deepStrictEqual(t.engines, { auto: true, css: false, invert: false });
+  assert.deepStrictEqual(t.features, { viewer_docx: 1 });
+  assert.strictEqual(ingests().length, 1);
+  assert.strictEqual(ingests()[0].body.sites, 1);
+  assert.deepStrictEqual(ingests()[0].body.featureUses, { viewer_docx: 1 });
+  assert.ok(validateReport(ingests()[0].body));
+
+  const s2 = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 3, lastSentDay: null, tally } } });
+  await s2.usage.recordDarkApplied(dark("css", "b.example.com"));
+  assert.strictEqual(s2.ingests().length, 1);
+  assert.strictEqual(s2.ingests()[0].body.sites, 2);
+  assert.ok(!("featureUses" in s2.ingests()[0].body));
+});
+
+test("a stored tally with malformed features is replaced by a fresh one", async () => {
+  for (const features of [[], "x", { viewer_pdf: "1" }, { viewer_pdf: -1 }, { viewer_pdf: 1.5 }, { bogus: 1 }]) {
+    const tally = { day: "2026-10-20", engines: { auto: true, css: false, invert: false }, sites: [123], features };
+    const { usage, ingests, map } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 3, lastSentDay: null, tally } } });
+    await usage.recordFeature("viewer_pdf");
+    const t = map.get("telemetryState").tally;
+    assert.deepStrictEqual(t.features, { viewer_pdf: 1 }, JSON.stringify(features));
+    assert.deepStrictEqual(t.sites, [], JSON.stringify(features));
+    assert.strictEqual(ingests().length, 1);
+    assert.ok(validateReport(ingests()[0].body));
+  }
+});
+
+test("feature counts: identical state does not re-send; a changed count refreshes only after the hourly wait", async () => {
+  const { usage, ingests, advance } = setup();
+  await usage.setConsent(true);
+  await usage.recordDarkApplied(dark());
+  assert.strictEqual(ingests().length, 1);
+  advance(3 * 60 * MIN);
+  await usage.recordDarkApplied(dark());
+  assert.strictEqual(ingests().length, 1, "same state: no resend");
+  await usage.recordFeature("viewer_csv");
+  assert.strictEqual(ingests().length, 2, "count changed and the hour has passed");
+  assert.deepStrictEqual(ingests()[1].body.featureUses, { viewer_csv: 1 });
+  advance(10 * MIN);
+  await usage.recordFeature("viewer_csv");
+  assert.strictEqual(ingests().length, 2, "within the hour: no refresh yet");
+  advance(2 * 60 * MIN);
+  await usage.recordDarkApplied(dark());
+  assert.strictEqual(ingests().length, 3, "the pending count change goes out after the wait");
+  assert.deepStrictEqual(ingests()[2].body.featureUses, { viewer_csv: 2 });
+  advance(2 * 60 * MIN);
+  await usage.recordDarkApplied(dark());
+  assert.strictEqual(ingests().length, 3, "identical state again: no resend");
+});
+
+test("concurrent feature events are all counted and cause a single request", async () => {
+  const { usage, ingests, map } = setup();
+  await usage.setConsent(true);
+  await Promise.all([usage.recordFeature("viewer_pdf"), usage.recordFeature("viewer_pdf"), usage.recordDarkApplied(dark())]);
+  assert.strictEqual(map.get("telemetryState").tally.features.viewer_pdf, 2);
+  assert.strictEqual(map.get("telemetryState").tally.sites.length, 1);
+  assert.strictEqual(ingests().length, 1);
 });
 
 test("postJson sends JSON with credentials omitted, no referrer, and a timeout signal", async () => {

@@ -51,18 +51,47 @@ export function validateHeartbeat(obj) {
   return true;
 }
 
-// The 2.1.0 opt-in usage report: five fields only. Copy of validateReport in src/shared/usageReport.js;
-// tests/usage_backend_test.mjs asserts the two agree on every case, so change both together.
+// The opt-in usage report (2.1.0+): five fields, plus an optional sixth, featureUses (a map of allow-listed feature
+// keys to counts 1..999, never empty). Copy of validateReport in src/shared/usageReport.js, except that the allow-list
+// is a superset: the extension's FEATURE_KEYS plus reserved tool_* keys for a later release, so the backend can be
+// deployed first. tests/usage_backend_test.mjs asserts the two agree on every case, so change both together.
 export const MAX_SITES = 9999;
+export const MAX_FEATURE_COUNT = 999;
+export const FEATURE_KEYS_ACCEPTED = Object.freeze([
+  "viewer_pdf", "viewer_docx", "viewer_pptx", "viewer_xlsx", "viewer_csv", "viewer_md", "viewer_txt", "viewer_rtf",
+  "export_pdf_txt", "export_pdf_md", "export_pdf_png",
+  "export_docx_txt", "export_docx_md", "export_docx_html",
+  "export_pptx_txt", "export_pptx_md", "export_pptx_html",
+  "export_xlsx_csv", "export_xlsx_json", "export_csv_xlsx",
+  "export_md_html", "export_txt_html", "export_rtf_html",
+  // Reserved (not sent by the extension yet).
+  "tool_merge", "tool_split", "tool_extract", "tool_remove", "tool_reorder", "tool_rotate", "tool_images_to_pdf",
+  "tool_page_numbers", "tool_watermark", "tool_strip_metadata", "tool_color_copy_dark", "tool_color_copy_sepia",
+  "tool_color_copy_gray",
+]);
+const hasOwn = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+const USAGE_KEYS = ["id", "day", "version", "engines", "sites"];
 
 export function validateUsage(obj) {
   if (!isPlainObject(obj)) return false;
-  if (!sameKeys(obj, ["id", "day", "version", "engines", "sites"])) return false;
+  const hasFeatures = hasOwn(obj, "featureUses");
+  if (!sameKeys(obj, hasFeatures ? [...USAGE_KEYS, "featureUses"] : USAGE_KEYS)) return false;
   if (typeof obj.id !== "string" || !UUID_RE.test(obj.id)) return false;
   if (typeof obj.day !== "string" || !DAY_RE.test(obj.day)) return false;
   if (typeof obj.version !== "string" || !SEMVER_RE.test(obj.version)) return false;
   const { engines } = obj;
   if (!isPlainObject(engines) || !sameKeys(engines, ENGINES) || !allBooleans(engines)) return false;
   if (!Number.isInteger(obj.sites) || obj.sites < 0 || obj.sites > MAX_SITES) return false;
+  if (hasFeatures) {
+    const fu = obj.featureUses;
+    if (!isPlainObject(fu)) return false;
+    const keys = Object.keys(fu);
+    if (keys.length === 0) return false;
+    for (const k of keys) {
+      if (!FEATURE_KEYS_ACCEPTED.includes(k)) return false;
+      const n = fu[k];
+      if (!Number.isInteger(n) || n < 1 || n > MAX_FEATURE_COUNT) return false;
+    }
+  }
   return true;
 }

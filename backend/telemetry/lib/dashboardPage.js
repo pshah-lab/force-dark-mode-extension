@@ -1,6 +1,10 @@
 // The private owner dashboard page (served by api/darkmode-dashboard.js). One self-contained document:
 // no external scripts, fonts or images (CSP default-src 'none'), charts drawn on <canvas>, every value
 // inserted with textContent. The token is typed in, kept in a JS variable only and sent as a bearer header.
+// The "Top features" aggregation is the tested topFeatures() from dashboardData.js, embedded as source.
+import { topFeatures, FEATURE_WINDOW_DAYS } from "./dashboardData.js";
+import { FEATURE_KEYS_ACCEPTED } from "./schema.js";
+
 export const DASHBOARD_HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -46,6 +50,7 @@ button{padding:8px 14px;border:1px solid var(--line);border-radius:6px;backgroun
 <div class="card"><h2>Sites darkened per install (daily, last 30 days)</h2><canvas id="c-sites" aria-label="Sites darkened buckets per day"></canvas>
 <div class="legend"><span style="color:var(--muted)">&#9632; 0</span><span style="color:var(--a)">&#9632; 1-5</span><span style="color:var(--b)">&#9632; 6-20</span><span style="color:var(--c)">&#9632; 21+</span></div></div>
 <div class="grid" id="dists"></div>
+<div class="card"><h2>Top features (uses, last ${FEATURE_WINDOW_DAYS} days, all installs)</h2><table><thead><tr><th>Feature</th><th>Uses</th></tr></thead><tbody id="features"></tbody></table></div>
 <div class="card"><h2>Most reported broken sites (last 30 days)</h2><table><thead><tr><th>Site</th><th>Reports</th><th>Days</th><th>Last</th></tr></thead><tbody id="top"></tbody></table></div>
 </div>
 </main>
@@ -56,6 +61,9 @@ var $ = function(id){ return document.getElementById(id); };
 function el(tag, text, cls){ var e = document.createElement(tag); if (text !== undefined) e.textContent = String(text); if (cls) e.className = cls; return e; }
 function css(n){ return getComputedStyle(document.documentElement).getPropertyValue(n).trim(); }
 function sum(a){ return a.reduce(function(x, y){ return x + y; }, 0); }
+
+var FEATURE_KEYS = ${JSON.stringify(FEATURE_KEYS_ACCEPTED)}, FEATURE_WINDOW_DAYS = ${FEATURE_WINDOW_DAYS};
+var topFeatures = ${topFeatures.toString()};
 
 var RELEASES = [{ day: "2026-10-22", label: "2.1.0" }, { day: "2026-10-29", label: "2.2.0" }];
 
@@ -142,6 +150,10 @@ function render(doc){
   dists.appendChild(dist("OS (latest with data)", lastWith(days, "os")));
   dists.appendChild(dist("Chrome (latest with data)", lastWith(days, "chrome")));
   dists.appendChild(dist("Language (latest with data)", lastWith(days, "lang")));
+  var feats = $("features"); feats.textContent = "";
+  var fr = topFeatures(days, FEATURE_WINDOW_DAYS, FEATURE_KEYS);
+  if (!fr.length) { var trf = el("tr"); var tdf = el("td", "No feature uses yet."); tdf.colSpan = 2; trf.appendChild(tdf); feats.appendChild(trf); }
+  fr.forEach(function(r){ var tr = el("tr"); tr.appendChild(el("td", r[0])); tr.appendChild(el("td", r[1])); feats.appendChild(tr); });
   var top = $("top"); top.textContent = "";
   if (!doc.topSites.length) { var tr0 = el("tr"); var td0 = el("td", "No reports yet."); td0.colSpan = 4; tr0.appendChild(td0); top.appendChild(tr0); }
   doc.topSites.forEach(function(s){ var tr = el("tr"); [s.site, s.reports, s.days, s.lastDay].forEach(function(v){ tr.appendChild(el("td", v)); }); top.appendChild(tr); });

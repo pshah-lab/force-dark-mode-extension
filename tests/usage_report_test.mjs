@@ -208,6 +208,10 @@ test("validateReport rejects bad featureUses", () => {
     {}, [], null, "x", 5,
   ];
   for (const fu of bad) assert.strictEqual(validateReport({ ...good(), featureUses: fu }), false, JSON.stringify(fu));
+  // Real own prototype-named keys, as JSON.parse creates them.
+  for (const raw of ['{"__proto__":1}', '{"viewer_pdf":1,"__proto__":1}', '{"constructor":1}', '{"toString":1}']) {
+    assert.strictEqual(validateReport({ ...good(), featureUses: JSON.parse(raw) }), false, raw);
+  }
   assert.strictEqual(validateReport({ ...good(), extra: 1 }), false);
   assert.strictEqual(validateReport({ ...good(), featureUses: { viewer_pdf: 1 }, extra: 1 }), false);
 });

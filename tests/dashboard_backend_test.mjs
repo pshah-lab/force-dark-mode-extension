@@ -5,7 +5,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAuthorized } from "../backend/telemetry/lib/dashboardAuth.js";
-import { validateDashboardData } from "../backend/telemetry/lib/dashboardData.js";
+import { validateDashboardData, topFeatures, FEATURE_WINDOW_DAYS } from "../backend/telemetry/lib/dashboardData.js";
+import { FEATURE_KEYS_ACCEPTED } from "../backend/telemetry/lib/schema.js";
 import { createDashboardDataHandler } from "../backend/telemetry/api/darkmode-dashboard-data.js";
 import { createDashboardPageHandler } from "../backend/telemetry/api/darkmode-dashboard.js";
 import { DASHBOARD_HTML } from "../backend/telemetry/lib/dashboardPage.js";
@@ -152,6 +153,48 @@ test("page has no external resources, never stores the token, sends it only in a
 test("page marks releases and labels dates on both charts", () => {
   assert.ok(/RELEASES = \[[^\]]*"2\.2\.0"/.test(DASHBOARD_HTML));
   assert.strictEqual(DASHBOARD_HTML.split("\n  axisDates(g,").length - 1, 2, "line and stacked charts both use it");
+});
+
+// ---- top features ----
+const fday = (day, featureUses) => ({ ...doc().days[0], day, featureUses });
+
+test("validateDashboardData accepts days with or without featureUses, rejects bad featureUses", () => {
+  const d = doc(); d.days.push(fday("2026-10-29", { viewer_pdf: 5, tool_merge: 1 }));
+  assert.strictEqual(validateDashboardData(d), true);
+  for (const bad of [{ viewer_pdf: -1 }, { viewer_pdf: "3" }, { "<b>": 1 }, [], null, "x"]) {
+    const d2 = doc(); d2.days[0].featureUses = bad;
+    assert.strictEqual(validateDashboardData(d2), false, JSON.stringify(bad));
+  }
+});
+
+test("topFeatures sums counts per key over the window and ignores unknown keys", () => {
+  const days = [
+    fday("2026-10-01", { viewer_pdf: 100 }), // outside a 2-day window
+    fday("2026-10-02", { viewer_pdf: 3, export_md_html: 2, nope: 50, tool_merge: 1 }),
+    { ...doc().days[0], day: "2026-10-03" }, // a day before usage_v3 (no featureUses)
+    fday("2026-10-04", { viewer_pdf: 4, export_md_html: 9, constructor: 7, "": 1 }),
+  ];
+  days[3].featureUses = JSON.parse('{"viewer_pdf":4,"export_md_html":9,"constructor":7,"__proto__":8}');
+  assert.deepStrictEqual(topFeatures(days, 3, FEATURE_KEYS_ACCEPTED), [["export_md_html", 11], ["viewer_pdf", 7], ["tool_merge", 1]]);
+  assert.deepStrictEqual(topFeatures(days, 30, FEATURE_KEYS_ACCEPTED)[0], ["viewer_pdf", 107]);
+  assert.deepStrictEqual(topFeatures([], 30, FEATURE_KEYS_ACCEPTED), []);
+  assert.deepStrictEqual(topFeatures([fday("2026-10-02", { viewer_pdf: 0 })], 30, FEATURE_KEYS_ACCEPTED), []);
+  assert.strictEqual(FEATURE_WINDOW_DAYS, 30);
+});
+
+test("page shows a Top features table built from the tested topFeatures via textContent", () => {
+  assert.ok(/Top features/.test(DASHBOARD_HTML));
+  assert.ok(DASHBOARD_HTML.includes(topFeatures.toString()), "page embeds the tested aggregation");
+  assert.ok(DASHBOARD_HTML.includes(JSON.stringify(FEATURE_KEYS_ACCEPTED)), "page uses the backend allow-list");
+  assert.ok(/id="features"/.test(DASHBOARD_HTML));
+});
+
+test("daily_stats.sql rolls feature_counts up per day (summed, no install IDs) and owner_dashboard returns them", () => {
+  const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/daily_stats.sql"), "utf8");
+  assert.ok(/alter table daily_stats add column if not exists feature_uses jsonb/i.test(sql));
+  assert.ok(/jsonb_each\(hb\.feature_counts\)/i.test(sql));
+  assert.ok(/'featureUses', feature_uses/.test(sql));
+  assert.ok(/feature_uses = excluded\.feature_uses/.test(sql));
 });
 
 // ---- SQL ----

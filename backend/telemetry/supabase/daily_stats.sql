@@ -1,5 +1,5 @@
 -- Owner dashboard: one aggregate row per UTC day, built nightly from heartbeats and site_reports. Run after
--- schema.sql, usage_v2.sql and site_reports.sql. The table holds counts and category names only (no install IDs),
+-- schema.sql, usage_v2.sql, usage_v3.sql and site_reports.sql (re-run it after usage_v3.sql). The table holds counts and category names only (no install IDs),
 -- so it is not personal data and may outlive the 13-month purge of raw heartbeats. Owner-only: nothing here
 -- is published (the public page uses public_stats(), which suppresses small groups).
 
@@ -18,6 +18,9 @@ create table if not exists daily_stats (
   chrome       jsonb not null default '{}',
   lang         jsonb not null default '{}'
 );
+
+-- Feature key -> uses summed over all of that day's reports (usage_v3.sql). Totals only, never per install.
+alter table daily_stats add column if not exists feature_uses jsonb not null default '{}';
 
 alter table daily_stats enable row level security;
 
@@ -46,7 +49,7 @@ set search_path = public
 as $$
   with hb as (select * from heartbeats where day = p_day),
   first_seen as (select install_id, min(day) as first_day from heartbeats group by install_id)
-  insert into daily_stats (day, active, new_installs, returning_installs, site_reports, avg_sites, sites, versions, engines, themes, os, chrome, lang)
+  insert into daily_stats (day, active, new_installs, returning_installs, site_reports, avg_sites, sites, versions, engines, themes, os, chrome, lang, feature_uses)
   select p_day,
     (select count(*) from hb)::int,
     (select count(*) from hb join first_seen f using (install_id) where f.first_day = p_day)::int,
@@ -66,12 +69,17 @@ as $$
     rollup_counts(p_day, 'theme'),
     rollup_counts(p_day, 'os'),
     rollup_counts(p_day, 'chrome'),
-    rollup_counts(p_day, 'lang')
+    rollup_counts(p_day, 'lang'),
+    (select coalesce(jsonb_object_agg(k, n), '{}'::jsonb) from (
+       select e.key as k, sum((e.value #>> '{}')::int)::int as n
+       from hb, jsonb_each(hb.feature_counts) e
+       where hb.feature_counts is not null and jsonb_typeof(e.value) = 'number'
+       group by 1) f)
   on conflict (day) do update set
     active = excluded.active, new_installs = excluded.new_installs, returning_installs = excluded.returning_installs,
     site_reports = excluded.site_reports, avg_sites = excluded.avg_sites, sites = excluded.sites,
     versions = excluded.versions, engines = excluded.engines, themes = excluded.themes,
-    os = excluded.os, chrome = excluded.chrome, lang = excluded.lang
+    os = excluded.os, chrome = excluded.chrome, lang = excluded.lang, feature_uses = excluded.feature_uses
 $$;
 
 -- One-time backfill of every day that already has heartbeats (re-runnable).
@@ -88,7 +96,7 @@ as $$
     'days', coalesce((select jsonb_agg(jsonb_build_object(
         'day', to_char(day, 'YYYY-MM-DD'), 'active', active, 'newInstalls', new_installs, 'returning', returning_installs,
         'siteReports', site_reports, 'avgSites', avg_sites, 'sites', sites, 'versions', versions,
-        'engines', engines, 'themes', themes, 'os', os, 'chrome', chrome, 'lang', lang) order by day)
+        'engines', engines, 'themes', themes, 'os', os, 'chrome', chrome, 'lang', lang, 'featureUses', feature_uses) order by day)
       from (select * from daily_stats order by day desc limit 800) s), '[]'::jsonb),
     'topSites', coalesce((select jsonb_agg(jsonb_build_object(
         'site', site, 'reports', reports, 'days', days, 'lastDay', to_char(last_day, 'YYYY-MM-DD')) order by reports desc, site)

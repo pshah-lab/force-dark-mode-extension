@@ -5,7 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import * as be from "../backend/telemetry/lib/schema.js";
 import { createHandler } from "../backend/telemetry/api/darkmode-telemetry.js";
-import { validateReport } from "../src/shared/usageReport.js";
+import { validateReport, FEATURE_KEYS, MAX_FEATURE_COUNT } from "../src/shared/usageReport.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const queue = [];
@@ -131,6 +131,92 @@ test("the README says to run usage_v2.sql before re-running public_stats.sql", (
   const readme = fs.readFileSync(path.join(ROOT, "backend/telemetry/README.md"), "utf8");
   const i = readme.indexOf("usage_v2.sql");
   assert.ok(i > -1 && /before[^.\n]*public_stats\.sql|public_stats\.sql[^.\n]*after/i.test(readme), "order must be stated");
+});
+
+// ---- featureUses (6-key form) ----
+const TOOL_KEYS = ["tool_merge", "tool_split", "tool_extract", "tool_remove", "tool_reorder", "tool_rotate",
+  "tool_images_to_pdf", "tool_page_numbers", "tool_watermark", "tool_strip_metadata", "tool_color_copy_dark",
+  "tool_color_copy_sepia", "tool_color_copy_gray"];
+const fu = (featureUses) => ({ ...report(), featureUses });
+const FU_VALID = [
+  fu({ viewer_pdf: 3, export_md_html: 999 }), fu({ viewer_pdf: 1 }),
+  fu(Object.fromEntries(FEATURE_KEYS.map((k) => [k, MAX_FEATURE_COUNT]))),
+];
+const FU_INVALID = [
+  { nope: 1 }, { __proto__x: 1 }, { viewer_pdf: 0 }, { viewer_pdf: 1000 }, { viewer_pdf: 1.5 },
+  { viewer_pdf: "3" }, { viewer_pdf: null }, { viewer_pdf: {} }, { viewer_pdf: [1] }, { viewer_pdf: -1 },
+  {}, [], null, "x", 5, { constructor: 1 }, { toString: 1 }, { hasOwnProperty: 1 }, { valueOf: 1 }, { "": 1 },
+  JSON.parse('{"__proto__":1}'), JSON.parse('{"viewer_pdf":1,"__proto__":1}'), JSON.parse('{"__proto__":{"viewer_pdf":1}}'),
+].map(fu).concat([
+  { ...fu({ viewer_pdf: 1 }), extra: 1 },
+  JSON.parse(`{"id":"${ID}","day":"2026-10-20","version":"2.1.0","engines":{"auto":true,"css":false,"invert":false},"sites":3,"__proto__":{"viewer_pdf":1}}`),
+  JSON.parse(`{"id":"${ID}","day":"2026-10-20","version":"2.1.0","engines":{"auto":true,"css":false,"invert":false},"sites":3,"featureUses":{"viewer_pdf":1},"__proto__":1}`),
+]);
+
+test("featureUses: validateUsage and validateReport agree on every 6-key case", () => {
+  for (const c of [...FU_VALID, ...FU_INVALID]) {
+    assert.strictEqual(be.validateUsage(c), validateReport(c), JSON.stringify(c));
+  }
+  for (const c of FU_VALID) assert.strictEqual(be.validateUsage(c), true, JSON.stringify(c));
+  for (const c of FU_INVALID) assert.strictEqual(be.validateUsage(c), false, JSON.stringify(c));
+});
+
+test("FEATURE_KEYS_ACCEPTED is the extension's 23 keys plus the reserved tool_* keys", () => {
+  assert.strictEqual(FEATURE_KEYS.length, 23);
+  for (const k of FEATURE_KEYS) assert.ok(be.FEATURE_KEYS_ACCEPTED.includes(k), k);
+  for (const k of TOOL_KEYS) assert.ok(be.FEATURE_KEYS_ACCEPTED.includes(k), k);
+  assert.strictEqual(be.FEATURE_KEYS_ACCEPTED.length, FEATURE_KEYS.length + TOOL_KEYS.length);
+  assert.strictEqual(new Set(be.FEATURE_KEYS_ACCEPTED).size, be.FEATURE_KEYS_ACCEPTED.length);
+  assert.ok(Object.isFrozen(be.FEATURE_KEYS_ACCEPTED));
+  assert.strictEqual(be.MAX_FEATURE_COUNT, MAX_FEATURE_COUNT);
+});
+
+test("reserved tool_* keys are accepted by the backend only", () => {
+  for (const k of TOOL_KEYS) {
+    assert.strictEqual(be.validateUsage(fu({ [k]: 2 })), true, k);
+    assert.strictEqual(validateReport(fu({ [k]: 2 })), false, k);
+    assert.strictEqual(be.validateUsage(fu({ [k]: 1000 })), false, k);
+  }
+});
+
+test("a 6-key report is stored with feature_counts", async () => {
+  const store = fakeStore();
+  const res = await call(createHandler({ store, now: () => NOW }), fu({ viewer_pdf: 2, tool_merge: 1 }));
+  assert.strictEqual(res.statusCode, 204);
+  assert.deepStrictEqual(store.rows[0], {
+    install_id: ID, day: "2026-10-20", version: "2.1.0",
+    engines: { auto: true, css: false, invert: false },
+    sites_darkened: 3,
+    feature_counts: { viewer_pdf: 2, tool_merge: 1 },
+  });
+});
+
+test("a 2.1/2.2 five-field report still returns 204 and never touches feature_counts", async () => {
+  const store = fakeStore();
+  const res = await call(createHandler({ store, now: () => NOW }), report({ version: "2.2.0" }));
+  assert.strictEqual(res.statusCode, 204);
+  assert.ok(!("feature_counts" in store.rows[0]));
+});
+
+test("bad featureUses returns 400 and nothing is stored", async () => {
+  for (const bad of FU_INVALID) {
+    const store = fakeStore();
+    const res = await call(createHandler({ store, now: () => NOW }), bad);
+    assert.strictEqual(res.statusCode, 400, JSON.stringify(bad));
+    assert.strictEqual(store.rows.length, 0);
+  }
+});
+
+test("usage_v3.sql adds feature_counts idempotently with an object-or-null check", () => {
+  const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/usage_v3.sql"), "utf8").toLowerCase();
+  assert.ok(/alter table heartbeats add column if not exists feature_counts jsonb/.test(sql));
+  assert.ok(/feature_counts is null or jsonb_typeof\(feature_counts\) = 'object'/.test(sql));
+});
+
+test("the public stats never mention feature_counts", () => {
+  const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/public_stats.sql"), "utf8").toLowerCase();
+  assert.ok(!sql.includes("feature_counts"));
+  assert.ok(!sql.includes("featureuses"));
 });
 
 console.log("\nUsage report backend");

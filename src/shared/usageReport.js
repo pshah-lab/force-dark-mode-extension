@@ -9,8 +9,8 @@
 // immediately before every send. Accepted forms: 5 fields, 5 + featureUses, 5 + surfaceUses, 5 + both.
 import "./surface.js";
 
-const { SURFACES } = globalThis.SurfaceKind;
-export { SURFACES };
+const { SURFACES, surfaceFor } = globalThis.SurfaceKind;
+export { SURFACES, surfaceFor };
 
 export const ENGINES = ["auto", "css", "invert"];
 export const MAX_SITES = 9999;

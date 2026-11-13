@@ -27,6 +27,27 @@ function imageDimValue(override, themeDim) {
   return 0;
 }
 
+// Opt-in usage report (consent v4): which fixed feature key a panel action counts as. Pure; never returns
+// anything derived from the input (no theme id or name), only an allow-listed key or null.
+function toggleFeatureKey(enabled) {
+  return enabled ? "toggle_on" : "toggle_off";
+}
+
+function engineFeatureKey(engine) {
+  if (engine === "auto") return "engine_auto";
+  if (engine === "css") return "engine_css";
+  if (engine === "invert") return "engine_invert";
+  return null;
+}
+
+function themeFeatureKey(themeId) {
+  if (themeId === "" || themeId === "default") return "theme_default";
+  if (typeof themeId !== "string") return null;
+  if (themeId.startsWith("builtin:")) return "theme_builtin";
+  if (themeId.startsWith("user:")) return "theme_custom";
+  return null;
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const button = document.getElementById("toggle");
   const label = button.querySelector(".label");
@@ -120,6 +141,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   let loadSequence = 0;
   let viewToken = 0; // bumped on every load so late replies for an earlier tab are dropped
   let loadedView = null;
+
+  // Opt-in usage report: count one committed panel action. Sends only a fixed key and the kind of surface (one of
+  // 9 fixed strings from SurfaceKind), never the URL, host, theme id or name; the worker drops it unless the user
+  // opted in. Fire and forget: never awaited, and any failure is ignored so counting can never affect the panel.
+  function reportFeature(key) {
+    if (typeof key !== "string") return;
+    try {
+      const surface = SurfaceKind.surfaceFor(tab?.url);
+      const sent = chrome.runtime.sendMessage({ type: "USAGE_FEATURE", key, surface });
+      if (sent && typeof sent.catch === "function") sent.catch(() => {});
+    } catch {
+      // ignored: usage counting is best effort
+    }
+  }
 
   chrome.commands.getAll((commands) => {
     const shortcut = commands.find((c) => c.name === "toggle-dark-mode")?.shortcut;
@@ -225,6 +260,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       outcome = undefined;
     }
     if (reportedHost !== host) return; // the user moved to another tab while sending
+    if (outcome === "sent") reportFeature("site_report_sent");
     reportCardEl.hidden = true;
     reportSend.disabled = false;
     reportStatus.textContent = ReportCard.outcomeMessage(outcome);
@@ -557,6 +593,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         forceEnabled: enabled,
         ...getFilterValues(),
       });
+      reportFeature(themeFeatureKey(themeId));
     });
   };
 
@@ -621,6 +658,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         backgroundColor,
         ...filters,
       });
+      reportFeature(toggleFeatureKey(nextEnabled));
     });
   };
 
@@ -640,6 +678,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           forceEnabled: enabled,
           ...getFilterValues(),
         });
+        reportFeature(engineFeatureKey(radio.value));
       });
     };
   });
@@ -660,6 +699,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           forceEnabled: enabled,
           ...getFilterValues(),
         });
+        reportFeature("media_control_changed");
       });
     };
   });
@@ -704,6 +744,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         forceEnabled: next === "force" ? true : enabled,
         ...getFilterValues(),
       });
+      if (next === "force") reportFeature("native_dark_override");
     });
   };
 
@@ -766,7 +807,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     contrastInput.value = defaultFilters.contrast;
     sepiaInput.value = defaultFilters.sepia;
     sendFilterUpdate();
+    reportFeature("filters_reset");
   };
+
+  // Usage counts for the colour picker and sliders: once per committed change (release / picker closed), never on
+  // every input event of a drag. The settings themselves are still saved by the debounced input handlers above.
+  backgroundColorInput.onchange = () => reportFeature("bg_color_changed");
+  brightnessInput.onchange = () => reportFeature("brightness_changed");
+  contrastInput.onchange = () => reportFeature("contrast_changed");
+  sepiaInput.onchange = () => reportFeature("sepia_changed");
+  imageDimInput.onchange = () => reportFeature("image_dim_changed");
 
   async function refreshActiveTab() {
     const sequence = ++loadSequence;

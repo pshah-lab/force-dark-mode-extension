@@ -30,9 +30,9 @@ There is **no install ID, account or cookie** in a report, so reports are not li
 - **Zero Page Content Extraction:** Web page text, form entries, credentials, and cookies are never accessed or transmitted.
 
 ### 1.2 Optional usage report (version 2.1.0 and later)
-In version 2.1.0 and later the usage report is **off by default**. Nothing is sent, and no random ID exists, unless you press **Turn on** on the one-time card in the side panel or switch on **Usage report** in the Options page. If you press No thanks, or never choose, the extension sends no usage report. People who opted in to the usage statistics of version 2.0.0 are asked once to confirm, because this version also counts sites; until they confirm, nothing is sent from their install.
+In version 2.1.0 and later the usage report is **off by default**. Nothing is sent, and no random ID exists, unless you press **Turn on** on the one-time card in the side panel or switch on **Usage report** in the Options page. If you press No thanks, or never choose, the extension sends no usage report. People who opted in to the usage statistics of version 2.0.0 are asked once to confirm, because this version also counts sites. From version 2.3.0 the report also counts which viewer and export features you used, so people who opted in with versions 2.0 to 2.2 are asked to confirm again; until they confirm, nothing new is sent from their install.
 
-When you opt in, on each day you use dark mode the extension sends a small report, from the background service worker only. The same day's report may be sent again, replacing the earlier one for that day, when the engines you used or the number of sites change (at most once an hour). A report contains exactly these fields:
+When you opt in, on each day you use dark mode the extension sends a small report, from the background service worker only. The same day's report may be sent again, replacing the earlier one for that day, when the engines you used, the number of sites or your feature counts change (at most once an hour). A report contains exactly these fields:
 
 <!-- usage-fields:start -->
 - `id`: a random identifier created when you turn the report on; it is not linked to your Google account, email or name
@@ -40,6 +40,7 @@ When you opt in, on each day you use dark mode the extension sends a small repor
 - `version`: the extension version
 - `engines.auto`, `engines.css`, `engines.invert`: whether each engine (Auto, CSS, Invert) was used that day (yes or no flags, not counts)
 - `sites`: how many sites dark mode was applied on that day (a number only, never which sites)
+- `featureUses` (version 2.3.0 and later): which viewer and export features you used, as counts per day; never file names, contents or sites (for example, how many times the PDF viewer or a PDF-to-text export was used; a whole number per feature, never a file name, size, page count, site or time)
 <!-- usage-fields:end -->
 
 Nothing about which sites you visit, what you read or watch, the documents you open or any text you type is ever collected or sent. So that each site is counted once, the extension keeps on your device a daily list of numeric fingerprints (hashes) of site names, replaced each day; the list never leaves your device, and only the final number is sent.

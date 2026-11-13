@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.0] - 2026-11-08
 
 ### Added
+- **Opt-in feature counts in the usage report**: if you have turned the usage report on, it now also says which viewer and export features you used, as counts per day (for example PDF viewer opens or PDF-to-text exports). Never file names, contents, sizes, page counts or sites. People who opted in with versions 2.0 to 2.2 are asked to confirm again, and nothing new is sent until they do. Turning the report off still deletes everything held for your random ID.
 - **Export & convert in the document viewer**: an Export menu downloads the open file in another format, converted entirely on your device. PDF to TXT, Markdown or PNG pages (single page or a zip, with a page range; scanned PDFs without text are reported, not converted); DOCX and PPTX to TXT, Markdown or HTML; XLSX to CSV or JSON; CSV to XLSX; Markdown, TXT and RTF to HTML. Exports follow what the viewer shows, so its size limits apply. No new permissions and no network use.
 
 ### Fixed

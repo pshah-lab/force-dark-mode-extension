@@ -1034,7 +1034,7 @@ test("PRIVACY.md describes the 2.1.0 opt-in usage report truthfully and lists ex
   const fields = privacyDoc.match(/<!-- usage-fields:start -->([\s\S]*?)<!-- usage-fields:end -->/);
   assert.ok(fields, "PRIVACY.md must delimit the 2.1.0 usage fields with usage-fields markers");
   const documented = [...fields[1].matchAll(/`([A-Za-z.]+)`/g)].map((m) => m[1]);
-  assert.deepStrictEqual([...documented].sort(), ["day", "engines.auto", "engines.css", "engines.invert", "id", "sites", "version"].sort());
+  assert.deepStrictEqual([...documented].sort(), ["day", "engines.auto", "engines.css", "engines.invert", "featureUses", "id", "sites", "version"].sort());
 });
 
 test("the web privacy page and the store text cover the 2.1.0 usage report and declare User activity and Web history", () => {

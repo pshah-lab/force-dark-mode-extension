@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { handleUsageMessage } from "../src/background/usageMessages.js";
+import { FEATURE_KEYS } from "../src/shared/usageReport.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => fs.readFileSync(path.join(rootDir, rel), "utf8");
@@ -19,6 +20,7 @@ function fakeUsage() {
     recordDarkApplied: async (a) => { calls.push(["record", a]); },
     setConsent: async (e) => { calls.push(["consent", e]); return { ok: true, serverConfirmed: true }; },
     status: async () => { calls.push(["status"]); return { enabled: false, consentNeeded: "ask" }; },
+    recordFeature: async (k) => { calls.push(["feature", k]); },
   };
 }
 const fromTab = (url) => ({ id: "x", tab: { id: 1, url } });
@@ -96,6 +98,28 @@ test("USAGE_CONSENT needs a real boolean", async () => {
   for (const bad of ["true", 1, null, undefined, {}]) {
     assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_CONSENT", enabled: bad }, fromPage), { ok: false });
   }
+  assert.deepStrictEqual(u.calls, []);
+});
+
+test("USAGE_FEATURE is accepted from extension pages (incl. a tab) and never rejects", async () => {
+  const u = fakeUsage();
+  const key = FEATURE_KEYS[0];
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_FEATURE", key }, fromPage), { ok: true });
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_FEATURE", key }, optionsTab, EXT), { ok: true });
+  assert.deepStrictEqual(u.calls, [["feature", key], ["feature", key]]);
+  u.recordFeature = async () => { throw new Error("x"); };
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_FEATURE", key }, fromPage), { ok: true });
+});
+
+test("USAGE_FEATURE is ignored from content scripts and for unknown keys", () => {
+  const u = fakeUsage();
+  const key = FEATURE_KEYS[0];
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_FEATURE", key }, contentScript, EXT), undefined);
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_FEATURE", key }, fromTab("https://a.example.com/")), undefined);
+  for (const bad of ["__proto__", "constructor", "toString", "nope", 0, 1, null, undefined, {}, [key], ""]) {
+    assert.strictEqual(handleUsageMessage(u, { type: "USAGE_FEATURE", key: bad }, fromPage), undefined, String(bad));
+  }
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_FEATURE" }, fromPage), undefined);
   assert.deepStrictEqual(u.calls, []);
 });
 

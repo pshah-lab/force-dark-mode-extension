@@ -67,6 +67,12 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://darkmode.pshah.fun/pro.html</loc>
+    <lastmod>2026-11-13</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  <url>
     <loc>https://darkmode.pshah.fun/about.html</loc>
     <lastmod>2026-09-22</lastmod>
     <changefreq>monthly</changefreq>

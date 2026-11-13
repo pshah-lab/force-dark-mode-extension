@@ -280,7 +280,11 @@ test("tools.html: module script only, no inline script/handlers, no remote URLs"
   assert.ok(/<link rel="stylesheet" href="tools\.css"/.test(html));
   assert.ok(!/<script\b(?![^>]*\ssrc\s*=)[^>]*>/i.test(html), "no inline <script>");
   assert.ok(!/\son[a-z]+\s*=/i.test(html), "no inline handlers");
-  assert.ok(!/https?:|\/\/[a-z]/i.test(html), "no remote URLs");
+  // The only allowed remote URL is the single "Pro is coming" interest-page link (opened in a new tab, no script/form).
+  const PRO_URL = "https://darkmode.pshah.fun/pro.html";
+  assert.ok(!/https?:|\/\/[a-z]/i.test(html.split(PRO_URL).join("")), "no remote URLs other than the Pro interest link");
+  assert.strictEqual(html.split(PRO_URL).length - 1, 1, "exactly one Pro interest link");
+  assert.ok(!/<form[^>]*\saction\s*=/i.test(html), "no form action");
   assert.ok(!/\sstyle\s*=/i.test(html), "no inline styles");
   for (const id of ["tool-list", "file-input", "drop-zone", "options", "run", "progress", "results"]) {
     assert.ok(html.includes(`id="${id}"`), `tools.html has #${id}`);

@@ -367,6 +367,23 @@ input:focus-visible {
   margin-bottom: 10px;
 }
 
+.tools-footer {
+  padding: 12px 24px 20px;
+  font-size: 12px;
+  text-align: center;
+}
+
+.tools-footer a {
+  color: var(--tools-muted);
+  text-decoration: none;
+}
+
+.tools-footer a:hover,
+.tools-footer a:focus-visible {
+  color: var(--tools-accent);
+  text-decoration: underline;
+}
+
 @media (max-width: 720px) {
   .layout {
     grid-template-columns: 1fr;

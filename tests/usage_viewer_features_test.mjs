@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { detectDocumentKind, getExportFormats } from "../src/viewer/convert/exportFormats.js";
-import { FEATURE_KEYS } from "../src/shared/usageReport.js";
+import { FEATURE_KEYS, SURFACES } from "../src/shared/usageReport.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -36,7 +36,7 @@ try {
   console.error(`  ✗ import src/viewer/usageFeatures.js: ${err.message}`);
   failed++;
 }
-const { viewerFeatureKey, exportFeatureKey } = helpers;
+const { viewerFeatureKey, exportFeatureKey, viewerSurface, pdfSourceKind } = helpers;
 
 // ---- Pure helpers -------------------------------------------------------
 
@@ -101,6 +101,35 @@ await test("exportFeatureKey returns null for unsupported combinations", () => {
   for (const [kind, ext] of bad) assert.strictEqual(exportFeatureKey(kind, ext), null, `${kind}/${ext}`);
 });
 
+await test("viewerSurface maps every document kind and both sources to a fixed surface", () => {
+  const expected = {
+    pdf: { url: "web_pdf", file: "local_pdf" },
+    docx: { url: "local_doc", file: "local_doc" }, pptx: { url: "local_doc", file: "local_doc" },
+    markdown: { url: "local_doc", file: "local_doc" }, text: { url: "local_doc", file: "local_doc" },
+    rtf: { url: "local_doc", file: "local_doc" },
+    xlsx: { url: "local_sheet", file: "local_sheet" }, csv: { url: "local_sheet", file: "local_sheet" },
+  };
+  for (const kind of KINDS) {
+    for (const source of ["url", "file"]) assert.strictEqual(viewerSurface(kind, source), expected[kind][source], `${kind}/${source}`);
+  }
+});
+
+await test("viewerSurface never returns anything but a fixed surface for odd input", () => {
+  const odd = [[undefined, undefined], [null, "url"], ["pdf", "https://x.example/a.pdf"], ["pdf", undefined], ["__proto__", "file"], [{}, {}]];
+  for (const [kind, source] of odd) {
+    assert.ok(SURFACES.includes(viewerSurface(kind, source)), `${String(kind)}/${String(source)}`);
+  }
+  assert.strictEqual(viewerSurface("pdf", "https://x.example/a.pdf"), "other");
+});
+
+await test("pdfSourceKind: http(s) strings are url; bytes, file:, blob: are file", () => {
+  assert.strictEqual(pdfSourceKind("https://example.com/a.pdf"), "url");
+  assert.strictEqual(pdfSourceKind("HTTP://example.com/a.pdf"), "url");
+  for (const v of [new Uint8Array(2), "file:///tmp/a.pdf", "blob:chrome-extension://x/1", "", null, undefined]) {
+    assert.strictEqual(pdfSourceKind(v), "file");
+  }
+});
+
 await test("usageFeatures.js is DOM-free and network-free", () => {
   const src = fs.readFileSync(path.join(rootDir, "src/viewer/usageFeatures.js"), "utf8")
     .replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
@@ -150,21 +179,26 @@ await test("viewer.js imports the helpers from usageFeatures.js", () => {
   assert.ok(/\bviewerFeatureKey\b/.test(m[1]) && /\bexportFeatureKey\b/.test(m[1]));
 });
 
-await test("reportFeature sends only {type, key} inside try/catch and swallows rejections", () => {
+await test("reportFeature sends only {type, key, surface} inside try/catch and swallows rejections", () => {
   const body = functionBody("reportFeature");
-  assert.ok(/^function reportFeature\(key\)/.test(body), "plain (non-async) reportFeature(key)");
-  assert.ok(/try\s*\{[\s\S]*chrome\.runtime\.sendMessage\(\{\s*type:\s*"USAGE_FEATURE",\s*key\s*\}\)[\s\S]*\}\s*catch/.test(body));
+  assert.ok(/^function reportFeature\(key, surface\)/.test(body), "plain (non-async) reportFeature(key, surface)");
+  assert.ok(/try\s*\{[\s\S]*chrome\.runtime\.sendMessage\(\{\s*type:\s*"USAGE_FEATURE",\s*key,\s*surface\s*\}\)[\s\S]*\}\s*catch/.test(body));
   assert.ok(/\.catch\(/.test(body), "a returned rejected promise is ignored");
   const sends = viewerSrc.match(/USAGE_FEATURE/g) || [];
   assert.strictEqual(sends.length, 1, "USAGE_FEATURE is sent from exactly one place");
 });
 
 await test("reportFeature calls pass only a helper result, never a name or file", () => {
-  const calls = callArgs(viewerSrc, "reportFeature").filter((c) => c.args !== "key");
+  const calls = callArgs(viewerSrc, "reportFeature").filter((c) => c.args !== "key, surface");
   assert.ok(calls.length >= 5, `expected open + export calls, found ${calls.length}`);
   for (const { args } of calls) {
     assert.ok(/^(viewerFeatureKey|exportFeatureKey)\(/.test(args.trim()), `reportFeature(${args})`);
-    assert.ok(!/\bname\b|\bfile\b|Name\b|\.name\b|size|numPages|pages/.test(args), `reportFeature(${args}) leaks data`);
+    const surfaceCalls = callArgs(args, "viewerSurface");
+    assert.strictEqual(surfaceCalls.length, 1, `reportFeature(${args}) passes one viewerSurface(...) result`);
+    assert.ok(/,\s*viewerSurface\([^]*\)\s*$/.test(args), `reportFeature(${args}): surface is the last argument`);
+    assert.ok(!/,\s*(name|url|src|source|file)\s*$/.test(args), `reportFeature(${args}) passes a bare variable`);
+    // Quoted literals (the fixed "file" source word) cannot carry data; every identifier is still checked.
+    assert.ok(!/\bname\b|\bfile\b|Name\b|\.name\b|size|numPages|pages/.test(args.replace(/"[^"]*"/g, '""')), `reportFeature(${args}) leaks data`);
   }
   assert.ok(!/await\s+reportFeature/.test(viewerSrc), "reportFeature is never awaited");
 });
@@ -182,13 +216,13 @@ await test("open paths report after success", () => {
     }
   }
   const office = functionBody("openOfficeFile");
-  assert.ok(/reportFeature\(viewerFeatureKey\("docx"\)\)/.test(office));
-  assert.ok(/reportFeature\(viewerFeatureKey\("pptx"\)\)/.test(office));
+  assert.ok(/reportFeature\(viewerFeatureKey\("docx"\), viewerSurface\("docx", "file"\)\)/.test(office));
+  assert.ok(/reportFeature\(viewerFeatureKey\("pptx"\), viewerSurface\("pptx", "file"\)\)/.test(office));
 });
 
 await test("PDF open counts only from file-open entry points, not re-renders", () => {
   const pdf = functionBody("openPdf");
-  const report = pdf.search(/reportFeature\(viewerFeatureKey\("pdf"\)\)/);
+  const report = pdf.search(/reportFeature\(viewerFeatureKey\("pdf"\), viewerSurface\("pdf", pdfSourceKind\(source\)\)\)/);
   assert.ok(report >= 0, "openPdf reports viewer_pdf");
   assert.ok(report > pdf.indexOf("currentPdf = pdf"), "reported only after the PDF loaded");
   assert.ok(report < pdf.indexOf("catch (error)"), "not reported from the failure path");
@@ -213,8 +247,8 @@ await test("re-render and conversion helpers never report", () => {
 
 await test("runExport reports only after a successful, non-stale download", () => {
   const body = functionBody("runExport");
-  const m = body.match(/reportFeature\(exportFeatureKey\(source\.kind,\s*formatId\)\)/);
-  assert.ok(m, "runExport reports exportFeatureKey(source.kind, formatId)");
+  const m = body.match(/reportFeature\(exportFeatureKey\(source\.kind,\s*formatId\),\s*viewerSurface\(source\.kind,\s*pdfSourceKind\(currentPdfSource\)\)\)/);
+  assert.ok(m, "runExport reports exportFeatureKey(source.kind, formatId) with the document's own surface");
   const at = body.indexOf(m[0]);
   assert.ok(at > body.indexOf("if (currentExport !== source) return;"), "after the stale check");
   assert.ok(at > body.indexOf("if (done)"), "inside the done branch");
@@ -224,6 +258,12 @@ await test("runExport reports only after a successful, non-stale download", () =
 
 await test("viewer.js still has no .innerHTML", () => {
   assert.ok(!/\.innerHTML/.test(viewerSrc));
+});
+
+await test("viewer.js imports viewerSurface and pdfSourceKind and has no other surface source", () => {
+  const m = viewerSrc.match(/import\s*\{([^}]*)\}\s*from\s*"\.\/usageFeatures\.js";/);
+  assert.ok(/\bviewerSurface\b/.test(m[1]) && /\bpdfSourceKind\b/.test(m[1]));
+  assert.ok(!/surfaceFor/.test(viewerSrc), "viewer.js goes through viewerSurface only");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

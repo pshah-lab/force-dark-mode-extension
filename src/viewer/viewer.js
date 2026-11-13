@@ -23,7 +23,7 @@ import { hasExtractableText, pdfPagesToText, pdfPagesToMarkdown, parsePageRange,
 import { sheetToMatrix, toCsv, workbookToJson } from "./convert/csvWriter.js";
 import { createXlsx } from "./convert/xlsxWriter.js";
 import { createZip } from "./convert/zipWriter.js";
-import { viewerFeatureKey, exportFeatureKey } from "./usageFeatures.js";
+import { viewerFeatureKey, exportFeatureKey, viewerSurface, pdfSourceKind } from "./usageFeatures.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
   "src/viewer/vendor/pdf.worker.min.mjs"
@@ -206,7 +206,7 @@ async function openPdf(source, name, fallbackSource = source, { countOpen = fals
     if (generation !== renderGeneration) return;
     currentPdf = pdf;
     setExportSource("pdf", name, pdf);
-    if (countOpen) reportFeature(viewerFeatureKey("pdf"));
+    if (countOpen) reportFeature(viewerFeatureKey("pdf"), viewerSurface("pdf", pdfSourceKind(source)));
 
     pdfStatus.textContent = `Rendering ${pdf.numPages} page${pdf.numPages === 1 ? "" : "s"}...`;
 
@@ -302,7 +302,7 @@ function openTextDocument(text, name) {
     documentPanel.replaceChildren();
     documentPanel.textContent = normalizeDocumentText(text, name);
   }
-  reportFeature(viewerFeatureKey(kind));
+  reportFeature(viewerFeatureKey(kind), viewerSurface(kind, "file"));
 }
 
 const CFB_SIGNATURE = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
@@ -380,7 +380,7 @@ async function openOfficeFile(file) {
     showPanel("document");
     renderDocxBlocksSafely(docxResult, documentPanel);
     setExportSource("docx", file.name, docxResult);
-    reportFeature(viewerFeatureKey("docx"));
+    reportFeature(viewerFeatureKey("docx"), viewerSurface("docx", "file"));
     return;
   }
 
@@ -416,7 +416,7 @@ async function openOfficeFile(file) {
   showPanel("document");
   renderPptxSlidesSafely(result, documentPanel);
   setExportSource("pptx", file.name, result);
-  reportFeature(viewerFeatureKey("pptx"));
+  reportFeature(viewerFeatureKey("pptx"), viewerSurface("pptx", "file"));
 }
 
 async function openSpreadsheetFile(file) {
@@ -487,7 +487,7 @@ async function openSpreadsheetFile(file) {
   currentSpreadsheet = { workbook, state: { selected: 0 } };
   renderSpreadsheet(spreadsheetPanel, workbook, getCurrentSettings(), currentSpreadsheet.state);
   setExportSource(isCsv ? "csv" : "xlsx", file.name, workbook);
-  reportFeature(viewerFeatureKey(isCsv ? "csv" : "xlsx"));
+  reportFeature(viewerFeatureKey(isCsv ? "csv" : "xlsx"), viewerSurface(isCsv ? "csv" : "xlsx", "file"));
 }
 
 // Re-draws the grid after a Mode/Background/Text change, keeping scroll position
@@ -1299,11 +1299,11 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
-// Opt-in usage count: sends only an allow-listed key. Best effort, never awaited.
-function reportFeature(key) {
+// Opt-in usage count: sends only an allow-listed key and a fixed surface string. Best effort, never awaited.
+function reportFeature(key, surface) {
   if (!key) return;
   try {
-    const result = chrome.runtime.sendMessage({ type: "USAGE_FEATURE", key });
+    const result = chrome.runtime.sendMessage({ type: "USAGE_FEATURE", key, surface });
     if (result && typeof result.catch === "function") result.catch(() => {});
   } catch {
     // Counting must never affect the viewer.
@@ -1329,7 +1329,7 @@ async function runExport() {
       const data = source.data;
       const truncated = !!data && (data.truncated === true || (Array.isArray(data.sheets) && data.sheets.some((sheet) => sheet.truncated)));
       setExportStatus(truncated ? "Downloaded. The preview was truncated, so the export is too." : "Downloaded.");
-      reportFeature(exportFeatureKey(source.kind, formatId));
+      reportFeature(exportFeatureKey(source.kind, formatId), viewerSurface(source.kind, pdfSourceKind(currentPdfSource)));
     }
   } catch (error) {
     console.warn("[ForceDark] Export failed:", error);

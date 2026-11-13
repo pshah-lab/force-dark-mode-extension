@@ -71,6 +71,7 @@ const EGRESS_SCANNED_FILES = [
   "src/shared/customCss.js",
   "src/shared/constants.js",
   "src/shared/usageReport.js",
+  "src/shared/surface.js",
   "src/viewer/viewer.js",
   "src/viewer/parsers/docxParser.js",
   "src/viewer/parsers/pptxParser.js",

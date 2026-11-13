@@ -137,10 +137,16 @@ test("the README says to run usage_v2.sql before re-running public_stats.sql", (
 const TOOL_KEYS = ["tool_merge", "tool_split", "tool_extract", "tool_remove", "tool_reorder", "tool_rotate",
   "tool_images_to_pdf", "tool_page_numbers", "tool_watermark", "tool_strip_metadata", "tool_color_copy_dark",
   "tool_color_copy_sepia", "tool_color_copy_gray"];
+// The 23 viewer/export keys of consent v3. The extension list grew to 44 (consent v4, Task 1); the backend
+// allow-list gains the 21 new keys in Task 7, which switches these back to the full FEATURE_KEYS.
+const V3_FEATURE_KEYS = ["viewer_pdf", "viewer_docx", "viewer_pptx", "viewer_xlsx", "viewer_csv", "viewer_md", "viewer_txt",
+  "viewer_rtf", "export_pdf_txt", "export_pdf_md", "export_pdf_png", "export_docx_txt", "export_docx_md", "export_docx_html",
+  "export_pptx_txt", "export_pptx_md", "export_pptx_html", "export_xlsx_csv", "export_xlsx_json", "export_csv_xlsx",
+  "export_md_html", "export_txt_html", "export_rtf_html"];
 const fu = (featureUses) => ({ ...report(), featureUses });
 const FU_VALID = [
   fu({ viewer_pdf: 3, export_md_html: 999 }), fu({ viewer_pdf: 1 }),
-  fu(Object.fromEntries(FEATURE_KEYS.map((k) => [k, MAX_FEATURE_COUNT]))),
+  fu(Object.fromEntries(V3_FEATURE_KEYS.map((k) => [k, MAX_FEATURE_COUNT]))),
 ];
 const FU_INVALID = [
   { nope: 1 }, { __proto__x: 1 }, { viewer_pdf: 0 }, { viewer_pdf: 1000 }, { viewer_pdf: 1.5 },
@@ -161,11 +167,13 @@ test("featureUses: validateUsage and validateReport agree on every 6-key case", 
   for (const c of FU_INVALID) assert.strictEqual(be.validateUsage(c), false, JSON.stringify(c));
 });
 
-test("FEATURE_KEYS_ACCEPTED is the extension's 23 keys plus the reserved tool_* keys", () => {
-  assert.strictEqual(FEATURE_KEYS.length, 23);
-  for (const k of FEATURE_KEYS) assert.ok(be.FEATURE_KEYS_ACCEPTED.includes(k), k);
+test("FEATURE_KEYS_ACCEPTED is the extension's 23 v3 keys plus the reserved tool_* keys (Task 7 adds the 21 v4 keys)", () => {
+  assert.strictEqual(FEATURE_KEYS.length, 44);
+  assert.strictEqual(V3_FEATURE_KEYS.length, 23);
+  for (const k of V3_FEATURE_KEYS) assert.ok(FEATURE_KEYS.includes(k), k);
+  for (const k of V3_FEATURE_KEYS) assert.ok(be.FEATURE_KEYS_ACCEPTED.includes(k), k);
   for (const k of TOOL_KEYS) assert.ok(be.FEATURE_KEYS_ACCEPTED.includes(k), k);
-  assert.strictEqual(be.FEATURE_KEYS_ACCEPTED.length, FEATURE_KEYS.length + TOOL_KEYS.length);
+  assert.strictEqual(be.FEATURE_KEYS_ACCEPTED.length, V3_FEATURE_KEYS.length + TOOL_KEYS.length);
   assert.strictEqual(new Set(be.FEATURE_KEYS_ACCEPTED).size, be.FEATURE_KEYS_ACCEPTED.length);
   assert.ok(Object.isFrozen(be.FEATURE_KEYS_ACCEPTED));
   assert.strictEqual(be.MAX_FEATURE_COUNT, MAX_FEATURE_COUNT);

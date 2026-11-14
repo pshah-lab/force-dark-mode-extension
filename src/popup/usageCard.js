@@ -19,7 +19,7 @@
     ask: {
       id: "ask",
       title: "Share a daily usage report?",
-      intro: `It is off unless you turn it on. If you do, ${UPDATED}`,
+      intro: `It helps us decide which features to improve. It is off unless you turn it on. If you do, ${UPDATED}`,
       items: ITEMS,
       note: NOTE,
       yes: "Turn on",

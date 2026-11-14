@@ -75,6 +75,7 @@ test("the copy is plain: never anonymous, says off by default, may be updated, n
     assert.ok(/Options/.test(card.note) && /deletes what we hold for your ID/i.test(card.note), `${key}: how to turn off`);
   }
   assert.ok(/off unless you turn it on/i.test(USAGE_COPY.ask.intro));
+  assert.ok(/helps us decide which features to improve/i.test(USAGE_COPY.ask.intro), "ask card says why we ask");
   assert.ok(/Nothing new is sent until you confirm/i.test(USAGE_COPY.reconfirm.intro));
   const ri = USAGE_COPY.reconfirm.intro;
   assert.ok(/earlier version/i.test(ri) && !/version 2\.0/i.test(ri), "true for 2.0, 2.1 and 2.2 opt-ins");
@@ -92,12 +93,14 @@ test("the side panel has the card, hidden until asked, and loads the script befo
   assert.ok(html.indexOf("usageCard.js") > -1 && html.indexOf("usageCard.js") < html.indexOf("popup.js"));
 });
 
-test("the panel asks USAGE_STATUS after the welcome card and answers with USAGE_CONSENT", () => {
+test("the panel asks USAGE_STATUS before the welcome card and answers with USAGE_CONSENT", () => {
   const js = read("src/popup/popup.js");
   assert.ok(/UsageCard\.cardFor\(/.test(js));
   assert.ok(/type: "USAGE_STATUS"/.test(js));
   assert.ok(/type: "USAGE_CONSENT", enabled: true/.test(js) && /type: "USAGE_CONSENT", enabled: false/.test(js));
-  assert.ok(/initWelcomeCard\(\)\s*\.then\(\(\) => initUsageCard\(\)\)/.test(js), "usage card follows the welcome card");
+  assert.ok(/initUsageCard\(\)\s*\.then\(\(\) => initWelcomeCard\(\)\)/.test(js), "the welcome card follows the usage card");
+  const body = js.slice(js.indexOf("async function initUsageCard"));
+  assert.ok(/await new Promise\(/.test(body) && /resolve\(\)/.test(body), "initUsageCard resolves once the card is answered, so the two cards never stack");
 });
 
 test("Options has an off-by-default toggle that sends USAGE_CONSENT and lists the same fields", () => {

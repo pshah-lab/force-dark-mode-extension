@@ -130,10 +130,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   document.getElementById("feedback-rate").addEventListener("click", () => settleFeedback(FeedbackPrompt.finish));
   document.getElementById("feedback-report").addEventListener("click", () => settleFeedback(FeedbackPrompt.finish));
 
-  // One-time welcome card (best features for new installs, what is new for updates). Runs on its own so a
-  // storage failure can never break the rest of the panel.
-  initWelcomeCard()
-    .then(() => initUsageCard())
+  // One-time cards, the usage-report choice first (so a new install is asked before anything else), then the
+  // welcome card (best features for new installs, what is new for updates). Runs on its own so a storage
+  // failure can never break the rest of the panel.
+  initUsageCard()
+    .then(() => initWelcomeCard())
     .catch((err) => console.warn("Side panel cards unavailable:", err));
 
   // The side panel stays open across tabs, so the current tab and host are re-read by loadForTab.
@@ -847,8 +848,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   await refreshActiveTab();
 });
 
-// Resolves when no welcome card is showing (immediately, or once it is dismissed), so the usage card never
-// stacks on top of it.
+// Resolves when no welcome card is showing (immediately, or once it is dismissed).
 async function initWelcomeCard() {
   const card = document.getElementById("welcome-card");
   const key = WelcomeCard.STATE_KEY;
@@ -879,7 +879,8 @@ async function initWelcomeCard() {
 }
 
 // One-time consent card for the optional usage report. The worker decides whether one is needed; both buttons
-// answer it and the card never comes back.
+// answer it and the card never comes back. Resolves when no card is showing (immediately, or once it is
+// answered), so the welcome card never stacks on top of it.
 async function initUsageCard() {
   let status;
   try {
@@ -904,11 +905,14 @@ async function initUsageCard() {
   const no = document.getElementById("usage-no");
   yes.textContent = content.yes;
   no.textContent = content.no;
-  const answer = (enabled) => {
-    card.hidden = true;
-    chrome.runtime.sendMessage(enabled ? { type: "USAGE_CONSENT", enabled: true } : { type: "USAGE_CONSENT", enabled: false }).catch(() => {});
-  };
-  yes.onclick = () => answer(true);
-  no.onclick = () => answer(false);
-  card.hidden = false;
+  await new Promise((resolve) => {
+    const answer = (enabled) => {
+      card.hidden = true;
+      chrome.runtime.sendMessage(enabled ? { type: "USAGE_CONSENT", enabled: true } : { type: "USAGE_CONSENT", enabled: false }).catch(() => {});
+      resolve();
+    };
+    yes.onclick = () => answer(true);
+    no.onclick = () => answer(false);
+    card.hidden = false;
+  });
 }

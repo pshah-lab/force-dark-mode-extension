@@ -3,9 +3,12 @@
 import { setCorsHeaders } from "./cors.js";
 
 export const MAX_BODY_BYTES = 2048;
+// Only the usage ingest endpoint (api/darkmode-telemetry.js) uses this: the largest valid consent-v4 report
+// (44 featureUses + 120 surfaceUses entries) measures 5513 bytes, about 5.5 KB, under this 8 KB limit. Every other endpoint keeps MAX_BODY_BYTES.
+export const MAX_USAGE_BODY_BYTES = 8192;
 
-// Returns { ok: true, value } or { ok: false, status }.
-export async function readJsonBody(req) {
+// Returns { ok: true, value } or { ok: false, status }. maxBytes defaults to MAX_BODY_BYTES.
+export async function readJsonBody(req, maxBytes = MAX_BODY_BYTES) {
   let raw;
   try {
     raw = req.body;
@@ -19,7 +22,7 @@ export async function readJsonBody(req) {
   else if (typeof raw === "object") {
     try { text = JSON.stringify(raw); } catch (e) { return { ok: false, status: 400 }; }
   } else return { ok: false, status: 400 };
-  if (Buffer.byteLength(text, "utf8") > MAX_BODY_BYTES) return { ok: false, status: 413 };
+  if (Buffer.byteLength(text, "utf8") > maxBytes) return { ok: false, status: 413 };
   try {
     return { ok: true, value: JSON.parse(text) };
   } catch (e) {

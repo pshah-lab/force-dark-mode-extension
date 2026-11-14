@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { handleUsageMessage } from "../src/background/usageMessages.js";
+import { FEATURE_KEYS, SURFACES } from "../src/shared/usageReport.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const read = (rel) => fs.readFileSync(path.join(rootDir, rel), "utf8");
@@ -19,6 +20,7 @@ function fakeUsage() {
     recordDarkApplied: async (a) => { calls.push(["record", a]); },
     setConsent: async (e) => { calls.push(["consent", e]); return { ok: true, serverConfirmed: true }; },
     status: async () => { calls.push(["status"]); return { enabled: false, consentNeeded: "ask" }; },
+    recordFeature: async (k, surf) => { calls.push(surf === undefined ? ["feature", k] : ["feature", k, surf]); },
   };
 }
 const fromTab = (url) => ({ id: "x", tab: { id: 1, url } });
@@ -29,13 +31,13 @@ test("DARK_APPLIED from a content script records the engine and the tab's own ho
   const p = handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, fromTab("https://News.Example.com/a?q=1#x"));
   assert.ok(p && typeof p.then === "function");
   assert.deepStrictEqual(await p, { ok: true });
-  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com" }]]);
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com", surface: "web_other" }]]);
 });
 
 test("a host or URL supplied inside the message is never used", async () => {
   const u = fakeUsage();
   await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "auto", host: "evil.example", url: "https://evil.example/" }, fromTab("https://real.example.com/"));
-  assert.deepStrictEqual(u.calls, [["record", { engine: "auto", host: "real.example.com" }]]);
+  assert.deepStrictEqual(u.calls, [["record", { engine: "auto", host: "real.example.com", surface: "web_other" }]]);
 });
 
 test("DARK_APPLIED is ignored without a tab, from non-web pages and with a bad engine", () => {
@@ -82,7 +84,7 @@ test("a content script still cannot read or change consent, and an extension pag
 test("a content script is still counted when the extension base URL is supplied", async () => {
   const u = fakeUsage();
   await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, contentScript, EXT);
-  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com" }]]);
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com", surface: "web_other" }]]);
 });
 
 test("an empty extension base URL never makes every sender look like an extension page", () => {
@@ -96,6 +98,65 @@ test("USAGE_CONSENT needs a real boolean", async () => {
   for (const bad of ["true", 1, null, undefined, {}]) {
     assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_CONSENT", enabled: bad }, fromPage), { ok: false });
   }
+  assert.deepStrictEqual(u.calls, []);
+});
+
+test("USAGE_FEATURE is accepted from extension pages (incl. a tab) and never rejects", async () => {
+  const u = fakeUsage();
+  const key = FEATURE_KEYS[0];
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_FEATURE", key }, fromPage), { ok: true });
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_FEATURE", key }, optionsTab, EXT), { ok: true });
+  assert.deepStrictEqual(u.calls, [["feature", key], ["feature", key]]);
+  u.recordFeature = async () => { throw new Error("x"); };
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_FEATURE", key }, fromPage), { ok: true });
+});
+
+test("USAGE_FEATURE is ignored from content scripts and for unknown keys", () => {
+  const u = fakeUsage();
+  const key = FEATURE_KEYS[0];
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_FEATURE", key }, contentScript, EXT), undefined);
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_FEATURE", key }, fromTab("https://a.example.com/")), undefined);
+  for (const bad of ["__proto__", "constructor", "toString", "nope", 0, 1, null, undefined, {}, [key], ""]) {
+    assert.strictEqual(handleUsageMessage(u, { type: "USAGE_FEATURE", key: bad }, fromPage), undefined, String(bad));
+  }
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_FEATURE" }, fromPage), undefined);
+  assert.deepStrictEqual(u.calls, []);
+});
+
+test("USAGE_FEATURE passes a valid surface, and drops an absent or unknown one (total still counts)", async () => {
+  const u = fakeUsage();
+  const key = FEATURE_KEYS[0];
+  const surf = SURFACES[0];
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_FEATURE", key, surface: surf }, fromPage), { ok: true });
+  for (const bad of ["nope", "__proto__", 1, null, {}, [surf], "", "WEB_OTHER"]) {
+    assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_FEATURE", key, surface: bad }, fromPage), { ok: true });
+  }
+  assert.deepStrictEqual(u.calls[0], ["feature", key, surf]);
+  assert.deepStrictEqual(u.calls.slice(1), Array(8).fill(["feature", key]));
+  assert.strictEqual(handleUsageMessage(u, { type: "USAGE_FEATURE", key, surface: surf }, contentScript, EXT), undefined);
+  u.recordFeature = async () => { throw new Error("x"); };
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_FEATURE", key, surface: surf }, fromPage), { ok: true });
+});
+
+test("DARK_APPLIED records dark_applied in the same call, with the surface computed from the sender tab", async () => {
+  let u = fakeUsage();
+  await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, fromTab("https://docs.google.com/document/d/x/edit"));
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "docs.google.com", surface: "google_docs" }]]);
+  u = fakeUsage();
+  await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, fromTab("https://news.example.com/a"));
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com", surface: "web_other" }]]);
+  u = fakeUsage();
+  await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css", surface: "google_docs" }, fromTab("https://news.example.com/a"));
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com", surface: "web_other" }]], "a smuggled surface is ignored");
+  u = fakeUsage();
+  await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css", key: "x", surface: "google_docs" }, fromTab("https://docs.google.com.evil.com/document/d/x"));
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "docs.google.com.evil.com", surface: "web_other" }]]);
+  assert.ok(u.calls.every((c) => c[0] !== "feature"), "dark_applied is no longer a separate recordFeature call");
+  u = fakeUsage();
+  u.recordFeature = async () => { throw new Error("x"); };
+  assert.deepStrictEqual(await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, fromTab("https://a.example.com/")), { ok: true });
+  u = fakeUsage();
+  assert.strictEqual(handleUsageMessage(u, { type: "DARK_APPLIED", engine: "bogus" }, fromTab("https://a.example.com/")), undefined);
   assert.deepStrictEqual(u.calls, []);
 });
 

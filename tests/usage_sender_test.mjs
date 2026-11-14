@@ -60,7 +60,7 @@ test("consent creates one id; turning on again keeps it", async () => {
   const s = map.get("telemetryState");
   assert.strictEqual(s.enabled, true);
   assert.strictEqual(s.id, ID);
-  assert.strictEqual(s.consentVersion, 2);
+  assert.strictEqual(s.consentVersion, 4);
   await usage.setConsent(true);
   assert.strictEqual(map.get("telemetryState").id, ID);
 });
@@ -196,7 +196,7 @@ test("a 2.0.x opt-in sends nothing until they confirm, then keeps their id", asy
   assert.deepStrictEqual(await usage.status(), { enabled: false, consentNeeded: "reconfirm" });
   await usage.setConsent(true);
   assert.strictEqual(map.get("telemetryState").id, ID);
-  assert.strictEqual(map.get("telemetryState").consentVersion, 2);
+  assert.strictEqual(map.get("telemetryState").consentVersion, 4);
   await usage.recordDarkApplied(dark());
   assert.strictEqual(ingests().length, 1);
   assert.strictEqual(ingests()[0].body.id, ID);
@@ -274,7 +274,7 @@ test("pending ids are all sent; only the failures are kept", async () => {
 });
 
 test("retryPendingDelete with nothing pending makes no request", async () => {
-  const { usage, calls } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 2 } } });
+  const { usage, calls } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 4 } } });
   await usage.retryPendingDelete();
   assert.strictEqual(calls.length, 0);
 });
@@ -284,6 +284,413 @@ test("garbage state sends nothing and is cleared on opt-out", async () => {
   await usage.setConsent(false);
   assert.strictEqual(calls.length, 0);
   assert.strictEqual(map.has("telemetryState"), false);
+});
+
+test("a consentVersion 2 opt-in is asked to reconfirm and sends nothing", async () => {
+  const before = { enabled: true, id: ID, consentVersion: 2, lastSentDay: "2026-10-19", tally: null };
+  const { usage, calls, map } = setup({ initial: { telemetryState: before } });
+  assert.deepStrictEqual(await usage.status(), { enabled: false, consentNeeded: "reconfirm" });
+  await usage.recordDarkApplied(dark());
+  await usage.recordFeature("viewer_pdf");
+  assert.strictEqual(calls.length, 0);
+  assert.deepStrictEqual(map.get("telemetryState"), before);
+  await usage.setConsent(true);
+  assert.strictEqual(map.get("telemetryState").consentVersion, 4);
+  assert.strictEqual(map.get("telemetryState").id, ID);
+  await usage.recordFeature("viewer_pdf");
+  assert.strictEqual(calls.length, 1);
+});
+
+test("a consentVersion 3 opt-in is asked to reconfirm and sends nothing", async () => {
+  const tally = { day: "2026-10-20", engines: { auto: true, css: false, invert: false }, sites: [123], features: { viewer_pdf: 2 } };
+  const before = { enabled: true, id: ID, consentVersion: 3, lastSentDay: "2026-10-19", tally };
+  const { usage, calls, map } = setup({ initial: { telemetryState: before } });
+  assert.deepStrictEqual(await usage.status(), { enabled: false, consentNeeded: "reconfirm" });
+  await usage.recordDarkApplied(dark());
+  await usage.recordFeature("viewer_pdf");
+  await usage.recordFeature("viewer_pdf", "local_pdf");
+  await usage.recordFeature("dark_applied", "web_other");
+  assert.strictEqual(calls.length, 0);
+  assert.deepStrictEqual(map.get("telemetryState"), before);
+  await usage.setConsent(true);
+  assert.strictEqual(map.get("telemetryState").consentVersion, 4);
+  assert.strictEqual(map.get("telemetryState").id, ID);
+  assert.deepStrictEqual(await usage.status(), { enabled: true, consentNeeded: null });
+  await usage.recordFeature("viewer_pdf", "local_pdf");
+  assert.strictEqual(calls.length, 1);
+  assert.deepStrictEqual(calls[0].body.featureUses, { viewer_pdf: 3 });
+  assert.deepStrictEqual(calls[0].body.surfaceUses, { viewer_pdf__local_pdf: 1 });
+  assert.ok(validateReport(calls[0].body));
+});
+
+test("recordFeature with a surface while sending stores and sends surfaceUses", async () => {
+  const { usage, ingests, map } = setup();
+  await usage.setConsent(true);
+  await usage.recordFeature("export_pdf_txt", "local_pdf");
+  const t = map.get("telemetryState").tally;
+  assert.deepStrictEqual(t.features, { export_pdf_txt: 1 });
+  assert.deepStrictEqual(t.surfaces, { export_pdf_txt__local_pdf: 1 });
+  assert.strictEqual(ingests().length, 1);
+  const body = ingests()[0].body;
+  assert.deepStrictEqual(Object.keys(body).sort(), ["day", "engines", "featureUses", "id", "sites", "surfaceUses", "version"]);
+  assert.deepStrictEqual(body.featureUses, { export_pdf_txt: 1 });
+  assert.deepStrictEqual(body.surfaceUses, { export_pdf_txt__local_pdf: 1 });
+  assert.ok(validateReport(body));
+  await usage.recordFeature("export_pdf_txt", "local_pdf");
+  await usage.recordFeature("export_pdf_txt", "web_pdf");
+  await usage.recordFeature("dark_applied", "google_docs");
+  assert.deepStrictEqual(map.get("telemetryState").tally.features, { export_pdf_txt: 3, dark_applied: 1 });
+  assert.deepStrictEqual(map.get("telemetryState").tally.surfaces, {
+    export_pdf_txt__local_pdf: 2, export_pdf_txt__web_pdf: 1, dark_applied__google_docs: 1,
+  });
+});
+
+test("recordDarkApplied with a surface: the first report of the day already carries dark_applied", async () => {
+  const { usage, ingests, map } = setup();
+  await usage.setConsent(true);
+  assert.strictEqual(map.get("telemetryState").tally, null, "no tally yet: this is the first event of the day");
+  await usage.recordDarkApplied({ engine: "css", host: "a.example.com", surface: "google_docs" });
+  assert.strictEqual(ingests().length, 1);
+  const body = ingests()[0].body;
+  assert.deepStrictEqual(Object.keys(body).sort(), ["day", "engines", "featureUses", "id", "sites", "surfaceUses", "version"]);
+  assert.deepStrictEqual(body.engines, { auto: false, css: true, invert: false });
+  assert.strictEqual(body.sites, 1);
+  assert.deepStrictEqual(body.featureUses, { dark_applied: 1 });
+  assert.deepStrictEqual(body.surfaceUses, { dark_applied__google_docs: 1 });
+  assert.ok(validateReport(body));
+  const t = map.get("telemetryState").tally;
+  assert.deepStrictEqual(t.features, { dark_applied: 1 });
+  assert.deepStrictEqual(t.surfaces, { dark_applied__google_docs: 1 });
+  assert.ok(!JSON.stringify(map.get("telemetryState")).includes("a.example.com"), "the host is never stored");
+});
+
+test("recordDarkApplied counts engine, site and dark_applied in a single storage write", async () => {
+  const { usage, map } = setup();
+  await usage.setConsent(true);
+  let writes = 0;
+  // A fresh sender on the consented state, with a storage that counts writes of the usage state.
+  const mapW = new Map([["telemetryState", map.get("telemetryState")]]);
+  const posts = [];
+  const counted = createUsage({
+    storage: {
+      get: async (k) => mapW.get(k),
+      set: async (k, v) => { if (k === "telemetryState") writes += 1; mapW.set(k, JSON.parse(JSON.stringify(v))); },
+      remove: async (k) => { mapW.delete(k); },
+    },
+    post: async (url, body) => { posts.push({ url, body }); return { ok: true, status: 204 }; },
+    now: () => new Date("2026-10-20T10:00:00Z"),
+    version: "2.1.0",
+  });
+  await counted.recordDarkApplied({ engine: "auto", host: "b.example.com", surface: "web_other" });
+  const ingest = posts.filter((p) => p.url === INGEST_URL);
+  assert.strictEqual(ingest.length, 1);
+  assert.deepStrictEqual(ingest[0].body.featureUses, { dark_applied: 1 });
+  assert.deepStrictEqual(ingest[0].body.surfaceUses, { dark_applied__web_other: 1 });
+  // One write for the tally, one for the send bookkeeping.
+  assert.strictEqual(writes, 2);
+});
+
+test("recordDarkApplied with a surface writes and sends nothing when off, at v3, or with no state", async () => {
+  const states = [
+    undefined,
+    { enabled: false, pendingDeleteIds: [ID] },
+    { enabled: true, id: ID, consentVersion: 3, tally: null },
+    { enabled: true, id: ID, consentVersion: 2, tally: null },
+    { enabled: true, id: ID, tally: null },
+  ];
+  for (const st of states) {
+    const { usage, calls, map } = setup({ initial: st === undefined ? {} : { telemetryState: st } });
+    assert.strictEqual(await usage.recordDarkApplied({ engine: "css", host: "a.example.com", surface: "google_docs" }), undefined);
+    assert.strictEqual(calls.length, 0, JSON.stringify(st));
+    if (st === undefined) assert.strictEqual(map.has("telemetryState"), false);
+    else assert.deepStrictEqual(map.get("telemetryState"), st);
+  }
+});
+
+test("recordFeature with a surface writes and sends nothing when off, below or above v4, or with no state", async () => {
+  const states = [
+    undefined,
+    { enabled: false, pendingDeleteIds: [ID] },
+    { enabled: true, id: ID, consentVersion: 2, tally: null },
+    { enabled: true, id: ID, consentVersion: 3, tally: null },
+    { enabled: true, id: ID, consentVersion: "4", tally: null },
+    { enabled: true, id: ID, consentVersion: 5, tally: null },
+    { enabled: true, id: ID, tally: null },
+    { enabled: "true", id: ID, consentVersion: 4, tally: null },
+    { enabled: true, id: "not-a-uuid", consentVersion: 4, tally: null },
+  ];
+  for (const st of states) {
+    const { usage, calls, map } = setup({ initial: st === undefined ? {} : { telemetryState: st } });
+    assert.strictEqual(await usage.recordFeature("viewer_pdf", "local_pdf"), undefined);
+    assert.strictEqual(await usage.recordFeature("dark_applied", "web_other"), undefined);
+    assert.strictEqual(calls.length, 0, JSON.stringify(st));
+    if (st === undefined) assert.strictEqual(map.has("telemetryState"), false);
+    else assert.deepStrictEqual(map.get("telemetryState"), st);
+  }
+  const { usage, calls, map } = setup();
+  await usage.setConsent(true);
+  await usage.setConsent(false);
+  const n = calls.length;
+  await usage.recordFeature("viewer_pdf", "local_pdf");
+  assert.strictEqual(calls.length, n);
+  assert.strictEqual(map.has("telemetryState"), false);
+});
+
+test("an unknown surface counts only the total", async () => {
+  const bad = ["bogus", "", "web", "WEB_OTHER", "__proto__", "constructor", "local_pdf__x", null, 5, {}, ["local_pdf"], "https://docs.google.com/document/d/x"];
+  const { usage, ingests, map } = setup();
+  await usage.setConsent(true);
+  for (const s of bad) await usage.recordFeature("viewer_pdf", s);
+  await usage.recordFeature("viewer_pdf");
+  const t = map.get("telemetryState").tally;
+  assert.deepStrictEqual(t.features, { viewer_pdf: bad.length + 1 });
+  assert.deepStrictEqual(t.surfaces, {});
+  assert.ok(ingests().length >= 1);
+  for (const c of ingests()) {
+    assert.ok(!("surfaceUses" in c.body));
+    assert.ok(validateReport(c.body));
+  }
+  assert.ok(!JSON.stringify([...map.entries()]).includes("docs.google"));
+});
+
+test("an unknown key with a valid surface touches nothing", async () => {
+  const { usage, calls, map } = setup();
+  await usage.setConsent(true);
+  const before = map.get("telemetryState");
+  for (const k of ["bogus", "__proto__", "viewer_pdf__local_pdf", "", null]) await usage.recordFeature(k, "local_pdf");
+  assert.strictEqual(calls.length, 0);
+  assert.deepStrictEqual(map.get("telemetryState"), before);
+});
+
+test("a stored tally without surfaces (v3 shape) still works", async () => {
+  const tally = { day: "2026-10-20", engines: { auto: true, css: false, invert: false }, sites: [123], features: { viewer_pdf: 2 } };
+  const { usage, ingests, map } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 4, lastSentDay: null, tally } } });
+  await usage.recordFeature("viewer_pdf", "web_pdf");
+  const t = map.get("telemetryState").tally;
+  assert.deepStrictEqual(t.sites, [123]);
+  assert.deepStrictEqual(t.features, { viewer_pdf: 3 });
+  assert.deepStrictEqual(t.surfaces, { viewer_pdf__web_pdf: 1 });
+  assert.strictEqual(ingests().length, 1);
+  assert.deepStrictEqual(ingests()[0].body.surfaceUses, { viewer_pdf__web_pdf: 1 });
+  assert.ok(validateReport(ingests()[0].body));
+});
+
+test("a stored tally with malformed surfaces is replaced by a fresh one", async () => {
+  const tooMany = {};
+  for (const f of ["viewer_pdf", "viewer_docx", "viewer_pptx", "viewer_xlsx", "viewer_csv", "viewer_md", "viewer_txt", "viewer_rtf", "export_pdf_txt", "export_pdf_md", "export_pdf_png", "export_docx_txt", "export_docx_md", "export_docx_html"]) {
+    for (const s of ["google_docs", "google_sheets", "google_slides", "web_pdf", "local_pdf", "local_sheet", "local_doc", "web_other", "other"]) tooMany[`${f}__${s}`] = 1;
+  }
+  assert.ok(Object.keys(tooMany).length > 120);
+  const bads = [
+    [], "x", null, 5,
+    { viewer_pdf__local_pdf: "1" }, { viewer_pdf__local_pdf: 0 }, { viewer_pdf__local_pdf: 1000 }, { viewer_pdf__local_pdf: 1.5 },
+    { viewer_pdf__local_pdf: null }, { viewer_pdf__local_pdf: { n: 1 } },
+    { viewer_pdf: 1 }, { bogus__local_pdf: 1 }, { viewer_pdf__nope: 1 }, { a__b__c: 1 }, { __x: 1 }, { x__: 1 },
+    { viewer_pdf__local_pdf__web_pdf: 1 }, { constructor__web_other: 1 },
+    tooMany,
+  ];
+  for (const surfaces of bads) {
+    const tally = { day: "2026-10-20", engines: { auto: true, css: false, invert: false }, sites: [123], features: { viewer_pdf: 1 }, surfaces };
+    const { usage, ingests, map } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 4, lastSentDay: null, tally } } });
+    await usage.recordFeature("viewer_pdf", "local_pdf");
+    const t = map.get("telemetryState").tally;
+    assert.deepStrictEqual(t.features, { viewer_pdf: 1 }, JSON.stringify(surfaces).slice(0, 80));
+    assert.deepStrictEqual(t.surfaces, { viewer_pdf__local_pdf: 1 }, JSON.stringify(surfaces).slice(0, 80));
+    assert.deepStrictEqual(t.sites, []);
+    assert.strictEqual(ingests().length, 1);
+    assert.ok(validateReport(ingests()[0].body));
+  }
+});
+
+test("recordFeature never stores more than 120 surface entries", async () => {
+  const surfaces = {};
+  const feats = ["viewer_pdf", "viewer_docx", "viewer_pptx", "viewer_xlsx", "viewer_csv", "viewer_md", "viewer_txt", "viewer_rtf", "export_pdf_txt", "export_pdf_md", "export_pdf_png", "export_docx_txt", "export_docx_md", "export_docx_html"];
+  const surfs = ["google_docs", "google_sheets", "google_slides", "web_pdf", "local_pdf", "local_sheet", "local_doc", "web_other", "other"];
+  outer: for (const f of feats) for (const s of surfs) { if (Object.keys(surfaces).length === 120) break outer; surfaces[`${f}__${s}`] = 1; }
+  assert.strictEqual(Object.keys(surfaces).length, 120);
+  const tally = { day: "2026-10-20", engines: { auto: false, css: false, invert: false }, sites: [], features: { dark_applied: 1 }, surfaces };
+  const { usage, ingests, map } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 4, lastSentDay: null, tally } } });
+  await usage.recordFeature("dark_applied", "web_other");
+  const t = map.get("telemetryState").tally;
+  assert.strictEqual(Object.keys(t.surfaces).length, 120);
+  assert.ok(!("dark_applied__web_other" in t.surfaces));
+  assert.strictEqual(t.features.dark_applied, 2);
+  assert.strictEqual(ingests().length, 1);
+  assert.strictEqual(Object.keys(ingests()[0].body.surfaceUses).length, 120);
+  assert.ok(validateReport(ingests()[0].body));
+});
+
+test("surface counts: a changed surface count refreshes only after the hourly wait; identical state does not re-send", async () => {
+  // The total is held at the cap so only the surface split changes between events.
+  const tally = { day: "2026-10-20", engines: { auto: false, css: false, invert: false }, sites: [], features: { viewer_pdf: 999 }, surfaces: {} };
+  const { usage, ingests, advance, map } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 4, lastSentDay: null, tally } } });
+  await usage.recordFeature("viewer_pdf", "local_pdf");
+  assert.strictEqual(ingests().length, 1);
+  assert.deepStrictEqual(ingests()[0].body.surfaceUses, { viewer_pdf__local_pdf: 1 });
+  advance(10 * MIN);
+  await usage.recordFeature("viewer_pdf", "web_pdf");
+  assert.strictEqual(ingests().length, 1, "within the hour: no refresh yet");
+  assert.strictEqual(map.get("telemetryState").tally.features.viewer_pdf, 999);
+  advance(2 * 60 * MIN);
+  await usage.recordFeature("viewer_pdf", "web_pdf");
+  assert.strictEqual(ingests().length, 2, "only the surface count changed, and the hour has passed");
+  assert.deepStrictEqual(ingests()[1].body.featureUses, { viewer_pdf: 999 });
+  assert.deepStrictEqual(ingests()[1].body.surfaceUses, { viewer_pdf__local_pdf: 1, viewer_pdf__web_pdf: 2 });
+  advance(2 * 60 * MIN);
+  await usage.recordDarkApplied({ engine: "bogus" });
+  assert.strictEqual(ingests().length, 2, "identical state again: no resend");
+});
+
+test("concurrent surface events are all counted and cause a single request", async () => {
+  const { usage, ingests, map } = setup();
+  await usage.setConsent(true);
+  await Promise.all([
+    usage.recordFeature("viewer_pdf", "local_pdf"),
+    usage.recordFeature("viewer_pdf", "local_pdf"),
+    usage.recordFeature("viewer_pdf", "web_pdf"),
+    usage.recordFeature("dark_applied", "google_sheets"),
+  ]);
+  const t = map.get("telemetryState").tally;
+  assert.deepStrictEqual(t.features, { viewer_pdf: 3, dark_applied: 1 });
+  assert.deepStrictEqual(t.surfaces, { viewer_pdf__local_pdf: 2, viewer_pdf__web_pdf: 1, dark_applied__google_sheets: 1 });
+  assert.strictEqual(ingests().length, 1);
+});
+
+test("recordFeature with a surface never rejects on storage or network failure", async () => {
+  const broken = createUsage({
+    storage: { get: async () => { throw new Error("x"); }, set: async () => { throw new Error("x"); }, remove: async () => { throw new Error("x"); } },
+    post: async () => { throw new Error("must not post"); }, now: () => new Date(), version: "2.1.0", randomUUID: () => ID,
+  });
+  assert.strictEqual(await broken.recordFeature("viewer_pdf", "local_pdf"), undefined);
+  const { usage } = setup({ responses: [new Error("offline")] });
+  await usage.setConsent(true);
+  assert.strictEqual(await usage.recordFeature("viewer_pdf", "local_pdf"), undefined);
+});
+
+test("recordFeature while sending counts the feature and sends a valid report with featureUses", async () => {
+  const { usage, ingests, map } = setup();
+  await usage.setConsent(true);
+  await usage.recordFeature("viewer_pdf");
+  assert.deepStrictEqual(map.get("telemetryState").tally.features, { viewer_pdf: 1 });
+  assert.strictEqual(ingests().length, 1);
+  const body = ingests()[0].body;
+  assert.deepStrictEqual(Object.keys(body).sort(), ["day", "engines", "featureUses", "id", "sites", "version"]);
+  assert.deepStrictEqual(body.featureUses, { viewer_pdf: 1 });
+  assert.strictEqual(body.sites, 0);
+  assert.strictEqual(body.day, "2026-10-20");
+  assert.ok(validateReport(body));
+  await usage.recordFeature("viewer_pdf");
+  await usage.recordFeature("export_xlsx_csv");
+  assert.deepStrictEqual(map.get("telemetryState").tally.features, { viewer_pdf: 2, export_xlsx_csv: 1 });
+  assert.ok(!JSON.stringify(map.get("telemetryState")).includes("example"));
+});
+
+test("recordFeature writes and sends nothing when off, at consentVersion 2, or with no state", async () => {
+  const states = [
+    undefined,
+    { enabled: false, pendingDeleteIds: [ID] },
+    { enabled: true, id: ID, consentVersion: 2, tally: null },
+    { enabled: true, id: ID, tally: null },
+  ];
+  for (const st of states) {
+    const { usage, calls, map } = setup({ initial: st === undefined ? {} : { telemetryState: st } });
+    const res = await usage.recordFeature("viewer_pdf");
+    assert.strictEqual(res, undefined);
+    assert.strictEqual(calls.length, 0, JSON.stringify(st));
+    if (st === undefined) assert.strictEqual(map.has("telemetryState"), false);
+    else assert.deepStrictEqual(map.get("telemetryState"), st);
+  }
+  const { usage, calls, map } = setup();
+  await usage.setConsent(true);
+  await usage.setConsent(false);
+  const n = calls.length;
+  await usage.recordFeature("viewer_pdf");
+  assert.strictEqual(calls.length, n);
+  assert.strictEqual(map.has("telemetryState"), false);
+});
+
+test("recordFeature ignores unknown keys entirely", async () => {
+  const { usage, calls, map } = setup();
+  await usage.setConsent(true);
+  const before = map.get("telemetryState");
+  for (const k of ["bogus", "__proto__", "constructor", "", null, undefined, 5, "a.example.com"]) {
+    await usage.recordFeature(k);
+  }
+  assert.strictEqual(calls.length, 0);
+  assert.deepStrictEqual(map.get("telemetryState"), before);
+});
+
+test("recordFeature never rejects on storage failure", async () => {
+  const broken = createUsage({
+    storage: { get: async () => { throw new Error("x"); }, set: async () => { throw new Error("x"); }, remove: async () => { throw new Error("x"); } },
+    post: async () => { throw new Error("must not post"); }, now: () => new Date(), version: "2.1.0", randomUUID: () => ID,
+  });
+  assert.strictEqual(await broken.recordFeature("viewer_pdf"), undefined);
+});
+
+test("a stored tally without features still works for sites and features", async () => {
+  const tally = { day: "2026-10-20", engines: { auto: true, css: false, invert: false }, sites: [123] };
+  const { usage, ingests, map } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 4, lastSentDay: null, tally } } });
+  await usage.recordFeature("viewer_docx");
+  const t = map.get("telemetryState").tally;
+  assert.deepStrictEqual(t.sites, [123]);
+  assert.deepStrictEqual(t.engines, { auto: true, css: false, invert: false });
+  assert.deepStrictEqual(t.features, { viewer_docx: 1 });
+  assert.strictEqual(ingests().length, 1);
+  assert.strictEqual(ingests()[0].body.sites, 1);
+  assert.deepStrictEqual(ingests()[0].body.featureUses, { viewer_docx: 1 });
+  assert.ok(validateReport(ingests()[0].body));
+
+  const s2 = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 4, lastSentDay: null, tally } } });
+  await s2.usage.recordDarkApplied(dark("css", "b.example.com"));
+  assert.strictEqual(s2.ingests().length, 1);
+  assert.strictEqual(s2.ingests()[0].body.sites, 2);
+  assert.ok(!("featureUses" in s2.ingests()[0].body));
+});
+
+test("a stored tally with malformed features is replaced by a fresh one", async () => {
+  for (const features of [[], "x", { viewer_pdf: "1" }, { viewer_pdf: -1 }, { viewer_pdf: 1.5 }, { bogus: 1 }]) {
+    const tally = { day: "2026-10-20", engines: { auto: true, css: false, invert: false }, sites: [123], features };
+    const { usage, ingests, map } = setup({ initial: { telemetryState: { enabled: true, id: ID, consentVersion: 4, lastSentDay: null, tally } } });
+    await usage.recordFeature("viewer_pdf");
+    const t = map.get("telemetryState").tally;
+    assert.deepStrictEqual(t.features, { viewer_pdf: 1 }, JSON.stringify(features));
+    assert.deepStrictEqual(t.sites, [], JSON.stringify(features));
+    assert.strictEqual(ingests().length, 1);
+    assert.ok(validateReport(ingests()[0].body));
+  }
+});
+
+test("feature counts: identical state does not re-send; a changed count refreshes only after the hourly wait", async () => {
+  const { usage, ingests, advance } = setup();
+  await usage.setConsent(true);
+  await usage.recordDarkApplied(dark());
+  assert.strictEqual(ingests().length, 1);
+  advance(3 * 60 * MIN);
+  await usage.recordDarkApplied(dark());
+  assert.strictEqual(ingests().length, 1, "same state: no resend");
+  await usage.recordFeature("viewer_csv");
+  assert.strictEqual(ingests().length, 2, "count changed and the hour has passed");
+  assert.deepStrictEqual(ingests()[1].body.featureUses, { viewer_csv: 1 });
+  advance(10 * MIN);
+  await usage.recordFeature("viewer_csv");
+  assert.strictEqual(ingests().length, 2, "within the hour: no refresh yet");
+  advance(2 * 60 * MIN);
+  await usage.recordDarkApplied(dark());
+  assert.strictEqual(ingests().length, 3, "the pending count change goes out after the wait");
+  assert.deepStrictEqual(ingests()[2].body.featureUses, { viewer_csv: 2 });
+  advance(2 * 60 * MIN);
+  await usage.recordDarkApplied(dark());
+  assert.strictEqual(ingests().length, 3, "identical state again: no resend");
+});
+
+test("concurrent feature events are all counted and cause a single request", async () => {
+  const { usage, ingests, map } = setup();
+  await usage.setConsent(true);
+  await Promise.all([usage.recordFeature("viewer_pdf"), usage.recordFeature("viewer_pdf"), usage.recordDarkApplied(dark())]);
+  assert.strictEqual(map.get("telemetryState").tally.features.viewer_pdf, 2);
+  assert.strictEqual(map.get("telemetryState").tally.sites.length, 1);
+  assert.strictEqual(ingests().length, 1);
 });
 
 test("postJson sends JSON with credentials omitted, no referrer, and a timeout signal", async () => {

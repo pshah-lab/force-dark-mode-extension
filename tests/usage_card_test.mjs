@@ -26,7 +26,17 @@ const TOPICS = [
   [/Auto, CSS, Invert/, "the engine names"],
   [/how many sites/i, "how many sites"],
   [/number only, never the sites/i, "a number only, never the sites"],
+  [/viewer and export features you used/i, "which viewer and export features were used"],
+  [/counts per day/i, "as counts per day"],
+  [/Never file names or contents/i, "never file names or contents"],
+  [/features you used and where/i, "which features were used and where"],
+  [/a few fixed places/i, "grouped into a few fixed places"],
+  [/Never page addresses, document names or contents/i, "never page addresses, document names or contents"],
+  [/how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders/i, "that page-load counts and the dark-mode, engine, theme and slider features are counted"],
 ];
+const SURFACE_ITEM = "Which features you used and where, as counts per day, grouped into a few fixed places such as Google Docs, Google Sheets, local PDF files or other web pages (for example 'exported a PDF to text, 2 times, on local PDF files'). This includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders. Never page addresses, document names or contents.";
+const DAY_PHRASE = /each day you use dark mode, the side panel, the Options page or the document viewer/;
+const FEATURE_ITEM = "Which viewer and export features you used, as counts per day (for example 'exported a PDF to text'). Never file names or contents.";
 const allText = (c) => [c.title, c.intro, ...c.items, c.note, c.yes, c.no].join(" ");
 
 test("cardFor shows the ask card, the reconfirm card, or nothing", () => {
@@ -38,7 +48,9 @@ test("cardFor shows the ask card, the reconfirm card, or nothing", () => {
 test("both cards list every field that is sent, and nothing else", () => {
   for (const key of ["ask", "reconfirm"]) {
     const card = USAGE_COPY[key];
-    assert.strictEqual(card.items.length, 4, `${key}: exactly four items`);
+    assert.strictEqual(card.items.length, 6, `${key}: exactly six items`);
+    assert.strictEqual(card.items[4], FEATURE_ITEM, `${key}: feature item stays fifth, verbatim`);
+    assert.strictEqual(card.items[5], SURFACE_ITEM, `${key}: surface item is last, verbatim`);
     const text = card.items.join(" ");
     for (const [re, label] of TOPICS) assert.ok(re.test(text), `${key}: must state ${label}`);
   }
@@ -56,12 +68,19 @@ test("the copy is plain: never anonymous, says off by default, may be updated, n
     assert.ok(!/anonym/i.test(text), `${key}: must not say anonymous`);
     assert.ok(!/telemetry|tracking/i.test(text), `${key}: no jargon`);
     assert.ok(/updated/i.test(card.intro), `${key}: must say the day's report may be updated`);
-    assert.ok(/never receive the sites you visit, page content, or anything you type/i.test(card.note), `${key}: note`);
+    assert.ok(DAY_PHRASE.test(card.intro), `${key}: must say a side-panel-only or viewer-only day also sends the report`);
+    assert.ok(!/each day you use dark mode or the document viewer/.test(card.intro), `${key}: old phrase must be gone`);
+    assert.ok(card.note.includes("We never receive page addresses, which individual sites you visit, page content, or anything you type; only the fixed place categories above."), `${key}: note, verbatim`);
+    assert.ok(!/never receive the sites you visit/i.test(card.note), `${key}: the old absolute never-the-sites claim must be gone`);
     assert.ok(/Options/.test(card.note) && /deletes what we hold for your ID/i.test(card.note), `${key}: how to turn off`);
   }
   assert.ok(/off unless you turn it on/i.test(USAGE_COPY.ask.intro));
   assert.ok(/Nothing new is sent until you confirm/i.test(USAGE_COPY.reconfirm.intro));
-  assert.ok(/version 2\.0/i.test(USAGE_COPY.reconfirm.intro));
+  const ri = USAGE_COPY.reconfirm.intro;
+  assert.ok(/earlier version/i.test(ri) && !/version 2\.0/i.test(ri), "true for 2.0, 2.1 and 2.2 opt-ins");
+  assert.ok(/viewer and export features/i.test(ri) && /counts per day/i.test(ri), "reconfirm says features are counted");
+  assert.ok(/also counts where features were used/i.test(ri) && /fixed places only/i.test(ri), "reconfirm says this version also counts where features were used, in fixed places only");
+  assert.ok(/never page addresses/i.test(ri), "reconfirm repeats that page addresses are never sent");
 });
 
 test("the side panel has the card, hidden until asked, and loads the script before popup.js", () => {
@@ -89,16 +108,22 @@ test("Options has an off-by-default toggle that sends USAGE_CONSENT and lists th
   const section = html.slice(html.indexOf('id="usage-card-options"'), html.indexOf("Privacy & Data Management"));
   for (const [re, label] of TOPICS) assert.ok(re.test(section), `options section must state ${label}`);
   assert.ok(!/anonym/i.test(section));
+  assert.ok(DAY_PHRASE.test(section), "options must say a side-panel-only or viewer-only day also sends the report");
+  assert.ok(html.includes(`<li>${FEATURE_ITEM}</li>`), "options lists the feature line verbatim");
+  assert.ok(html.includes(`<li>${SURFACE_ITEM}</li>`), "options lists the where-used line verbatim");
+  assert.ok(section.includes("We never receive page addresses, which individual sites you visit, page content, or anything you type; only the fixed place categories above."), "options note, verbatim");
+  assert.ok(!/never receive the sites you visit/i.test(html), "options: the old absolute never-the-sites claim must be gone");
+  for (const t of ["A random ID for this install", "The date and the extension version.", "Which engines you used that day", "How many sites dark mode was applied on that day"]) assert.ok(section.includes(t), t);
   const js = read("src/options/options.js");
   assert.ok(/type: "USAGE_CONSENT", enabled: usageToggle\.checked/.test(js));
   assert.ok(/type: "USAGE_STATUS"/.test(js));
 });
 
-test("Options explains a 2.0.x opt-in that has not confirmed yet and offers to delete their data", () => {
+test("Options explains an earlier opt-in that has not confirmed yet and offers to delete their data", () => {
   const html = read("src/options/options.html");
   assert.ok(/id="usage-legacy"[^>]*\shidden/.test(html), "the legacy note is hidden unless the worker says reconfirm");
   const block = html.slice(html.indexOf('id="usage-legacy"'), html.indexOf("</div>", html.indexOf('id="usage-legacy"')));
-  assert.ok(/version 2\.0/.test(block) && /Nothing new is sent until you/.test(block), "must explain the 2.0 state");
+  assert.ok(/earlier version/.test(block) && !/version 2\.0/.test(block) && /Nothing new is sent until you/.test(block), "must explain the earlier-opt-in state");
   assert.ok(/id="usage-delete-legacy"/.test(block) && /Delete my data/.test(block), "must offer Delete my data");
   const js = read("src/options/options.js");
   assert.ok(/consentNeeded === "reconfirm"/.test(js), "options.js must show the legacy note for reconfirm");

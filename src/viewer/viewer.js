@@ -28,6 +28,7 @@ import { renderColorCopyPages } from "../tools/colorCopyRender.js";
 import { sheetToMatrix, toCsv, workbookToJson } from "./convert/csvWriter.js";
 import { createXlsx } from "./convert/xlsxWriter.js";
 import { createZip } from "./convert/zipWriter.js";
+import { viewerFeatureKey, exportFeatureKey, viewerSurface, pdfSourceKind } from "./usageFeatures.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
   "src/viewer/vendor/pdf.worker.min.mjs"
@@ -163,7 +164,7 @@ function loadInitialDocument() {
   const name = params.get("name");
 
   if (source && isSafeDocumentUrl(source)) {
-    openPdf(source, name || getNameFromUrl(source) || "PDF document");
+    openPdf(source, name || getNameFromUrl(source) || "PDF document", source, { countOpen: true });
   } else if (source) {
     showEmptyState("Invalid or disallowed document URL");
   }
@@ -182,7 +183,7 @@ async function openLocalFile(file) {
   if (isPdfFile(file)) {
     const data = new Uint8Array(await file.arrayBuffer());
     currentObjectUrl = URL.createObjectURL(file);
-    openPdf(data, file.name, currentObjectUrl);
+    openPdf(data, file.name, currentObjectUrl, { countOpen: true });
     return;
   }
 
@@ -211,7 +212,8 @@ async function openLocalFile(file) {
   showEmptyState(`${file.name} is not supported yet`);
 }
 
-async function openPdf(source, name, fallbackSource = source) {
+// countOpen is set only by the file-open entry points, so a settings re-render is not another open.
+async function openPdf(source, name, fallbackSource = source, { countOpen = false } = {}) {
   currentPdfSource = source;
   currentPdfName = name;
   renderGeneration += 1;
@@ -233,6 +235,7 @@ async function openPdf(source, name, fallbackSource = source) {
     if (generation !== renderGeneration) return;
     currentPdf = pdf;
     setExportSource("pdf", name, pdf);
+    if (countOpen) reportFeature(viewerFeatureKey("pdf"), viewerSurface("pdf", pdfSourceKind(source)));
 
     pdfStatus.textContent = `Rendering ${pdf.numPages} page${pdf.numPages === 1 ? "" : "s"}...`;
 
@@ -320,14 +323,15 @@ function openPdfFallback(source, name) {
 function openTextDocument(text, name) {
   showPanel("document");
   documentName.textContent = name;
-  setExportSource(detectDocumentKind(name) || "text", name, text);
+  const kind = detectDocumentKind(name) || "text";
+  setExportSource(kind, name, text);
   if (isMarkdownName(name)) {
     renderMarkdownSafely(text, documentPanel);
-    return;
+  } else {
+    documentPanel.replaceChildren();
+    documentPanel.textContent = normalizeDocumentText(text, name);
   }
-
-  documentPanel.replaceChildren();
-  documentPanel.textContent = normalizeDocumentText(text, name);
+  reportFeature(viewerFeatureKey(kind), viewerSurface(kind, "file"));
 }
 
 const CFB_SIGNATURE = [0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1];
@@ -405,6 +409,7 @@ async function openOfficeFile(file) {
     showPanel("document");
     renderDocxBlocksSafely(docxResult, documentPanel);
     setExportSource("docx", file.name, docxResult);
+    reportFeature(viewerFeatureKey("docx"), viewerSurface("docx", "file"));
     return;
   }
 
@@ -440,6 +445,7 @@ async function openOfficeFile(file) {
   showPanel("document");
   renderPptxSlidesSafely(result, documentPanel);
   setExportSource("pptx", file.name, result);
+  reportFeature(viewerFeatureKey("pptx"), viewerSurface("pptx", "file"));
 }
 
 async function openSpreadsheetFile(file) {
@@ -510,6 +516,7 @@ async function openSpreadsheetFile(file) {
   currentSpreadsheet = { workbook, state: { selected: 0 } };
   renderSpreadsheet(spreadsheetPanel, workbook, getCurrentSettings(), currentSpreadsheet.state);
   setExportSource(isCsv ? "csv" : "xlsx", file.name, workbook);
+  reportFeature(viewerFeatureKey(isCsv ? "csv" : "xlsx"), viewerSurface(isCsv ? "csv" : "xlsx", "file"));
 }
 
 // Re-draws the grid after a Mode/Background/Text change, keeping scroll position
@@ -1325,6 +1332,17 @@ function downloadBlob(blob, filename) {
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
 
+// Opt-in usage count: sends only an allow-listed key and a fixed surface string. Best effort, never awaited.
+function reportFeature(key, surface) {
+  if (!key) return;
+  try {
+    const result = chrome.runtime.sendMessage({ type: "USAGE_FEATURE", key, surface });
+    if (result && typeof result.catch === "function") result.catch(() => {});
+  } catch {
+    // Counting must never affect the viewer.
+  }
+}
+
 function downloadExport(content, name, ext) {
   downloadBlob(new Blob([content], { type: EXPORT_MIME_TYPES[ext] }), exportFileName(name, ext));
 }
@@ -1344,6 +1362,7 @@ async function runExport() {
       const data = source.data;
       const truncated = !!data && (data.truncated === true || (Array.isArray(data.sheets) && data.sheets.some((sheet) => sheet.truncated)));
       setExportStatus(truncated ? "Downloaded. The preview was truncated, so the export is too." : "Downloaded.");
+      reportFeature(exportFeatureKey(source.kind, formatId), viewerSurface(source.kind, pdfSourceKind(currentPdfSource)));
     }
   } catch (error) {
     console.warn("[ForceDark] Export failed:", error);

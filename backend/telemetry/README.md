@@ -19,6 +19,37 @@ now count 2.0.x heartbeats only and never publish 2.1.0 reports), then deploy th
 agree, so change both together. Turning the report off calls `POST /api/darkmode-telemetry-delete`, which removes every
 row for that ID. The existing views (`dau`, `wau`, `mau`, `new_vs_returning`, `retention`) cover both report shapes.
 
+**Feature counts (usage report, sixth field).** A report may also carry `featureUses`: a map of allow-listed feature
+keys (`viewer_*`, `export_*`, and reserved `tool_*` keys for a later release) to how many times each was used that day
+(integers 1..999, never empty; no file names, contents or sites). Five-field reports from 2.1/2.2 are still accepted
+unchanged and never touch the new column; a report with a bad `featureUses` is refused with 400. `FEATURE_KEYS_ACCEPTED`
+in `lib/schema.js` is the extension's `FEATURE_KEYS` plus the reserved `tool_*` keys, so the backend can be deployed
+before the extension sends them. Setup, in this order: run `supabase/usage_v3.sql` (adds the nullable
+`heartbeats.feature_counts` jsonb column, which must be an object), then re-run `supabase/daily_stats.sql` (adds
+`daily_stats.feature_uses`, the per-day totals over all installs, and returns them from `owner_dashboard()` as
+`featureUses`), then deploy `api/darkmode-telemetry.js`, `lib/schema.js`, `lib/dashboardData.js` and
+`lib/dashboardPage.js`. Between those two steps the old deployed owner dashboard rejects days that carry
+`featureUses`, so deploy the backend right after re-running `daily_stats.sql` (transient, owner-only; nothing public).
+The owner dashboard shows a "Top features" table: total uses per feature over the last 30 days,
+summed across installs (never per install); unknown keys are ignored. `public_stats()` never reads `feature_counts`
+(it publishes 2.0.x heartbeats only), so nothing about features is public.
+
+**Feature uses by surface (usage report, consent v4).** A report may also carry `surfaceUses`: a map of
+`"<feature>__<surface>"` keys (an accepted feature key, then one of the 9 surfaces in `SURFACES_ACCEPTED`:
+`google_docs`, `google_sheets`, `google_slides`, `web_pdf`, `local_pdf`, `local_sheet`, `local_doc`, `web_other`,
+`other`) to counts 1..999, never empty, at most 120 entries; no URLs, hosts, document IDs or file names. Accepted
+forms: 5 fields, 5 + `featureUses`, 5 + `surfaceUses`, 5 + both; older 5- and 6-field reports are unchanged and never
+touch the new column, and a bad `surfaceUses` is refused with 400. Deploy order (owner; do not change it): run
+`supabase/usage_v4.sql` (adds the nullable `heartbeats.surface_counts` jsonb column, which must be an object), then
+re-run `supabase/daily_stats.sql` (it requires `usage_v4.sql`; adds `daily_stats.surface_uses`, the per-day totals per
+key over all installs, and returns them from `owner_dashboard()` as `surfaceUses`), then deploy the backend
+(`api/darkmode-telemetry.js`, `lib/schema.js`, `lib/dashboardData.js`, `lib/dashboardPage.js`), and only then
+release the extension that sends `surfaceUses`. Between re-running `daily_stats.sql` and deploying the backend, the
+old deployed owner dashboard rejects days that carry `surfaceUses` (it fails closed and shows an error), so deploy
+the backend right after (transient, owner-only; nothing public). The owner dashboard adds "Top features by surface"
+(30-day totals per key, shown as feature and surface) and "Where dark mode is used" (`dark_applied` by surface);
+unknown keys and days without `surfaceUses` are ignored. `public_stats()` never reads `surface_counts`.
+
 The rest of this file describes the 2.0.x usage heartbeat. The extension no longer sends it, but 2.0.x clients still
 do and may still call the delete endpoint, so those endpoints stay deployed until they are retired.
 
@@ -58,7 +89,7 @@ user) until `EXTENSION_ID` is changed and redeployed. Confirm the ID on the stor
 ## Owner dashboard (private)
 
 `supabase/daily_stats.sql` builds one aggregate row per UTC day (`daily_stats`: active, new and returning installs,
-versions, engines, sites-darkened buckets, theme/OS/Chrome/language, broken-site reports; counts only, no install IDs)
+versions, engines, sites-darkened buckets, theme/OS/Chrome/language, feature-use totals and per-surface feature-use totals, broken-site reports; counts only, no install IDs)
 and schedules `rollup_daily_stats()` nightly at 00:30 UTC with pg_cron. Run it once in the SQL editor (it also backfills
 existing days). The rows are not purged with the raw heartbeats, so history outlives the 13-month retention.
 

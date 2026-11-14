@@ -1,7 +1,7 @@
-// POST /api/darkmode-telemetry : validates and upserts one opt-in usage report (the 2.0.x heartbeat or the 2.1.0 report) (OPTIONS: CORS preflight).
+// POST /api/darkmode-telemetry : validates and upserts one opt-in usage report (the 2.0.x heartbeat or the 2.1.0+ report, optionally with featureUses and/or surfaceUses) (OPTIONS: CORS preflight).
 // Only req.method and req.body are used. No header or network address is read or stored.
 import { validateHeartbeat, validateUsage } from "../lib/schema.js";
-import { readJsonBody, reply, isPreflight, createSupabaseClient } from "../lib/http.js";
+import { readJsonBody, reply, isPreflight, createSupabaseClient, MAX_USAGE_BODY_BYTES } from "../lib/http.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -34,7 +34,7 @@ export function createHandler({ store, now = () => new Date() } = {}) {
   return async function handler(req, res) {
     if (isPreflight(req)) return reply(res, 204);
     if (req.method !== "POST") return reply(res, 405);
-    const body = await readJsonBody(req);
+    const body = await readJsonBody(req, MAX_USAGE_BODY_BYTES);
     if (!body.ok) return reply(res, body.status);
     const hb = body.value;
     let row;
@@ -52,7 +52,9 @@ export function createHandler({ store, now = () => new Date() } = {}) {
         features: hb.features,
       };
     } else if (validateUsage(hb)) {
-      // 2.1.0 opt-in usage report: only these five facts are stored.
+      // 2.1.0+ opt-in usage report: only these five facts are stored, plus the feature counts when the
+      // optional featureUses field is present and the per-surface counts when surfaceUses is present (a report
+      // without either field leaves that column untouched).
       row = {
         install_id: hb.id,
         day: hb.day,
@@ -60,6 +62,8 @@ export function createHandler({ store, now = () => new Date() } = {}) {
         engines: hb.engines,
         sites_darkened: hb.sites,
       };
+      if (Object.prototype.hasOwnProperty.call(hb, "featureUses")) row.feature_counts = hb.featureUses;
+      if (Object.prototype.hasOwnProperty.call(hb, "surfaceUses")) row.surface_counts = hb.surfaceUses;
     } else {
       return reply(res, 400);
     }

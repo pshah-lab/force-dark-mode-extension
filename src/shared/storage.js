@@ -94,7 +94,7 @@ export function getSiteConfig(host) {
 export function setSiteConfig(host, config) {
   return new Promise((resolve) => {
     if (!isSafeKey(host)) {
-      resolve();
+      resolve(false);
       return;
     }
     const safeConfig = {
@@ -112,8 +112,10 @@ export function setSiteConfig(host, config) {
     chrome.storage.sync.set({ [host]: safeConfig }, () => {
       if (chrome.runtime.lastError) {
         console.warn("[ForceDark] Storage set error:", chrome.runtime.lastError.message);
+        resolve(false);
+        return;
       }
-      resolve();
+      resolve(true);
     });
   });
 }

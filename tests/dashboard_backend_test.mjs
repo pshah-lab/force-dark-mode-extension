@@ -5,7 +5,8 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { isAuthorized } from "../backend/telemetry/lib/dashboardAuth.js";
-import { validateDashboardData } from "../backend/telemetry/lib/dashboardData.js";
+import { validateDashboardData, topFeatures, FEATURE_WINDOW_DAYS, topSurfaceFeatures, darkBySurface } from "../backend/telemetry/lib/dashboardData.js";
+import { FEATURE_KEYS_ACCEPTED, SURFACES_ACCEPTED } from "../backend/telemetry/lib/schema.js";
 import { createDashboardDataHandler } from "../backend/telemetry/api/darkmode-dashboard-data.js";
 import { createDashboardPageHandler } from "../backend/telemetry/api/darkmode-dashboard.js";
 import { DASHBOARD_HTML } from "../backend/telemetry/lib/dashboardPage.js";
@@ -152,6 +153,115 @@ test("page has no external resources, never stores the token, sends it only in a
 test("page marks releases and labels dates on both charts", () => {
   assert.ok(/RELEASES = \[[^\]]*"2\.2\.0"/.test(DASHBOARD_HTML));
   assert.strictEqual(DASHBOARD_HTML.split("\n  axisDates(g,").length - 1, 2, "line and stacked charts both use it");
+});
+
+// ---- top features ----
+const fday = (day, featureUses) => ({ ...doc().days[0], day, featureUses });
+
+test("validateDashboardData accepts days with or without featureUses, rejects bad featureUses", () => {
+  const d = doc(); d.days.push(fday("2026-10-29", { viewer_pdf: 5, tool_merge: 1 }));
+  assert.strictEqual(validateDashboardData(d), true);
+  for (const bad of [{ viewer_pdf: -1 }, { viewer_pdf: "3" }, { "<b>": 1 }, [], null, "x"]) {
+    const d2 = doc(); d2.days[0].featureUses = bad;
+    assert.strictEqual(validateDashboardData(d2), false, JSON.stringify(bad));
+  }
+});
+
+test("topFeatures sums counts per key over the window and ignores unknown keys", () => {
+  const days = [
+    fday("2026-10-01", { viewer_pdf: 100 }), // outside a 2-day window
+    fday("2026-10-02", { viewer_pdf: 3, export_md_html: 2, nope: 50, tool_merge: 1 }),
+    { ...doc().days[0], day: "2026-10-03" }, // a day before usage_v3 (no featureUses)
+    fday("2026-10-04", { viewer_pdf: 4, export_md_html: 9, constructor: 7, "": 1 }),
+  ];
+  days[3].featureUses = JSON.parse('{"viewer_pdf":4,"export_md_html":9,"constructor":7,"__proto__":8}');
+  assert.deepStrictEqual(topFeatures(days, 3, FEATURE_KEYS_ACCEPTED), [["export_md_html", 11], ["viewer_pdf", 7], ["tool_merge", 1]]);
+  assert.deepStrictEqual(topFeatures(days, 30, FEATURE_KEYS_ACCEPTED)[0], ["viewer_pdf", 107]);
+  assert.deepStrictEqual(topFeatures([], 30, FEATURE_KEYS_ACCEPTED), []);
+  assert.deepStrictEqual(topFeatures([fday("2026-10-02", { viewer_pdf: 0 })], 30, FEATURE_KEYS_ACCEPTED), []);
+  assert.strictEqual(FEATURE_WINDOW_DAYS, 30);
+});
+
+test("page shows a Top features table built from the tested topFeatures via textContent", () => {
+  assert.ok(/Top features/.test(DASHBOARD_HTML));
+  assert.ok(DASHBOARD_HTML.includes(topFeatures.toString()), "page embeds the tested aggregation");
+  assert.ok(DASHBOARD_HTML.includes(JSON.stringify(FEATURE_KEYS_ACCEPTED)), "page uses the backend allow-list");
+  assert.ok(/id="features"/.test(DASHBOARD_HTML));
+});
+
+test("daily_stats.sql rolls feature_counts up per day (summed, no install IDs) and owner_dashboard returns them", () => {
+  const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/daily_stats.sql"), "utf8");
+  assert.ok(/alter table daily_stats add column if not exists feature_uses jsonb/i.test(sql));
+  assert.ok(/jsonb_each\(hb\.feature_counts\)/i.test(sql));
+  assert.ok(sql.includes("and (e.value #>> '{}') ~ '^[0-9]{1,3}$'"), "a non-integer stored value must not abort the rollup");
+  assert.ok(/'featureUses', feature_uses/.test(sql));
+  assert.ok(/feature_uses = excluded\.feature_uses/.test(sql));
+});
+
+// ---- feature uses by surface (usage_v4) ----
+const sday = (day, surfaceUses) => ({ ...doc().days[0], day, featureUses: {}, surfaceUses });
+
+test("validateDashboardData accepts days with or without surfaceUses (old days stay valid), rejects bad surfaceUses", () => {
+  const d = doc();
+  d.days.push(sday("2026-10-29", { dark_applied__web_other: 5, tool_merge__local_pdf: 1 }));
+  d.days.push({ ...doc().days[0], day: "2026-10-30", featureUses: { viewer_pdf: 1 } });
+  assert.strictEqual(validateDashboardData(d), true);
+  for (const bad of [{ dark_applied__web_other: -1 }, { dark_applied__web_other: "3" }, { "<b>__web_other": 1 },
+    { dark_applied__web_other: 1.5 }, [], null, "x"]) {
+    const d2 = doc(); d2.days[0].surfaceUses = bad;
+    assert.strictEqual(validateDashboardData(d2), false, JSON.stringify(bad));
+  }
+  const d3 = doc(); d3.days[0].surfaceuses = {};
+  assert.strictEqual(validateDashboardData(d3), false, "unknown day keys still rejected");
+});
+
+test("topSurfaceFeatures sums per composite key over the window, splits it, ignores unknown keys and old days", () => {
+  const days = [
+    sday("2026-10-01", { dark_applied__web_other: 100 }), // outside a 3-day window
+    sday("2026-10-02", { dark_applied__web_other: 3, viewer_pdf__local_pdf: 2, nope__web_other: 50,
+      dark_applied__nope: 9, tool_merge__local_pdf: 1, "a__b__c": 4, dark_applied: 6 }),
+    { ...doc().days[0], day: "2026-10-03" }, // a day before usage_v4 (no surfaceUses)
+    sday("2026-10-04", null),
+  ];
+  days[3].surfaceUses = JSON.parse('{"dark_applied__web_other":4,"viewer_pdf__local_pdf":9,"constructor__web_other":7,"__proto__":8,"dark_applied__google_docs":0,"dark_applied__google_sheets":2}');
+  assert.deepStrictEqual(topSurfaceFeatures(days, 3, FEATURE_KEYS_ACCEPTED, SURFACES_ACCEPTED), [
+    ["viewer_pdf", "local_pdf", 11], ["dark_applied", "web_other", 7], ["dark_applied", "google_sheets", 2],
+    ["tool_merge", "local_pdf", 1],
+  ]);
+  assert.deepStrictEqual(topSurfaceFeatures(days, 30, FEATURE_KEYS_ACCEPTED, SURFACES_ACCEPTED)[0], ["dark_applied", "web_other", 107]);
+  assert.deepStrictEqual(topSurfaceFeatures([], 30, FEATURE_KEYS_ACCEPTED, SURFACES_ACCEPTED), []);
+  assert.deepStrictEqual(topSurfaceFeatures([{ ...doc().days[0] }], 30, FEATURE_KEYS_ACCEPTED, SURFACES_ACCEPTED), []);
+  assert.deepStrictEqual(topSurfaceFeatures(null, 30, FEATURE_KEYS_ACCEPTED, SURFACES_ACCEPTED), []);
+});
+
+test("darkBySurface keeps only dark_applied rows, as [surface, uses]", () => {
+  const rows = [["viewer_pdf", "local_pdf", 11], ["dark_applied", "web_other", 7], ["dark_applied", "google_docs", 2]];
+  assert.deepStrictEqual(darkBySurface(rows), [["web_other", 7], ["google_docs", 2]]);
+  assert.deepStrictEqual(darkBySurface([]), []);
+});
+
+test("page shows Top features by surface and Where dark mode is used, from the tested helpers via textContent", () => {
+  assert.ok(/Top features by surface/.test(DASHBOARD_HTML));
+  assert.ok(/Where dark mode is used/.test(DASHBOARD_HTML));
+  assert.ok(DASHBOARD_HTML.includes(topSurfaceFeatures.toString()), "page embeds the tested aggregation");
+  assert.ok(DASHBOARD_HTML.includes(darkBySurface.toString()), "page embeds the tested filter");
+  assert.ok(DASHBOARD_HTML.includes(JSON.stringify(SURFACES_ACCEPTED)), "page uses the backend surface list");
+  assert.ok(/id="surface-features"/.test(DASHBOARD_HTML) && /id="dark-surfaces"/.test(DASHBOARD_HTML));
+  assert.ok(!/innerHTML/.test(DASHBOARD_HTML));
+});
+
+test("daily_stats.sql rolls surface_counts up per day (summed, no install IDs, integer guard) and owner_dashboard returns them", () => {
+  const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/daily_stats.sql"), "utf8");
+  assert.ok(/requires usage_v4\.sql/i.test(sql.split("\n").slice(0, 6).join("\n")), "header says it requires usage_v4.sql");
+  assert.ok(/alter table daily_stats add column if not exists surface_uses jsonb not null default '\{\}'/i.test(sql));
+  assert.ok(/jsonb_each\(hb\.surface_counts\)/i.test(sql));
+  assert.ok(/hb\.surface_counts is not null/i.test(sql));
+  assert.strictEqual(sql.split("and (e.value #>> '{}') ~ '^[0-9]{1,3}$'").length - 1, 2, "both rollups keep the integer guard");
+  assert.ok(/'surfaceUses', surface_uses/.test(sql));
+  assert.ok(/surface_uses = excluded\.surface_uses/.test(sql));
+  assert.ok(/insert into daily_stats \([^)]*\bsurface_uses\)/i.test(sql));
+  const rollup = sql.match(/create or replace function rollup_daily_stats[\s\S]*?\n\$\$;/i)[0];
+  assert.ok(!/install_id\s+as|'install_id'|jsonb_agg\(\s*install_id/i.test(rollup), "never aggregates install ids");
 });
 
 // ---- SQL ----

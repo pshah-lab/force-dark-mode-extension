@@ -1,4 +1,4 @@
-// POST /api/darkmode-telemetry : validates and upserts one opt-in usage report (the 2.0.x heartbeat or the 2.1.0+ report, optionally with featureUses) (OPTIONS: CORS preflight).
+// POST /api/darkmode-telemetry : validates and upserts one opt-in usage report (the 2.0.x heartbeat or the 2.1.0+ report, optionally with featureUses and/or surfaceUses) (OPTIONS: CORS preflight).
 // Only req.method and req.body are used. No header or network address is read or stored.
 import { validateHeartbeat, validateUsage } from "../lib/schema.js";
 import { readJsonBody, reply, isPreflight, createSupabaseClient } from "../lib/http.js";
@@ -53,7 +53,8 @@ export function createHandler({ store, now = () => new Date() } = {}) {
       };
     } else if (validateUsage(hb)) {
       // 2.1.0+ opt-in usage report: only these five facts are stored, plus the feature counts when the
-      // optional featureUses field is present (a five-field report leaves feature_counts untouched).
+      // optional featureUses field is present and the per-surface counts when surfaceUses is present (a report
+      // without either field leaves that column untouched).
       row = {
         install_id: hb.id,
         day: hb.day,
@@ -62,6 +63,7 @@ export function createHandler({ store, now = () => new Date() } = {}) {
         sites_darkened: hb.sites,
       };
       if (Object.prototype.hasOwnProperty.call(hb, "featureUses")) row.feature_counts = hb.featureUses;
+      if (Object.prototype.hasOwnProperty.call(hb, "surfaceUses")) row.surface_counts = hb.surfaceUses;
     } else {
       return reply(res, 400);
     }

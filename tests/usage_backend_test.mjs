@@ -5,7 +5,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import * as be from "../backend/telemetry/lib/schema.js";
 import { createHandler } from "../backend/telemetry/api/darkmode-telemetry.js";
-import { validateReport, FEATURE_KEYS, MAX_FEATURE_COUNT } from "../src/shared/usageReport.js";
+import { MAX_BODY_BYTES } from "../backend/telemetry/lib/http.js";
+import { validateReport, FEATURE_KEYS, MAX_FEATURE_COUNT, SURFACES, MAX_SURFACE_ENTRIES } from "../src/shared/usageReport.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const queue = [];
@@ -137,16 +138,10 @@ test("the README says to run usage_v2.sql before re-running public_stats.sql", (
 const TOOL_KEYS = ["tool_merge", "tool_split", "tool_extract", "tool_remove", "tool_reorder", "tool_rotate",
   "tool_images_to_pdf", "tool_page_numbers", "tool_watermark", "tool_strip_metadata", "tool_color_copy_dark",
   "tool_color_copy_sepia", "tool_color_copy_gray"];
-// The 23 viewer/export keys of consent v3. The extension list grew to 44 (consent v4, Task 1); the backend
-// allow-list gains the 21 new keys in Task 7, which switches these back to the full FEATURE_KEYS.
-const V3_FEATURE_KEYS = ["viewer_pdf", "viewer_docx", "viewer_pptx", "viewer_xlsx", "viewer_csv", "viewer_md", "viewer_txt",
-  "viewer_rtf", "export_pdf_txt", "export_pdf_md", "export_pdf_png", "export_docx_txt", "export_docx_md", "export_docx_html",
-  "export_pptx_txt", "export_pptx_md", "export_pptx_html", "export_xlsx_csv", "export_xlsx_json", "export_csv_xlsx",
-  "export_md_html", "export_txt_html", "export_rtf_html"];
 const fu = (featureUses) => ({ ...report(), featureUses });
 const FU_VALID = [
   fu({ viewer_pdf: 3, export_md_html: 999 }), fu({ viewer_pdf: 1 }),
-  fu(Object.fromEntries(V3_FEATURE_KEYS.map((k) => [k, MAX_FEATURE_COUNT]))),
+  fu(Object.fromEntries(FEATURE_KEYS.map((k) => [k, MAX_FEATURE_COUNT]))),
 ];
 const FU_INVALID = [
   { nope: 1 }, { __proto__x: 1 }, { viewer_pdf: 0 }, { viewer_pdf: 1000 }, { viewer_pdf: 1.5 },
@@ -167,13 +162,12 @@ test("featureUses: validateUsage and validateReport agree on every 6-key case", 
   for (const c of FU_INVALID) assert.strictEqual(be.validateUsage(c), false, JSON.stringify(c));
 });
 
-test("FEATURE_KEYS_ACCEPTED is the extension's 23 v3 keys plus the reserved tool_* keys (Task 7 adds the 21 v4 keys)", () => {
+test("FEATURE_KEYS_ACCEPTED is exactly the extension's FEATURE_KEYS plus the reserved tool_* keys", () => {
   assert.strictEqual(FEATURE_KEYS.length, 44);
-  assert.strictEqual(V3_FEATURE_KEYS.length, 23);
-  for (const k of V3_FEATURE_KEYS) assert.ok(FEATURE_KEYS.includes(k), k);
-  for (const k of V3_FEATURE_KEYS) assert.ok(be.FEATURE_KEYS_ACCEPTED.includes(k), k);
+  for (const k of FEATURE_KEYS) assert.ok(be.FEATURE_KEYS_ACCEPTED.includes(k), k);
   for (const k of TOOL_KEYS) assert.ok(be.FEATURE_KEYS_ACCEPTED.includes(k), k);
-  assert.strictEqual(be.FEATURE_KEYS_ACCEPTED.length, V3_FEATURE_KEYS.length + TOOL_KEYS.length);
+  assert.strictEqual(be.FEATURE_KEYS_ACCEPTED.length, FEATURE_KEYS.length + TOOL_KEYS.length);
+  assert.strictEqual(be.FEATURE_KEYS_ACCEPTED.length, 57);
   assert.strictEqual(new Set(be.FEATURE_KEYS_ACCEPTED).size, be.FEATURE_KEYS_ACCEPTED.length);
   assert.ok(Object.isFrozen(be.FEATURE_KEYS_ACCEPTED));
   assert.strictEqual(be.MAX_FEATURE_COUNT, MAX_FEATURE_COUNT);
@@ -225,6 +219,146 @@ test("the public stats never mention feature_counts", () => {
   const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/public_stats.sql"), "utf8").toLowerCase();
   assert.ok(!sql.includes("feature_counts"));
   assert.ok(!sql.includes("featureuses"));
+});
+
+// ---- surfaceUses (consent v4: 5 + surfaceUses, or 7-key with featureUses) ----
+const su = (surfaceUses, featureUses) => (featureUses === undefined
+  ? { ...report(), surfaceUses } : { ...report(), featureUses, surfaceUses });
+const ALL_SURFACE_KEYS = FEATURE_KEYS.flatMap((f) => SURFACES.map((s) => `${f}__${s}`));
+const manyKeys = (n) => Object.fromEntries(ALL_SURFACE_KEYS.slice(0, n).map((k) => [k, MAX_FEATURE_COUNT]));
+const SU_VALID = [
+  su({ dark_applied__web_other: 3 }),
+  su({ export_pdf_txt__local_pdf: 1, viewer_pdf__web_pdf: 999 }),
+  su({ dark_applied__google_docs: 2 }, { dark_applied: 2 }),
+  su(manyKeys(MAX_SURFACE_ENTRIES)),
+  su(manyKeys(MAX_SURFACE_ENTRIES), Object.fromEntries(FEATURE_KEYS.map((k) => [k, 1]))),
+  ...SURFACES.map((s) => su({ [`toggle_on__${s}`]: 1 })),
+];
+const SU_BAD_MAPS = [
+  { "a__b__c": 1 }, { __x: 1 }, { x__: 1 }, { viewer_pdf__nope: 1 }, { nope__web_other: 1 },
+  JSON.parse('{"__proto__":1}'), JSON.parse('{"viewer_pdf__web_other":1,"__proto__":1}'),
+  JSON.parse('{"__proto__":{"viewer_pdf__web_other":1}}'),
+  { constructor__web_other: 1 }, { toString__web_other: 1 }, { viewer_pdf__constructor: 1 }, { viewer_pdf__proto__: 1 },
+  { viewer_pdf__web_other: 0 }, { viewer_pdf__web_other: 1000 }, { viewer_pdf__web_other: 1.5 },
+  { viewer_pdf__web_other: "3" }, { viewer_pdf__web_other: null }, { viewer_pdf__web_other: {} },
+  { viewer_pdf__web_other: [1] }, { viewer_pdf__web_other: -1 },
+  { viewer_pdf: 1 }, { viewer_pdf__: 1 }, { __web_other: 1 }, { viewer_pdf___web_other: 1 },
+  { viewer_pdf__web_other__web_other: 1 }, { VIEWER_PDF__web_other: 1 }, { viewer_pdf__WEB_OTHER: 1 },
+  { "viewer_pdf__web_other ": 1 }, { "viewer_pdf_web_other": 1 }, { "": 1 }, { "__": 1 },
+  {}, [], null, "x", 5, [["viewer_pdf__web_other", 1]],
+  manyKeys(MAX_SURFACE_ENTRIES + 1),
+];
+const SU_INVALID = SU_BAD_MAPS.map((m) => su(m)).concat(
+  SU_BAD_MAPS.map((m) => su(m, { viewer_pdf: 1 })),
+  [
+    su({ viewer_pdf__web_other: 1 }, { nope: 1 }),
+    su({ viewer_pdf__web_other: 1 }, {}),
+    { ...su({ viewer_pdf__web_other: 1 }, { viewer_pdf: 1 }), extra: 1 },
+    { ...su({ viewer_pdf__web_other: 1 }), sites: -1 },
+    JSON.parse(`{"id":"${ID}","day":"2026-10-20","version":"2.1.0","engines":{"auto":true,"css":false,"invert":false},"sites":3,"__proto__":{"surfaceUses":{"viewer_pdf__web_other":1}}}`),
+    JSON.parse(`{"id":"${ID}","day":"2026-10-20","version":"2.1.0","engines":{"auto":true,"css":false,"invert":false},"sites":3,"surfaceUses":{"viewer_pdf__web_other":1},"__proto__":1}`),
+    { ...report(), surfaceuses: { viewer_pdf__web_other: 1 } },
+  ],
+);
+// Only meaningful in-process: JSON serialisation drops an undefined field, so it cannot reach the handler.
+const SU_INVALID_IN_PROCESS = [{ ...report(), surfaceUses: undefined }, { ...report(), featureUses: undefined }];
+
+test("surfaceUses: validateUsage and validateReport agree on every 5+surfaceUses and 7-key case", () => {
+  assert.strictEqual(ALL_SURFACE_KEYS.length, 44 * 9);
+  for (const c of [...SU_VALID, ...SU_INVALID, ...SU_INVALID_IN_PROCESS]) {
+    assert.strictEqual(be.validateUsage(c), validateReport(c), JSON.stringify(c));
+  }
+  for (const c of SU_VALID) assert.strictEqual(be.validateUsage(c), true, JSON.stringify(c));
+  for (const c of [...SU_INVALID, ...SU_INVALID_IN_PROCESS]) assert.strictEqual(be.validateUsage(c), false, JSON.stringify(c));
+});
+
+test("SURFACES_ACCEPTED is exactly the extension's 9 SURFACES and MAX_SURFACE_ENTRIES matches", () => {
+  assert.deepStrictEqual([...be.SURFACES_ACCEPTED], [...SURFACES]);
+  assert.deepStrictEqual([...be.SURFACES_ACCEPTED], ["google_docs", "google_sheets", "google_slides", "web_pdf",
+    "local_pdf", "local_sheet", "local_doc", "web_other", "other"]);
+  assert.ok(Object.isFrozen(be.SURFACES_ACCEPTED));
+  assert.strictEqual(be.MAX_SURFACE_ENTRIES, MAX_SURFACE_ENTRIES);
+  assert.strictEqual(be.MAX_SURFACE_ENTRIES, 120);
+  for (const k of [...be.FEATURE_KEYS_ACCEPTED, ...be.SURFACES_ACCEPTED]) {
+    assert.ok(/^[a-z0-9_]+$/.test(k) && !k.includes("__"), k);
+  }
+});
+
+test("reserved tool_* surface keys are accepted by the backend only", () => {
+  for (const k of TOOL_KEYS) {
+    const r = su({ [`${k}__local_pdf`]: 2 });
+    assert.strictEqual(be.validateUsage(r), true, k);
+    assert.strictEqual(validateReport(r), false, k);
+    assert.strictEqual(be.validateUsage(su({ [`${k}__local_pdf`]: 1000 })), false, k);
+    assert.strictEqual(be.validateUsage(su({ [`${k}__nope`]: 1 })), false, k);
+  }
+});
+
+test("a 7-key report is stored with feature_counts and surface_counts", async () => {
+  const store = fakeStore();
+  const res = await call(createHandler({ store, now: () => NOW }),
+    su({ dark_applied__web_other: 4, viewer_pdf__local_pdf: 1 }, { dark_applied: 4, viewer_pdf: 1 }));
+  assert.strictEqual(res.statusCode, 204);
+  assert.deepStrictEqual(store.rows[0], {
+    install_id: ID, day: "2026-10-20", version: "2.1.0",
+    engines: { auto: true, css: false, invert: false },
+    sites_darkened: 3,
+    feature_counts: { dark_applied: 4, viewer_pdf: 1 },
+    surface_counts: { dark_applied__web_other: 4, viewer_pdf__local_pdf: 1 },
+  });
+});
+
+test("a 5+surfaceUses report stores surface_counts and leaves feature_counts untouched", async () => {
+  const store = fakeStore();
+  const res = await call(createHandler({ store, now: () => NOW }), su({ toggle_on__google_docs: 2 }));
+  assert.strictEqual(res.statusCode, 204);
+  assert.deepStrictEqual(store.rows[0].surface_counts, { toggle_on__google_docs: 2 });
+  assert.ok(!("feature_counts" in store.rows[0]));
+});
+
+test("5-field and v3 6-field reports still return 204 and never touch surface_counts", async () => {
+  for (const r of [report({ version: "2.2.0" }), fu({ viewer_pdf: 2 }), fu({ dark_applied: 1, theme_custom: 3 })]) {
+    const store = fakeStore();
+    const res = await call(createHandler({ store, now: () => NOW }), r);
+    assert.strictEqual(res.statusCode, 204, JSON.stringify(r));
+    assert.ok(!("surface_counts" in store.rows[0]), JSON.stringify(r));
+  }
+});
+
+test("bad surfaceUses returns 400 (413 when also over the body limit) and nothing is stored", async () => {
+  for (const bad of SU_INVALID) {
+    const store = fakeStore();
+    const res = await call(createHandler({ store, now: () => NOW }), bad);
+    const big = Buffer.byteLength(JSON.stringify(bad) || "", "utf8") > MAX_BODY_BYTES;
+    assert.strictEqual(res.statusCode, big ? 413 : 400, JSON.stringify(bad));
+    assert.strictEqual(store.rows.length, 0);
+  }
+});
+
+test("usage_v4.sql adds surface_counts idempotently with an object-or-null check", () => {
+  const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/usage_v4.sql"), "utf8").toLowerCase();
+  assert.ok(/alter table heartbeats add column if not exists surface_counts jsonb/.test(sql));
+  assert.ok(/surface_counts is null or jsonb_typeof\(surface_counts\) = 'object'/.test(sql));
+  assert.ok(!/\b(drop|delete|truncate|update)\b/.test(sql.replace(/^--.*$/gm, "")), "additive only");
+});
+
+test("the public stats never mention surface_counts", () => {
+  const sql = fs.readFileSync(path.join(ROOT, "backend/telemetry/supabase/public_stats.sql"), "utf8").toLowerCase();
+  assert.ok(!sql.includes("surface_counts"));
+  assert.ok(!sql.includes("surfaceuses"));
+  assert.ok(!sql.includes("surface_uses"));
+  const pub = fs.readFileSync(path.join(ROOT, "backend/telemetry/lib/publicStats.js"), "utf8").toLowerCase();
+  assert.ok(!/surface_counts|surfaceuses|surface_uses/.test(pub));
+});
+
+test("the README gives the v4 deploy order and warns about the old dashboard", () => {
+  const readme = fs.readFileSync(path.join(ROOT, "backend/telemetry/README.md"), "utf8");
+  const a = readme.indexOf("supabase/usage_v4.sql");
+  assert.ok(a > -1, "usage_v4.sql must be documented");
+  const sec = readme.slice(a, a + 1600);
+  const b = sec.indexOf("daily_stats.sql"), c = sec.indexOf("deploy"), d = sec.indexOf("release the extension");
+  assert.ok(b > 0 && c > b && d > c, "order: usage_v4.sql -> daily_stats.sql -> deploy backend -> release extension");
+  assert.ok(/old deployed owner dashboard rejects days that carry\s+`surfaceUses`/.test(readme));
 });
 
 console.log("\nUsage report backend");

@@ -1035,7 +1035,10 @@ test("PRIVACY.md describes the 2.1.0 opt-in usage report truthfully and lists ex
   assert.ok(!/each day you use dark mode or the document viewer/.test(section), "the old send-day phrase must be gone");
   assert.ok(/surfaceUses/.test(section) && /a few fixed places/.test(section) && /Google Docs/.test(section), "must describe surfaceUses and the few fixed places");
   assert.ok(/never page addresses, document names or contents/i.test(section), "must say never page addresses, document names or contents");
-  assert.ok(/2\.3\.0 or earlier/.test(section) && /asked to confirm again/i.test(section), "earlier opt-ins (2.3.0 or earlier) are asked to confirm again");
+  assert.ok(/people who opted in earlier are asked to confirm again/i.test(section) && /nothing new is sent/i.test(section), "earlier opt-ins are asked to confirm again, with no hard-coded version");
+  assert.ok(!/surfaceUses`?\s*\((?:versions? )?after|versions? after 2\.3\.0|2\.3\.0 or earlier/i.test(section), "the surfaceUses text must not hard-code a release version");
+  assert.ok(/Which individual sites you visit, page addresses[^.]*are never collected or sent; only a few fixed place categories/.test(section), "must use the precise never-collected sentence with the fixed-place qualifier");
+  assert.ok(!/Nothing about which sites you visit/.test(section), "the bare absolute 'Nothing about which sites you visit' claim must be gone");
   assert.ok(/hash/i.test(section) && /never leaves your device/i.test(section), "must describe the local site fingerprints");
   const fields = privacyDoc.match(/<!-- usage-fields:start -->([\s\S]*?)<!-- usage-fields:end -->/);
   assert.ok(fields, "PRIVACY.md must delimit the 2.1.0 usage fields with usage-fields markers");
@@ -1051,6 +1054,11 @@ test("the web privacy page and the store text cover the 2.1.0 usage report and d
   assert.ok(!/each day you use dark mode or the document viewer/.test(html), "docs/privacy.html must not keep the old send-day phrase");
   assert.ok(/<code>surfaceUses<\/code>/.test(html) && /a few fixed places/.test(html) && /never page addresses, document names or contents/i.test(html), "docs/privacy.html must list surfaceUses, fixed places and the never-page-addresses limit");
   assert.ok(/which features are used in which of a few fixed places \(counts only\)/.test(html), "docs/privacy.html purpose must include where-used counts");
+  assert.ok(!/versions? after 2\.3\.0|2\.3\.0 or earlier/.test(html), "docs/privacy.html must not hard-code a release version for surfaceUses");
+  assert.ok(/people who opted in earlier are asked to confirm again/i.test(html), "docs/privacy.html: earlier opt-ins are asked to confirm again");
+  assert.ok(/Which individual sites you visit, page addresses[^.]*are never collected or sent; only a few fixed place categories/.test(html), "docs/privacy.html must use the precise never-collected sentence");
+  const stats = fs.readFileSync(path.join(rootDir, "docs/stats.html"), "utf8");
+  assert.ok(/Which individual sites you visit, page addresses, document names, file names and contents are never sent/.test(stats) && !/Nothing about sites, URLs or content is sent/.test(stats), "docs/stats.html must use the precise never-sent sentence");
   assert.ok(/which viewer and export features are used \(counts only\)/.test(html), "docs/privacy.html purpose must include viewer and export feature counts");
   const cws = fs.readFileSync(path.join(rootDir, "CHROMEWEBSTORE.md"), "utf8");
   const row = (name) => cws.split("\n").find((l) => l.startsWith(`| ${name}`)) || "";
@@ -1060,6 +1068,8 @@ test("the web privacy page and the store text cover the 2.1.0 usage report and d
   assert.ok(!/day you use dark mode(?!, the side panel or the document viewer)|day the user uses dark mode(?!, the side panel or the document viewer)/.test(cws), "the store text must say a side-panel-only or viewer-only day also sends the report");
   assert.ok(/each day you use dark mode, the side panel or the document viewer/.test(cws) && /each day the user uses dark mode, the side panel or the document viewer/.test(cws), "the store text must carry the new send-day phrase in both places");
   assert.ok(/a few fixed places/.test(cws) && /never page addresses, document names or contents/i.test(cws), "the store text must name the few fixed places and never page addresses");
+  assert.ok(!/never file names, contents or sites/.test(cws), "the store text must say 'never which sites', not a bare 'never ... sites' beside the fixed-place categories");
+  assert.ok(/never file names, contents or which sites\. It also counts which features you used and where/.test(cws), "the store text must split the fixed-place sentence from the feature-count sentence");
   assert.ok(/which features are used in which of a few fixed places \(counts only\)/.test(row("User activity")), "User activity purpose must include where-used counts");
   assert.ok(/which viewer and export features are used \(counts only\)/.test(row("User activity")), "User activity purpose must include viewer and export feature counts");
 });

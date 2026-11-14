@@ -1031,26 +1031,36 @@ test("PRIVACY.md describes the 2.1.0 opt-in usage report truthfully and lists ex
   assert.ok(/delete/i.test(section) && /13 months/.test(section), "deletion and the 13-month purge");
   assert.ok(/does not store IP addresses/.test(section) && /request logs may transiently contain/.test(section) && /User-Agent/.test(section) && /Accept-Language/.test(section));
   assert.ok(/updated|sent again/i.test(section), "must say the day's report may be sent again");
-  assert.ok(/each day you use dark mode or the document viewer/.test(section), "must say a viewer-only day also sends the report");
+  assert.ok(/each day you use dark mode, the side panel or the document viewer/.test(section), "must say a side-panel-only or viewer-only day also sends the report");
+  assert.ok(!/each day you use dark mode or the document viewer/.test(section), "the old send-day phrase must be gone");
+  assert.ok(/surfaceUses/.test(section) && /a few fixed places/.test(section) && /Google Docs/.test(section), "must describe surfaceUses and the few fixed places");
+  assert.ok(/never page addresses, document names or contents/i.test(section), "must say never page addresses, document names or contents");
+  assert.ok(/2\.3\.0 or earlier/.test(section) && /asked to confirm again/i.test(section), "earlier opt-ins (2.3.0 or earlier) are asked to confirm again");
   assert.ok(/hash/i.test(section) && /never leaves your device/i.test(section), "must describe the local site fingerprints");
   const fields = privacyDoc.match(/<!-- usage-fields:start -->([\s\S]*?)<!-- usage-fields:end -->/);
   assert.ok(fields, "PRIVACY.md must delimit the 2.1.0 usage fields with usage-fields markers");
   const documented = [...fields[1].matchAll(/`([A-Za-z.]+)`/g)].map((m) => m[1]);
-  assert.deepStrictEqual([...documented].sort(), ["day", "engines.auto", "engines.css", "engines.invert", "featureUses", "id", "sites", "version"].sort());
+  assert.deepStrictEqual([...documented].sort(), ["day", "engines.auto", "engines.css", "engines.invert", "featureUses", "id", "sites", "surfaceUses", "version"].sort());
 });
 
 test("the web privacy page and the store text cover the 2.1.0 usage report and declare User activity and Web history", () => {
   const html = fs.readFileSync(path.join(rootDir, "docs/privacy.html"), "utf8");
   assert.ok(/1\.2 Optional Usage Report \(Version 2\.1\.0 and Later\)/.test(html), "docs/privacy.html needs the 2.1.0 usage report section");
   assert.ok(/off by default/i.test(html) && /<code>sites<\/code>/.test(html) && /<code>engines\.auto<\/code>/.test(html));
-  assert.ok(/each day you use dark mode or the document viewer/.test(html), "docs/privacy.html must say a viewer-only day also sends the report");
+  assert.ok(/each day you use dark mode, the side panel or the document viewer/.test(html), "docs/privacy.html must say a side-panel-only or viewer-only day also sends the report");
+  assert.ok(!/each day you use dark mode or the document viewer/.test(html), "docs/privacy.html must not keep the old send-day phrase");
+  assert.ok(/<code>surfaceUses<\/code>/.test(html) && /a few fixed places/.test(html) && /never page addresses, document names or contents/i.test(html), "docs/privacy.html must list surfaceUses, fixed places and the never-page-addresses limit");
+  assert.ok(/which features are used in which of a few fixed places \(counts only\)/.test(html), "docs/privacy.html purpose must include where-used counts");
   assert.ok(/which viewer and export features are used \(counts only\)/.test(html), "docs/privacy.html purpose must include viewer and export feature counts");
   const cws = fs.readFileSync(path.join(rootDir, "CHROMEWEBSTORE.md"), "utf8");
   const row = (name) => cws.split("\n").find((l) => l.startsWith(`| ${name}`)) || "";
   assert.ok(/\|\s*Yes/.test(row("User activity")), "User activity must be declared in CHROMEWEBSTORE.md");
   assert.ok(/\|\s*Yes/.test(row("Web history")), "Web history must be declared in CHROMEWEBSTORE.md");
   assert.ok(/usage report/i.test(cws) && /off unless you turn it on/i.test(cws), "the store text must describe the opt-in usage report");
-  assert.ok(!/day you use dark mode(?! or the document viewer)|day the user uses dark mode(?! or the document viewer)/.test(cws), "the store text must say a viewer-only day also sends the report");
+  assert.ok(!/day you use dark mode(?!, the side panel or the document viewer)|day the user uses dark mode(?!, the side panel or the document viewer)/.test(cws), "the store text must say a side-panel-only or viewer-only day also sends the report");
+  assert.ok(/each day you use dark mode, the side panel or the document viewer/.test(cws) && /each day the user uses dark mode, the side panel or the document viewer/.test(cws), "the store text must carry the new send-day phrase in both places");
+  assert.ok(/a few fixed places/.test(cws) && /never page addresses, document names or contents/i.test(cws), "the store text must name the few fixed places and never page addresses");
+  assert.ok(/which features are used in which of a few fixed places \(counts only\)/.test(row("User activity")), "User activity purpose must include where-used counts");
   assert.ok(/which viewer and export features are used \(counts only\)/.test(row("User activity")), "User activity purpose must include viewer and export feature counts");
 });
 
@@ -1234,6 +1244,8 @@ test("the usage report purpose names viewer and export feature counts in the dat
   const inv = fs.readFileSync(path.join(rootDir, "documentation/privacy/data-inventory.md"), "utf8");
   const di10 = inv.split("\n").find((l) => l.startsWith("| **DI-10**")) || "";
   assert.ok(/which viewer and export features are used \(counts only\)/.test(di10), "DI-10 purpose must include viewer and export feature counts");
+  assert.ok(/which features are used in which of a few fixed places \(counts only\)/.test(di10), "DI-10 purpose must include where-used counts");
+  assert.ok(/surfaceUses/.test(di10) && /never page addresses, document names or contents/i.test(di10), "DI-10 must list surfaceUses and the never-page-addresses limit");
 });
 
 // Final summary

@@ -1,7 +1,7 @@
 // POST /api/darkmode-telemetry : validates and upserts one opt-in usage report (the 2.0.x heartbeat or the 2.1.0+ report, optionally with featureUses and/or surfaceUses) (OPTIONS: CORS preflight).
 // Only req.method and req.body are used. No header or network address is read or stored.
 import { validateHeartbeat, validateUsage } from "../lib/schema.js";
-import { readJsonBody, reply, isPreflight, createSupabaseClient } from "../lib/http.js";
+import { readJsonBody, reply, isPreflight, createSupabaseClient, MAX_USAGE_BODY_BYTES } from "../lib/http.js";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -34,7 +34,7 @@ export function createHandler({ store, now = () => new Date() } = {}) {
   return async function handler(req, res) {
     if (isPreflight(req)) return reply(res, 204);
     if (req.method !== "POST") return reply(res, 405);
-    const body = await readJsonBody(req);
+    const body = await readJsonBody(req, MAX_USAGE_BODY_BYTES);
     if (!body.ok) return reply(res, body.status);
     const hb = body.value;
     let row;

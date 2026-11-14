@@ -5,7 +5,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import * as be from "../backend/telemetry/lib/schema.js";
 import { createHandler } from "../backend/telemetry/api/darkmode-telemetry.js";
-import { MAX_BODY_BYTES } from "../backend/telemetry/lib/http.js";
+import { MAX_USAGE_BODY_BYTES } from "../backend/telemetry/lib/http.js";
 import { validateReport, FEATURE_KEYS, MAX_FEATURE_COUNT, SURFACES, MAX_SURFACE_ENTRIES } from "../src/shared/usageReport.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -329,10 +329,30 @@ test("bad surfaceUses returns 400 (413 when also over the body limit) and nothin
   for (const bad of SU_INVALID) {
     const store = fakeStore();
     const res = await call(createHandler({ store, now: () => NOW }), bad);
-    const big = Buffer.byteLength(JSON.stringify(bad) || "", "utf8") > MAX_BODY_BYTES;
+    const big = Buffer.byteLength(JSON.stringify(bad) || "", "utf8") > MAX_USAGE_BODY_BYTES;
     assert.strictEqual(res.statusCode, big ? 413 : 400, JSON.stringify(bad));
     assert.strictEqual(store.rows.length, 0);
   }
+});
+
+test("the largest valid v4 report (all 44 featureUses + 120 surfaceUses) is under 8 KB and accepted with 204", async () => {
+  const biggest = {
+    ...report({ version: "2222.2222.2222", sites: 9999, engines: { auto: true, css: true, invert: true } }),
+    featureUses: Object.fromEntries(FEATURE_KEYS.map((k) => [k, MAX_FEATURE_COUNT])),
+    // The longest 120 composite keys, so this is the worst case for size.
+    surfaceUses: Object.fromEntries([...ALL_SURFACE_KEYS].sort((a, b) => b.length - a.length || (a < b ? -1 : 1))
+      .slice(0, MAX_SURFACE_ENTRIES).map((k) => [k, MAX_FEATURE_COUNT])),
+  };
+  assert.strictEqual(validateReport(biggest), true);
+  assert.strictEqual(Object.keys(biggest.surfaceUses).length, 120);
+  const bytes = Buffer.byteLength(JSON.stringify(biggest), "utf8");
+  assert.ok(bytes > 2048 && bytes < MAX_USAGE_BODY_BYTES, `${bytes} bytes`);
+  assert.strictEqual(MAX_USAGE_BODY_BYTES, 8192);
+  const store = fakeStore();
+  const res = await call(createHandler({ store, now: () => NOW }), biggest);
+  assert.strictEqual(res.statusCode, 204);
+  assert.deepStrictEqual(store.rows[0].surface_counts, biggest.surfaceUses);
+  assert.deepStrictEqual(store.rows[0].feature_counts, biggest.featureUses);
 });
 
 test("usage_v4.sql adds surface_counts idempotently with an object-or-null check", () => {

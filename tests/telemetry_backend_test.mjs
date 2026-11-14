@@ -16,6 +16,7 @@ import * as be from "../backend/telemetry/lib/schema.js";
 import { createHandler as createIngest } from "../backend/telemetry/api/darkmode-telemetry.js";
 import { createHandler as createDelete } from "../backend/telemetry/api/darkmode-telemetry-delete.js";
 import * as cors from "../backend/telemetry/lib/cors.js";
+import { MAX_BODY_BYTES, MAX_USAGE_BODY_BYTES } from "../backend/telemetry/lib/http.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 let passed = 0;
@@ -43,6 +44,9 @@ function fakeStore() {
     async deleteById(id) { deleted.push(id); for (const k of [...rows.keys()]) if (k.startsWith(id)) rows.delete(k); },
   };
 }
+// A valid JSON body padded with trailing spaces to exactly n bytes.
+const padTo = (obj, n) => { const t = JSON.stringify(obj); return t + " ".repeat(n - Buffer.byteLength(t, "utf8")); };
+
 function call(handler, { method = "POST", body } = {}) {
   const res = { statusCode: null, ended: false, body: null, headers: {},
     status(c) { this.statusCode = c; return this; },
@@ -133,7 +137,8 @@ test("every POST response (204/400/405/413/500) carries the CORS headers", async
   const failDel = createDelete({ store: { async deleteById() { throw new Error("x"); } } });
   const cases = [
     [ing, { body: hb() }, 204], [ing, { body: "{bad" }, 400], [ing, { method: "GET" }, 405],
-    [ing, { body: JSON.stringify(hb()) + " ".repeat(2100) }, 413], [failIng, { body: hb() }, 500],
+    [ing, { body: padTo(hb(), MAX_USAGE_BODY_BYTES + 1) }, 413], [ing, { body: padTo(hb(), MAX_USAGE_BODY_BYTES) }, 204],
+    [failIng, { body: hb() }, 500],
     [del, { body: { id: ID } }, 204], [del, { body: { id: "x" } }, 400], [del, { method: "GET" }, 405],
     [del, { body: JSON.stringify({ id: ID }) + " ".repeat(2100) }, 413], [failDel, { body: { id: ID } }, 500],
   ];
@@ -176,16 +181,33 @@ test("ingest rejects invalid bodies with 400 and never touches the store", async
   assert.strictEqual(store.upserts, 0);
 });
 
-test("ingest rejects bodies over 2 KB", async () => {
+test("ingest rejects bodies over 8 KB (its own limit) and accepts a valid body of exactly 8 KB", async () => {
+  assert.strictEqual(MAX_USAGE_BODY_BYTES, 8192);
   const store = fakeStore();
   const h = createIngest({ store, now: () => NOW });
-  const big = JSON.stringify(hb()) + " ".repeat(2100);
+  const big = padTo(hb(), MAX_USAGE_BODY_BYTES + 1);
+  assert.strictEqual(Buffer.byteLength(big, "utf8"), 8193);
   const res = await call(h, { body: big });
   assert.strictEqual(res.statusCode, 413);
   assert.strictEqual(store.upserts, 0);
-  const res2 = await call(h, { body: { ...hb(), pad: "x".repeat(3000) } });
+  const res2 = await call(h, { body: { ...hb(), pad: "x".repeat(9000) } });
   assert.strictEqual(res2.statusCode, 413);
   assert.strictEqual(store.upserts, 0);
+  const res3 = await call(h, { body: padTo(hb(), MAX_USAGE_BODY_BYTES) });
+  assert.strictEqual(res3.statusCode, 204);
+  assert.strictEqual(store.upserts, 1);
+});
+
+test("the delete endpoint keeps the 2 KB limit", async () => {
+  assert.strictEqual(MAX_BODY_BYTES, 2048);
+  const store = fakeStore();
+  const h = createDelete({ store });
+  const res = await call(h, { body: padTo({ id: ID }, MAX_BODY_BYTES + 1) });
+  assert.strictEqual(res.statusCode, 413);
+  assert.strictEqual(store.deleted.length, 0);
+  const res2 = await call(h, { body: padTo({ id: ID }, MAX_BODY_BYTES) });
+  assert.strictEqual(res2.statusCode, 204);
+  assert.deepStrictEqual(store.deleted, [ID]);
 });
 
 test("a throwing req.body getter yields a clean 400 on both handlers", async () => {

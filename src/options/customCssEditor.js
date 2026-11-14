@@ -146,6 +146,8 @@ export async function initCustomCssEditor({ showStatus }) {
       return;
     }
     hostInput.value = check.host;
+    // Clearing the box saves an empty value, which deletes the site's CSS; a delete is deliberately not counted as
+    // site_css_saved.
     if (textArea.value !== "") reportSiteCssSaved();
     await renderList();
     showStatus(

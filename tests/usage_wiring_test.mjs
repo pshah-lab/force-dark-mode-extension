@@ -31,13 +31,13 @@ test("DARK_APPLIED from a content script records the engine and the tab's own ho
   const p = handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, fromTab("https://News.Example.com/a?q=1#x"));
   assert.ok(p && typeof p.then === "function");
   assert.deepStrictEqual(await p, { ok: true });
-  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com" }], ["feature", "dark_applied", "web_other"]]);
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com", surface: "web_other" }]]);
 });
 
 test("a host or URL supplied inside the message is never used", async () => {
   const u = fakeUsage();
   await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "auto", host: "evil.example", url: "https://evil.example/" }, fromTab("https://real.example.com/"));
-  assert.deepStrictEqual(u.calls, [["record", { engine: "auto", host: "real.example.com" }], ["feature", "dark_applied", "web_other"]]);
+  assert.deepStrictEqual(u.calls, [["record", { engine: "auto", host: "real.example.com", surface: "web_other" }]]);
 });
 
 test("DARK_APPLIED is ignored without a tab, from non-web pages and with a bad engine", () => {
@@ -84,7 +84,7 @@ test("a content script still cannot read or change consent, and an extension pag
 test("a content script is still counted when the extension base URL is supplied", async () => {
   const u = fakeUsage();
   await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, contentScript, EXT);
-  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com" }], ["feature", "dark_applied", "web_other"]]);
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com", surface: "web_other" }]]);
 });
 
 test("an empty extension base URL never makes every sender look like an extension page", () => {
@@ -138,19 +138,20 @@ test("USAGE_FEATURE passes a valid surface, and drops an absent or unknown one (
   assert.deepStrictEqual(await handleUsageMessage(u, { type: "USAGE_FEATURE", key, surface: surf }, fromPage), { ok: true });
 });
 
-test("DARK_APPLIED also records dark_applied with the surface computed from the sender tab", async () => {
+test("DARK_APPLIED records dark_applied in the same call, with the surface computed from the sender tab", async () => {
   let u = fakeUsage();
   await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, fromTab("https://docs.google.com/document/d/x/edit"));
-  assert.deepStrictEqual(u.calls[1], ["feature", "dark_applied", "google_docs"]);
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "docs.google.com", surface: "google_docs" }]]);
   u = fakeUsage();
   await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, fromTab("https://news.example.com/a"));
-  assert.deepStrictEqual(u.calls[1], ["feature", "dark_applied", "web_other"]);
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com", surface: "web_other" }]]);
   u = fakeUsage();
   await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css", surface: "google_docs" }, fromTab("https://news.example.com/a"));
-  assert.deepStrictEqual(u.calls[1], ["feature", "dark_applied", "web_other"], "a smuggled surface is ignored");
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "news.example.com", surface: "web_other" }]], "a smuggled surface is ignored");
   u = fakeUsage();
   await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css", key: "x", surface: "google_docs" }, fromTab("https://docs.google.com.evil.com/document/d/x"));
-  assert.deepStrictEqual(u.calls.filter((c) => c[0] === "feature"), [["feature", "dark_applied", "web_other"]]);
+  assert.deepStrictEqual(u.calls, [["record", { engine: "css", host: "docs.google.com.evil.com", surface: "web_other" }]]);
+  assert.ok(u.calls.every((c) => c[0] !== "feature"), "dark_applied is no longer a separate recordFeature call");
   u = fakeUsage();
   u.recordFeature = async () => { throw new Error("x"); };
   assert.deepStrictEqual(await handleUsageMessage(u, { type: "DARK_APPLIED", engine: "css" }, fromTab("https://a.example.com/")), { ok: true });

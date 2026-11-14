@@ -21,10 +21,10 @@ import {
 export const INGEST_URL = "https://pshah.fun/api/darkmode-telemetry";
 export const DELETE_URL = "https://pshah.fun/api/darkmode-telemetry-delete";
 
-// Same key as the 2.0.x opt-in, so people who opted in there keep their ID if they confirm. consentVersion 4 marks
+// Same key as the first opt-in, so people who opted in there keep their ID if they confirm. consentVersion 4 marks
 // consent given to what this version sends (feature counts, and those counts split by kind of surface); a state
-// without it, or with any other version (2.0.x had none, 2.1.x-2.3.x wrote 2, 2.4.x wrote 3), is an opt-in that has
-// not confirmed yet and sends nothing.
+// without it, or with any other version (the first opt-in wrote none, earlier consent versions wrote 2, and the
+// previous consent version wrote 3), is an opt-in that has not confirmed yet and sends nothing.
 const CONSENT_VERSION = 4;
 const STATE_KEY = "telemetryState";
 const CARD_KEY = "usageCardState";
@@ -107,8 +107,8 @@ export function createUsage({
     return run;
   };
 
-  // First report of the day goes out at once; later changes to the day's engines or site count refresh that day's
-  // row at most once an hour; a failed attempt is retried after five minutes.
+  // First report of the day goes out at once; later changes to the day's engines, site count, or feature or surface
+  // counts refresh that day's row at most once an hour; a failed attempt is retried after five minutes.
   function shouldSend(state, tally, today, nowMs) {
     const sentToday = state.lastSentDay === today;
     if (sentToday && state.lastSentSig === signature(tally)) return false;
@@ -180,9 +180,15 @@ export function createUsage({
     }
   }
 
-  // Called by the worker when a page had dark mode applied. Never rejects.
-  async function recordDarkApplied({ engine, host } = {}) {
-    await record((base) => recordSite(recordEngine(base, engine), host));
+  // Called by the worker when a page had dark mode applied. With a `surface` (computed by the worker from the sender
+  // tab's URL) it also counts dark_applied for that page load, in the same update as the engine and site, so the day's
+  // first report already carries it (one storage write, one send decision). Nothing is counted unless sending
+  // (consent v4). Never rejects.
+  async function recordDarkApplied({ engine, host, surface } = {}) {
+    await record((base) => {
+      const withSite = recordSite(recordEngine(base, engine), host);
+      return surface === undefined ? withSite : tallyFeature(withSite, "dark_applied", surface);
+    });
   }
 
   // Called when an allow-listed feature was used, optionally on one of the fixed surfaces (surface.js). Only
@@ -193,7 +199,7 @@ export function createUsage({
     await record((base) => tallyFeature(base, key, surface));
   }
 
-  // Which card, if any, the side panel should show. An opt-in at an older consent version is asked to confirm;
+  // Which card, if any, the side panel should show. An opt-in at any other consent version is asked to confirm;
   // everyone else who has not decided is asked once.
   async function status() {
     try {

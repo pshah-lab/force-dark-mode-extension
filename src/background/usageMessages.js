@@ -36,20 +36,10 @@ export function handleUsageMessage(usage, msg, sender, extensionUrl = "") {
       if (!host) return undefined;
       // The surface comes from the sender's own tab URL, never from the message.
       const surface = surfaceFor(sender.tab.url);
-      return usage
-        .recordDarkApplied({ engine: msg.engine, host })
-        .then(
-          () => ({ ok: true }),
-          () => ({ ok: false })
-        )
-        .then(async (reply) => {
-          try {
-            await usage.recordFeature("dark_applied", surface);
-          } catch (e) {
-            // counting is best effort
-          }
-          return reply;
-        });
+      return usage.recordDarkApplied({ engine: msg.engine, host, surface }).then(
+        () => ({ ok: true }),
+        () => ({ ok: false })
+      );
     }
     case "USAGE_CONSENT":
       if (fromContentScript) return undefined;

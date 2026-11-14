@@ -345,6 +345,68 @@ test("recordFeature with a surface while sending stores and sends surfaceUses", 
   });
 });
 
+test("recordDarkApplied with a surface: the first report of the day already carries dark_applied", async () => {
+  const { usage, ingests, map } = setup();
+  await usage.setConsent(true);
+  assert.strictEqual(map.get("telemetryState").tally, null, "no tally yet: this is the first event of the day");
+  await usage.recordDarkApplied({ engine: "css", host: "a.example.com", surface: "google_docs" });
+  assert.strictEqual(ingests().length, 1);
+  const body = ingests()[0].body;
+  assert.deepStrictEqual(Object.keys(body).sort(), ["day", "engines", "featureUses", "id", "sites", "surfaceUses", "version"]);
+  assert.deepStrictEqual(body.engines, { auto: false, css: true, invert: false });
+  assert.strictEqual(body.sites, 1);
+  assert.deepStrictEqual(body.featureUses, { dark_applied: 1 });
+  assert.deepStrictEqual(body.surfaceUses, { dark_applied__google_docs: 1 });
+  assert.ok(validateReport(body));
+  const t = map.get("telemetryState").tally;
+  assert.deepStrictEqual(t.features, { dark_applied: 1 });
+  assert.deepStrictEqual(t.surfaces, { dark_applied__google_docs: 1 });
+  assert.ok(!JSON.stringify(map.get("telemetryState")).includes("a.example.com"), "the host is never stored");
+});
+
+test("recordDarkApplied counts engine, site and dark_applied in a single storage write", async () => {
+  const { usage, map } = setup();
+  await usage.setConsent(true);
+  let writes = 0;
+  // A fresh sender on the consented state, with a storage that counts writes of the usage state.
+  const mapW = new Map([["telemetryState", map.get("telemetryState")]]);
+  const posts = [];
+  const counted = createUsage({
+    storage: {
+      get: async (k) => mapW.get(k),
+      set: async (k, v) => { if (k === "telemetryState") writes += 1; mapW.set(k, JSON.parse(JSON.stringify(v))); },
+      remove: async (k) => { mapW.delete(k); },
+    },
+    post: async (url, body) => { posts.push({ url, body }); return { ok: true, status: 204 }; },
+    now: () => new Date("2026-10-20T10:00:00Z"),
+    version: "2.1.0",
+  });
+  await counted.recordDarkApplied({ engine: "auto", host: "b.example.com", surface: "web_other" });
+  const ingest = posts.filter((p) => p.url === INGEST_URL);
+  assert.strictEqual(ingest.length, 1);
+  assert.deepStrictEqual(ingest[0].body.featureUses, { dark_applied: 1 });
+  assert.deepStrictEqual(ingest[0].body.surfaceUses, { dark_applied__web_other: 1 });
+  // One write for the tally, one for the send bookkeeping.
+  assert.strictEqual(writes, 2);
+});
+
+test("recordDarkApplied with a surface writes and sends nothing when off, at v3, or with no state", async () => {
+  const states = [
+    undefined,
+    { enabled: false, pendingDeleteIds: [ID] },
+    { enabled: true, id: ID, consentVersion: 3, tally: null },
+    { enabled: true, id: ID, consentVersion: 2, tally: null },
+    { enabled: true, id: ID, tally: null },
+  ];
+  for (const st of states) {
+    const { usage, calls, map } = setup({ initial: st === undefined ? {} : { telemetryState: st } });
+    assert.strictEqual(await usage.recordDarkApplied({ engine: "css", host: "a.example.com", surface: "google_docs" }), undefined);
+    assert.strictEqual(calls.length, 0, JSON.stringify(st));
+    if (st === undefined) assert.strictEqual(map.has("telemetryState"), false);
+    else assert.deepStrictEqual(map.get("telemetryState"), st);
+  }
+});
+
 test("recordFeature with a surface writes and sends nothing when off, below or above v4, or with no state", async () => {
   const states = [
     undefined,

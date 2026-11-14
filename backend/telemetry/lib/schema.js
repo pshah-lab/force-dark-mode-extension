@@ -67,7 +67,7 @@ export const FEATURE_KEYS_ACCEPTED = Object.freeze([
   "export_pptx_txt", "export_pptx_md", "export_pptx_html",
   "export_xlsx_csv", "export_xlsx_json", "export_csv_xlsx",
   "export_md_html", "export_txt_html", "export_rtf_html",
-  // Consent v4 (2.4.0+).
+  // Consent v4.
   "dark_applied", "toggle_on", "toggle_off", "native_dark_override", "shortcut_toggle", "context_menu_toggle",
   "engine_auto", "engine_css", "engine_invert", "theme_default", "theme_builtin", "theme_custom",
   "bg_color_changed", "brightness_changed", "contrast_changed", "sepia_changed", "image_dim_changed",

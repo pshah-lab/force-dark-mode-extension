@@ -1,6 +1,7 @@
 // One-time consent card for the optional daily usage report. Off unless the user turns it on. The card says exactly
-// what is received, that the day's report may be updated, and how to turn it off. An earlier opt-in (2.0 to 3)
-// sees the "reconfirm" version because this version also counts where features were used, in fixed places only.
+// what is received, that the day's report may be updated, and how to turn it off. An opt-in at any earlier consent
+// version sees the "reconfirm" version because this version also counts where features were used, in fixed places
+// only.
 (function (root) {
   const ITEMS = [
     "A random ID for this install, not linked to your name or account.",
@@ -8,11 +9,11 @@
     "Which engines you used that day (Auto, CSS, Invert).",
     "How many sites dark mode was applied on that day. A number only, never the sites.",
     "Which viewer and export features you used, as counts per day (for example 'exported a PDF to text'). Never file names or contents.",
-    "Which features you used and where, as counts per day, grouped into a few fixed places such as Google Docs, Google Sheets, local PDF files or other web pages (for example 'exported a PDF to text, 2 times, on local PDF files'). Never page addresses, document names or contents.",
+    "Which features you used and where, as counts per day, grouped into a few fixed places such as Google Docs, Google Sheets, local PDF files or other web pages (for example 'exported a PDF to text, 2 times, on local PDF files'). This includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders. Never page addresses, document names or contents.",
   ];
   const NOTE =
-    "We never receive the sites you visit, page content, or anything you type. Turn it off any time in Options: that stops reports and deletes what we hold for your ID.";
-  const UPDATED = "each day you use dark mode, the side panel or the document viewer we receive the items below, and the day's report may be updated as the numbers change.";
+    "We never receive page addresses, which individual sites you visit, page content, or anything you type; only the fixed place categories above. Turn it off any time in Options: that stops reports and deletes what we hold for your ID.";
+  const UPDATED = "each day you use dark mode, the side panel, the Options page or the document viewer we receive the items below, and the day's report may be updated as the numbers change.";
 
   const USAGE_COPY = {
     ask: {

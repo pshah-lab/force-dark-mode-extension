@@ -32,9 +32,10 @@ const TOPICS = [
   [/features you used and where/i, "which features were used and where"],
   [/a few fixed places/i, "grouped into a few fixed places"],
   [/Never page addresses, document names or contents/i, "never page addresses, document names or contents"],
+  [/how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders/i, "that page-load counts and the dark-mode, engine, theme and slider features are counted"],
 ];
-const SURFACE_ITEM = "Which features you used and where, as counts per day, grouped into a few fixed places such as Google Docs, Google Sheets, local PDF files or other web pages (for example 'exported a PDF to text, 2 times, on local PDF files'). Never page addresses, document names or contents.";
-const DAY_PHRASE = /each day you use dark mode, the side panel or the document viewer/;
+const SURFACE_ITEM = "Which features you used and where, as counts per day, grouped into a few fixed places such as Google Docs, Google Sheets, local PDF files or other web pages (for example 'exported a PDF to text, 2 times, on local PDF files'). This includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders. Never page addresses, document names or contents.";
+const DAY_PHRASE = /each day you use dark mode, the side panel, the Options page or the document viewer/;
 const FEATURE_ITEM = "Which viewer and export features you used, as counts per day (for example 'exported a PDF to text'). Never file names or contents.";
 const allText = (c) => [c.title, c.intro, ...c.items, c.note, c.yes, c.no].join(" ");
 
@@ -69,7 +70,8 @@ test("the copy is plain: never anonymous, says off by default, may be updated, n
     assert.ok(/updated/i.test(card.intro), `${key}: must say the day's report may be updated`);
     assert.ok(DAY_PHRASE.test(card.intro), `${key}: must say a side-panel-only or viewer-only day also sends the report`);
     assert.ok(!/each day you use dark mode or the document viewer/.test(card.intro), `${key}: old phrase must be gone`);
-    assert.ok(/never receive the sites you visit, page content, or anything you type/i.test(card.note), `${key}: note`);
+    assert.ok(card.note.includes("We never receive page addresses, which individual sites you visit, page content, or anything you type; only the fixed place categories above."), `${key}: note, verbatim`);
+    assert.ok(!/never receive the sites you visit/i.test(card.note), `${key}: the old absolute never-the-sites claim must be gone`);
     assert.ok(/Options/.test(card.note) && /deletes what we hold for your ID/i.test(card.note), `${key}: how to turn off`);
   }
   assert.ok(/off unless you turn it on/i.test(USAGE_COPY.ask.intro));
@@ -109,6 +111,8 @@ test("Options has an off-by-default toggle that sends USAGE_CONSENT and lists th
   assert.ok(DAY_PHRASE.test(section), "options must say a side-panel-only or viewer-only day also sends the report");
   assert.ok(html.includes(`<li>${FEATURE_ITEM}</li>`), "options lists the feature line verbatim");
   assert.ok(html.includes(`<li>${SURFACE_ITEM}</li>`), "options lists the where-used line verbatim");
+  assert.ok(section.includes("We never receive page addresses, which individual sites you visit, page content, or anything you type; only the fixed place categories above."), "options note, verbatim");
+  assert.ok(!/never receive the sites you visit/i.test(html), "options: the old absolute never-the-sites claim must be gone");
   for (const t of ["A random ID for this install", "The date and the extension version.", "Which engines you used that day", "How many sites dark mode was applied on that day"]) assert.ok(section.includes(t), t);
   const js = read("src/options/options.js");
   assert.ok(/type: "USAGE_CONSENT", enabled: usageToggle\.checked/.test(js));

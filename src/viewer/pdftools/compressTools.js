@@ -34,7 +34,7 @@ function isPlainJpegImage(stream) {
   if (d.get(N("Subtype")) !== N("Image")) return false;
   if (d.get(N("Filter")) !== N("DCTDecode")) return false;
   const cs = d.get(N("ColorSpace"));
-  if (cs !== N("DeviceRGB") && cs !== N("DeviceGray")) return false;
+  if (cs !== N("DeviceRGB")) return false; // canvas output is RGB; gray or CMYK sources are left alone
   if (num(d, "BitsPerComponent") !== 8) return false;
   return !d.has(N("Decode")) && !d.has(N("Mask")) && !d.has(N("ImageMask"));
 }

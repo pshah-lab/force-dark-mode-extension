@@ -24,8 +24,9 @@ const pageCount = async (bytes) => (await PDFDocument.load(bytes)).getPageCount(
 // 1x1 JPEG fixture (same as pdftools_raster_test)
 const JPG1 = new Uint8Array(Buffer.from("/9j/4AAQSkZJRgABAQAASABIAAD/4QBMRXhpZgAATU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAAAaADAAQAAAABAAAAAQAAAAD/7QA4UGhvdG9zaG9wIDMuMAA4QklNBAQAAAAAAAA4QklNBCUAAAAAABDUHYzZjwCyBOmACZjs+EJ+/8AAEQgAAQABAwEiAAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMFBQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYnKCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SVlpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQHBQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBkaJicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz9PX29/j5+v/bAEMAAgICAgICAwICAwUDAwMFBgUFBQUGCAYGBgYGCAoICAgICAgKCgoKCgoKCgwMDAwMDA4ODg4ODw8PDw8PDw8PD//bAEMBAgICBAQEBwQEBxALCQsQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEP/dAAQAAf/aAAwDAQACEQMRAD8A+L6KKK/lM/38P//Z", "base64"));
 
-const SPEC_IDS = ["merge", "split", "extract", "remove", "reorder", "rotate", "images-to-pdf", "page-numbers", "watermark", "strip-metadata", "color-copy"];
-const OPTION_TYPES = ["text", "number", "select", "checkbox"];
+const SPEC_IDS = ["merge", "split", "extract", "remove", "reorder", "rotate", "images-to-pdf", "page-numbers", "watermark", "strip-metadata", "color-copy",
+  "compress", "pdf-to-images", "organize", "encrypt", "decrypt", "html-to-pdf", "share"];
+const OPTION_TYPES = ["text", "number", "select", "checkbox", "password", "textarea"];
 
 // ---------------------------------------------------------------- registry shape
 test("registry has every spec tool with unique ids and the documented shape", () => {
@@ -36,7 +37,7 @@ test("registry has every spec tool with unique ids and the documented shape", ()
   for (const t of TOOLS) {
     assert.strictEqual(typeof t.title, "string", t.id);
     assert.ok(t.title.length > 0, t.id);
-    assert.ok(t.accepts === "pdf" || t.accepts === "images", `${t.id} accepts`);
+    assert.ok(["pdf", "images", "html", "none"].includes(t.accepts), `${t.id} accepts`);
     assert.strictEqual(typeof t.multiple, "boolean", `${t.id} multiple`);
     assert.ok(Array.isArray(t.options), `${t.id} options`);
     assert.strictEqual(typeof t.run, "function", `${t.id} run`);

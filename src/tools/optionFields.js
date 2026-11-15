@@ -25,8 +25,14 @@ export function buildOptionFields(tool, idPrefix = "opt-") {
     } else if (option.type === "checkbox") {
       input = el("input", { id, name: option.id, type: "checkbox", checked: !!option.default });
       return el("label", { className: "checkbox", htmlFor: id }, input, option.label);
+    } else if (option.type === "textarea") {
+      input = el("textarea", { id, name: option.id, spellcheck: false, rows: 6 });
+      if (option.placeholder) input.placeholder = option.placeholder;
+      input.value = option.default;
+      const wide = el("label", { htmlFor: id, className: "wide" }, option.label, input);
+      return wide;
     } else {
-      input = el("input", { id, name: option.id, type: option.type, autocomplete: "off", spellcheck: false });
+      input = el("input", { id, name: option.id, type: option.type, autocomplete: option.type === "password" ? "new-password" : "off", spellcheck: false });
       if (option.placeholder) input.placeholder = option.placeholder;
       if (option.type === "number") {
         for (const key of ["min", "max", "step"]) if (option[key] !== undefined) input[key] = String(option[key]);
@@ -48,4 +54,18 @@ export function rawOptionValues(tool, form) {
     raw[option.id] = option.type === "checkbox" ? input.checked : input.value;
   }
   return raw;
+}
+
+// Options with a showIf rule ({option, values}) are shown only while that other option has one of those values.
+export function bindVisibility(tool, form, idPrefix = "opt-") {
+  const rules = tool.options.filter((o) => o.showIf);
+  const apply = () => {
+    for (const option of rules) {
+      const source = form.elements.namedItem(option.showIf.option);
+      const label = form.querySelector(`#${idPrefix}${option.id}`)?.closest("label");
+      if (label && source) label.hidden = !option.showIf.values.includes(source.value);
+    }
+  };
+  if (rules.length) form.addEventListener("change", apply);
+  apply();
 }

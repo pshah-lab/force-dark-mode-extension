@@ -10,6 +10,8 @@ import { stripMetadata, inspectMetadata } from "../viewer/pdftools/stripMetadata
 import { rasterToPdf } from "../viewer/pdftools/rasterExport.js";
 import { loadPdf } from "../viewer/pdftools/loadPdf.js";
 import { makeResult } from "../viewer/pdftools/result.js";
+import { compressPdf } from "../viewer/pdftools/compressTools.js";
+import { encryptPdf, decryptPdf } from "../viewer/pdftools/encryptTools.js";
 import { exportFileName } from "../viewer/convert/exportFormats.js";
 
 const RANGE_HINT = "e.g. 1-3, 5";
@@ -46,6 +48,187 @@ async function colorCopy(input, mode) {
   const file = { ...result.files[0], name: exportFileName(input.name, "pdf", `-${mode}`) };
   return makeResult([file], warnings);
 }
+
+const ORGANIZE_RUNNERS = {
+  extract: (input, v) => extractPages(input, v.pages),
+  remove: (input, v) => removePages(input, v.pages),
+  reorder: (input, v) => reorderPages(input, v.pages),
+  rotate: (input, v) => rotateAll(input, v.pages, Number(v.angle)),
+};
+
+// PDF to Images: the page renders itself first (PDF.js needs a canvas), then passes {name, images, totalPages}.
+async function pdfToImages(rendered) {
+  const images = Array.isArray(rendered.images) ? rendered.images : [];
+  const warnings = [];
+  const total = Number(rendered.totalPages) || 0;
+  if (total > images.length && images.length > 0) warnings.push(`Only ${images.length} of ${total} pages were converted.`);
+  return makeResult(images, warnings);
+}
+
+// HTML to PDF: the page rasterises the HTML first, then passes {name, pages: [{width, height, jpegBytes}]}.
+async function htmlToPdf(rendered) {
+  const result = await rasterToPdf(Array.isArray(rendered.pages) ? rendered.pages : []);
+  const file = { ...result.files[0], name: exportFileName(rendered.name, "pdf") };
+  return makeResult([file], result.warnings);
+}
+
+export const CATEGORIES = Object.freeze(["ORGANIZE", "OPTIMIZE", "EDIT", "CONVERT", "SECURITY", "SHARE"]);
+
+// Grid card data: short summary, category chip, tile colour class (see tools.css), NEW pill, card title.
+const META = {
+  merge: { cardTitle: "Merge PDF", summary: "Combine multiple PDF files into one", category: "ORGANIZE", tile: "blue", grid: 1 },
+  split: { cardTitle: "Split PDF", summary: "Extract pages or split into multiple files", category: "ORGANIZE", tile: "violet", grid: 2 },
+  compress: { summary: "Reduce PDF file size", category: "OPTIMIZE", tile: "orange", grid: 3 },
+  rotate: { cardTitle: "Rotate PDF", summary: "Rotate PDF pages", category: "EDIT", tile: "green", grid: 4 },
+  "pdf-to-images": { summary: "Convert PDF pages to JPG or PNG", category: "CONVERT", tile: "indigo", grid: 5 },
+  "images-to-pdf": { cardTitle: "Images to PDF", summary: "Convert images to PDF document", category: "CONVERT", tile: "pink", grid: 6 },
+  organize: { summary: "Reorder, rotate, or delete PDF pages", category: "ORGANIZE", tile: "amber", grid: 7 },
+  watermark: { cardTitle: "Add Watermark", summary: "Add text watermark to PDF pages", category: "EDIT", tile: "teal", grid: 8 },
+  encrypt: { summary: "Add password protection and control permissions", category: "SECURITY", tile: "rose", isNew: true, grid: 9 },
+  decrypt: { summary: "Remove password protection from encrypted PDFs", category: "SECURITY", tile: "sky", isNew: true, grid: 10 },
+  "html-to-pdf": { summary: "Convert HTML files or code to PDF documents", category: "CONVERT", tile: "purple", grid: 11 },
+  share: { summary: "Send files directly between devices on your network", category: "SHARE", tile: "emerald", isNew: true, grid: 12 },
+  "page-numbers": { cardTitle: "Add Page Numbers", summary: "Stamp a page number on every page", category: "EDIT", tile: "cyan", grid: 13 },
+  "strip-metadata": { cardTitle: "Strip Metadata", summary: "Remove title, author and other document info", category: "SECURITY", tile: "slate", grid: 14 },
+  "color-copy": { cardTitle: "Dark, Sepia or Gray Copy", summary: "Make a dark, sepia or grayscale image copy", category: "CONVERT", tile: "navy", grid: 15 },
+  // Folded into Organize Pages for the grid; still reachable by hash and from the viewer.
+  extract: { grid: 0 },
+  remove: { grid: 0 },
+  reorder: { grid: 0 },
+};
+// Not offered by the document viewer's Tools control (they need passwords, an HTML source, or many renders).
+const NOT_IN_VIEWER = new Set(["compress", "organize", "encrypt", "decrypt", "pdf-to-images", "html-to-pdf", "share"]);
+
+const NEW_TOOLS = [
+  {
+    id: "compress",
+    title: "Compress PDF",
+    description:
+      "Makes the PDF smaller by storing uncompressed data efficiently and, if you choose, re-saving large photos as lower-quality JPEGs. " +
+      "PDFs that are already compact may not shrink at all; the result tells you the real saving, and you keep the original either way.",
+    accepts: "pdf",
+    multiple: false,
+    options: [
+      {
+        id: "imageQuality", label: "Photos", type: "select", default: "medium",
+        choices: [
+          { value: "none", label: "Keep photos as they are" },
+          { value: "medium", label: "Shrink photos (good quality)" },
+          { value: "low", label: "Shrink photos (smallest file)" },
+        ],
+      },
+      { id: "removeMetadata", label: "Also remove title, author and other document info", type: "checkbox", default: false },
+    ],
+    run: (files, v, hooks) => compressPdf(first(files), v, hooks),
+  },
+  {
+    id: "pdf-to-images",
+    title: "PDF to Images",
+    description: "Turn each page of a PDF into a JPG or PNG picture. Up to 50 pages at a time; several images download as one .zip.",
+    accepts: "pdf",
+    multiple: false,
+    renderer: "pdf-images",
+    options: [
+      {
+        id: "format", label: "Image format", type: "select", default: "jpg",
+        choices: [{ value: "jpg", label: "JPG (smaller files)" }, { value: "png", label: "PNG (sharp text)" }],
+      },
+      { id: "pages", label: "Pages (blank = all)", type: "text", default: "", placeholder: RANGE_HINT },
+    ],
+    run: (files) => pdfToImages(first(files)),
+  },
+  {
+    id: "organize",
+    title: "Organize Pages",
+    description: "Pick pages to keep or delete, list them in a new order, or rotate pages. Reorder takes every page you want, in the new order; pages left out are dropped.",
+    accepts: "pdf",
+    multiple: false,
+    options: [
+      {
+        id: "action", label: "What to do", type: "select", default: "extract",
+        choices: [
+          { value: "extract", label: "Keep only these pages" },
+          { value: "remove", label: "Delete these pages" },
+          { value: "reorder", label: "Reorder pages" },
+          { value: "rotate", label: "Rotate pages" },
+        ],
+      },
+      { id: "pages", label: "Pages (blank = all, when rotating)", type: "text", default: "", placeholder: "e.g. 3, 1, 2, 4-6" },
+      {
+        id: "angle", label: "Rotate by", type: "select", default: "90", showIf: { option: "action", values: ["rotate"] },
+        choices: [
+          { value: "90", label: "90° clockwise" },
+          { value: "180", label: "180°" },
+          { value: "270", label: "90° counter-clockwise" },
+        ],
+      },
+    ],
+    run: (files, v) => ORGANIZE_RUNNERS[v.action](first(files), v),
+  },
+  {
+    id: "encrypt",
+    title: "Encrypt PDF",
+    description:
+      "Locks the PDF with a password (AES-256) on this device; the file and password never leave it. Set an owner password too if you want to choose what is allowed once it is open. " +
+      "Those permissions are advice: some PDF programs ignore them. Keep the password safe, it cannot be recovered.",
+    accepts: "pdf",
+    multiple: false,
+    options: [
+      { id: "userPassword", label: "Password to open", type: "password", default: "" },
+      { id: "ownerPassword", label: "Owner password (optional, blank = random)", type: "password", default: "" },
+      { id: "allowPrint", label: "Allow printing", type: "checkbox", default: true },
+      { id: "allowCopy", label: "Allow copying text", type: "checkbox", default: true },
+      { id: "allowEdit", label: "Allow editing", type: "checkbox", default: false },
+    ],
+    run: (files, v) => encryptPdf(first(files), v),
+  },
+  {
+    id: "decrypt",
+    title: "Decrypt PDF",
+    description:
+      "Removes the password from a PDF you can open, on this device. Enter the password to open it (or the owner password). " +
+      "Works on AES-256, AES-128 and RC4 protected files; it cannot guess or crack a lost password.",
+    accepts: "pdf",
+    multiple: false,
+    options: [{ id: "password", label: "Password", type: "password", default: "" }],
+    run: (files, v) => decryptPdf(first(files), { password: v.password }),
+  },
+  {
+    id: "html-to-pdf",
+    title: "HTML to PDF",
+    description:
+      "Turns an HTML file or pasted code into a PDF on this device, without scripts and without loading anything from the internet: " +
+      "images, fonts and stylesheets that point to remote addresses are left out. Pages become pictures, so text is not selectable. " +
+      "Choose a .html file, or paste code below.",
+    accepts: "html",
+    multiple: false,
+    renderer: "html",
+    allowPaste: true,
+    options: [
+      { id: "html", label: "Or paste HTML here", type: "textarea", default: "", placeholder: "<h1>Hello</h1>" },
+      {
+        id: "pageSize", label: "Page size", type: "select", default: "a4",
+        choices: [{ value: "a4", label: "A4" }, { value: "letter", label: "Letter" }],
+      },
+    ],
+    run: (files) => htmlToPdf(first(files)),
+  },
+  {
+    id: "share",
+    title: "Share Files",
+    description: "Send files directly between devices on the same network.",
+    accepts: "none",
+    multiple: false,
+    disabled: true,
+    comingSoon:
+      "Coming soon. Sending files between devices on the same network needs a connection set-up server or extra browser permissions. " +
+      "This extension keeps everything on your device with no server and no extra permissions, so the card stays off until there is a way to do it without breaking that.",
+    options: [],
+    run: async () => {
+      throw new Error("Share Files is coming soon.");
+    },
+  },
+];
 
 export const TOOLS = Object.freeze([
   {
@@ -222,7 +405,16 @@ export const TOOLS = Object.freeze([
     ],
     run: (files, v) => colorCopy(first(files), v.mode),
   },
-].map(freezeTool));
+].concat(NEW_TOOLS).map((t) => freezeTool({
+  ...t,
+  ...META[t.id],
+  viewer: !NOT_IN_VIEWER.has(t.id),
+})));
+
+// Cards shown on the Tools page, in order (extract / remove / reorder live inside Organize Pages).
+export function gridTools() {
+  return TOOLS.filter((t) => t.grid > 0).sort((a, b) => a.grid - b.grid);
+}
 
 const BY_ID = new Map(TOOLS.map((t) => [t.id, t]));
 
@@ -233,7 +425,8 @@ export function getTool(id) {
 // "#merge" -> the merge tool; anything unknown -> null.
 export function toolFromHash(hash) {
   const id = String(hash == null ? "" : hash).replace(/^#/, "").trim().toLowerCase();
-  return id ? getTool(id) : null;
+  const tool = id ? getTool(id) : null;
+  return tool && !tool.disabled ? tool : null;
 }
 
 // Raw form values (strings / booleans) -> typed values for run(). Missing values use the default.
@@ -260,9 +453,13 @@ const messageOf = (e) => String((e && e.message) || e || "Something went wrong."
 
 // Runs a tool. Multi-file tools get every file in one call; single-file tools run once per file
 // so one bad file does not stop the others. Returns {outputs: [{source, files, warnings}], errors: [{name, message}]}.
-export async function runTool(tool, files, values, onProgress = () => {}) {
+export async function runTool(tool, files, values, onProgress = () => {}, hooks = {}) {
   const outputs = [];
   const errors = [];
+  if (tool.disabled) {
+    errors.push({ name: "", message: `${tool.title} is coming soon.` });
+    return { outputs, errors };
+  }
   const list = Array.isArray(files) ? files : [];
   if (tool.multiple) {
     const label = tool.id === "merge" ? "PDFs to merge" : "files";
@@ -272,8 +469,8 @@ export async function runTool(tool, files, values, onProgress = () => {}) {
     }
     onProgress(`Working on ${list.length} file${list.length > 1 ? "s" : ""}…`);
     try {
-      const r = await tool.run(list, values);
-      outputs.push({ source: list.map((f) => f.name).join(", "), files: r.files, warnings: r.warnings });
+      const r = await tool.run(list, values, hooks);
+      outputs.push({ source: list.map((f) => f.name).join(", "), files: r.files, warnings: r.warnings, notes: r.notes || [] });
     } catch (e) {
       errors.push({ name: "", message: messageOf(e) });
     }
@@ -287,8 +484,8 @@ export async function runTool(tool, files, values, onProgress = () => {}) {
     const f = list[i];
     onProgress(list.length > 1 ? `File ${i + 1} of ${list.length}: ${f.name}` : `Working on ${f.name}…`);
     try {
-      const r = await tool.run([f], values);
-      outputs.push({ source: f.name, files: r.files, warnings: r.warnings });
+      const r = await tool.run([f], values, hooks);
+      outputs.push({ source: f.name, files: r.files, warnings: r.warnings, notes: r.notes || [] });
     } catch (e) {
       errors.push({ name: f.name, message: messageOf(e) });
     }
@@ -298,6 +495,7 @@ export async function runTool(tool, files, values, onProgress = () => {}) {
 
 const ACCEPTED = {
   pdf: { exts: [".pdf"], mimes: ["application/pdf"], reason: "not a PDF" },
+  html: { exts: [".html", ".htm"], mimes: ["text/html"], reason: "not an HTML file" },
   images: { exts: [".jpg", ".jpeg", ".png"], mimes: ["image/jpeg", "image/png"], reason: "not a JPG or PNG image" },
 };
 

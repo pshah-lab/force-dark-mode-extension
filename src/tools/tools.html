@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>PDF Tools</title>
     <link rel="stylesheet" href="tools.css" />
   </head>
@@ -14,13 +15,15 @@
       </div>
     </header>
 
-    <main class="layout">
-      <nav class="tool-nav" aria-label="Tools">
-        <ul id="tool-list" class="tool-list"></ul>
-      </nav>
+    <main class="page">
+      <section id="grid-view" aria-labelledby="grid-heading">
+        <h2 id="grid-heading" class="visually-hidden">All tools</h2>
+        <ul id="tool-list" class="tool-grid"></ul>
+      </section>
 
-      <section class="workspace" aria-labelledby="tool-title">
-        <h2 id="tool-title">Choose a tool</h2>
+      <section id="tool-view" class="workspace" aria-labelledby="tool-title" hidden>
+        <button id="back-link" type="button" class="back-link">← Back to all tools</button>
+        <h2 id="tool-title" tabindex="-1">Choose a tool</h2>
         <p id="tool-description" class="tool-description"></p>
 
         <div id="drop-zone" class="drop-zone">
@@ -44,6 +47,9 @@
 
         <div id="results" class="results" aria-live="polite"></div>
       </section>
+
+      <!-- Namespace source for the HTML to PDF renderer; never shown. -->
+      <svg id="svg-probe" width="0" height="0" aria-hidden="true" focusable="false"></svg>
     </main>
 
     <footer class="tools-footer">

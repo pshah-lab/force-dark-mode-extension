@@ -7,7 +7,7 @@ const HANDOFF_IDS = new Set(["merge", "split", "images-to-pdf"]);
 
 // Single-file tools run on the PDF open in the viewer (same frozen registry entries, so labels and copy match).
 export const VIEWER_TOOLS = Object.freeze(
-  TOOLS.filter((t) => t.accepts === "pdf" && !t.multiple && !HANDOFF_IDS.has(t.id))
+  TOOLS.filter((t) => t.viewer && t.accepts === "pdf" && !t.multiple && !HANDOFF_IDS.has(t.id))
 );
 
 export const HANDOFF_TOOLS = Object.freeze(TOOLS.filter((t) => HANDOFF_IDS.has(t.id)));

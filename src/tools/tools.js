@@ -2,10 +2,12 @@
 // Everything runs in this tab. Files are held in memory only (never stored, never sent anywhere)
 // and are released when the page closes or the user clears them.
 import * as pdfjsLib from "../viewer/vendor/pdf.min.mjs";
-import { TOOLS, getTool, toolFromHash, readValues, runTool, zipEntryNames, acceptsFile, skipMessage, needsInspection } from "./toolRegistry.js";
+import { gridTools, getTool, toolFromHash, readValues, runTool, zipEntryNames, acceptsFile, skipMessage, needsInspection } from "./toolRegistry.js";
 import { downloadBlob } from "./download.js";
-import { el, buildOptionFields, rawOptionValues } from "./optionFields.js";
+import { el, buildOptionFields, rawOptionValues, bindVisibility } from "./optionFields.js";
 import { renderColorCopyPages } from "./colorCopyRender.js";
+import { renderPdfToImages, recompressJpeg } from "./pdfImagesRender.js";
+import { renderHtmlToPages } from "./htmlRender.js";
 import { createZip } from "../viewer/convert/zipWriter.js";
 import { exportFileName, EXPORT_MIME_TYPES } from "../viewer/convert/exportFormats.js";
 
@@ -16,9 +18,13 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
 const ACCEPT = {
   pdf: "application/pdf,.pdf",
   images: "image/jpeg,image/png,.jpg,.jpeg,.png",
+  html: "text/html,.html,.htm",
 };
 
 const toolList = document.getElementById("tool-list");
+const gridView = document.getElementById("grid-view");
+const toolView = document.getElementById("tool-view");
+const backLink = document.getElementById("back-link");
 const toolTitle = document.getElementById("tool-title");
 const toolDescription = document.getElementById("tool-description");
 const dropZone = document.getElementById("drop-zone");
@@ -36,6 +42,7 @@ let currentTool = null;
 let files = []; // [{ name, bytes, size }]
 let running = false;
 let generation = 0; // bumps on tool switch / clear so stale async work is ignored
+let lastOpenedId = null; // card to refocus when going back to the grid
 
 function setProgress(message, tone = "info") {
   progress.textContent = message;
@@ -50,36 +57,70 @@ function formatSize(bytes) {
 
 // ------------------------------------------------------------------ tool selection
 
-function buildToolList() {
-  const items = TOOLS.map((tool) => {
-    const button = el("button", { type: "button", text: tool.title });
-    button.dataset.tool = tool.id;
-    button.addEventListener("click", () => {
-      if (running) return;
-      if (location.hash === `#${tool.id}`) selectTool(tool);
-      else location.hash = tool.id;
+function buildCard(tool) {
+  const title = tool.cardTitle || tool.title;
+  const chips = el("div", { className: "chips" });
+  if (tool.isNew) chips.append(el("span", { className: "pill-new", text: "NEW" }));
+  chips.append(el("span", { className: "chip", text: tool.disabled ? "COMING SOON" : tool.category }));
+  const top = el("div", { className: "card-top" },
+    el("div", { className: `tile tile-${tool.tile}`, text: title.charAt(0).toUpperCase() }), chips);
+  top.firstChild.setAttribute("aria-hidden", "true");
+  const card = el("li", { className: tool.disabled ? "tool-card is-disabled" : "tool-card" });
+  card.append(top, el("h3", { className: "card-title", text: title }), el("p", { className: "card-summary", text: tool.summary }));
+  if (tool.disabled) {
+    card.append(el("span", { className: "coming-soon-label", text: "Coming soon" }),
+      el("p", { className: "coming-soon-note", text: tool.comingSoon }));
+  } else {
+    const link = el("a", { className: "open-link", href: `#${tool.id}`, text: "Open Tool ›" });
+    link.dataset.tool = tool.id;
+    link.setAttribute("aria-label", `Open ${title}`);
+    link.addEventListener("click", (event) => {
+      if (running) event.preventDefault();
     });
-    return el("li", {}, button);
-  });
-  toolList.replaceChildren(...items);
+    card.append(link);
+  }
+  return card;
+}
+
+function buildToolList() {
+  toolList.replaceChildren(...gridTools().map(buildCard));
+}
+
+function showGrid() {
+  if (running) return;
+  generation++;
+  currentTool = null;
+  files = [];
+  fileInput.value = "";
+  clearResults();
+  renderFiles();
+  setProgress("");
+  toolView.hidden = true;
+  gridView.hidden = false;
+  document.title = "PDF Tools";
+  const link = lastOpenedId && toolList.querySelector(`a[data-tool="${lastOpenedId}"]`);
+  if (link) link.focus();
 }
 
 function selectTool(tool) {
   if (!tool || running) return;
   const previous = currentTool;
   currentTool = tool;
-  for (const button of toolList.querySelectorAll("button")) {
-    button.setAttribute("aria-current", String(button.dataset.tool === tool.id));
-  }
+  lastOpenedId = tool.id;
+  gridView.hidden = true;
+  toolView.hidden = false;
+  document.title = `${tool.title} - PDF Tools`;
   toolTitle.textContent = tool.title;
   toolDescription.textContent = tool.description;
   fileInput.accept = ACCEPT[tool.accepts];
   fileInput.multiple = true;
   dropHint.textContent = tool.accepts === "images"
     ? "Drop JPG or PNG images here or"
-    : tool.multiple
-      ? "Drop PDFs here or"
-      : "Drop one or more PDFs here (each is processed separately) or";
+    : tool.accepts === "html"
+      ? "Drop an .html file here or"
+      : tool.multiple
+        ? "Drop PDFs here or"
+        : "Drop one or more PDFs here (each is processed separately) or";
   if (previous && previous.accepts !== tool.accepts) clearFiles();
   else {
     generation++;
@@ -91,10 +132,17 @@ function selectTool(tool) {
   inspectBox.hidden = true;
   inspectBox.replaceChildren();
   if (needsInspection(tool, files)) showInspection(generation);
+  toolTitle.focus();
 }
 
 function buildOptions(tool) {
   optionsForm.replaceChildren(...buildOptionFields(tool, "opt-"));
+  bindVisibility(tool, optionsForm, "opt-");
+}
+
+function pastedHtml() {
+  const box = optionsForm.elements.namedItem("html");
+  return box && box.value.trim() ? box.value : "";
 }
 
 function formValues() {
@@ -188,7 +236,8 @@ function clearFiles() {
 }
 
 function updateControls() {
-  runButton.disabled = running || !currentTool || files.length === 0;
+  const pasted = !!(currentTool && currentTool.allowPaste && pastedHtml());
+  runButton.disabled = running || !currentTool || (files.length === 0 && !pasted);
   clearButton.disabled = running || files.length === 0;
   fileInput.disabled = running;
 }
@@ -237,9 +286,30 @@ function renderForColorCopy(file, mode, label, token) {
 
 // ------------------------------------------------------------------ run and results
 
+// Files to run: the chosen files, or for HTML to PDF the pasted code as a virtual file.
+function inputFiles(tool) {
+  if (files.length > 0) return files;
+  const text = tool.allowPaste ? pastedHtml() : "";
+  if (!text) return [];
+  const bytes = new TextEncoder().encode(text);
+  return [{ name: "pasted.html", bytes, size: bytes.length }];
+}
+
+// Tools whose pages render in this tab first (canvas), then pass the result to the engine.
+async function renderFor(tool, file, values, label, token) {
+  const onProgress = (message) => setProgress(`${label}${message}`);
+  const isCurrent = () => token === generation;
+  if (tool.render) return renderForColorCopy(file, values.mode, label, token);
+  if (tool.renderer === "pdf-images") {
+    return renderPdfToImages(pdfjsLib, { name: file.name, bytes: file.bytes, format: values.format, pages: values.pages, onProgress, isCurrent });
+  }
+  return renderHtmlToPages({ name: file.name, html: new TextDecoder().decode(file.bytes), pageSize: values.pageSize, onProgress, isCurrent });
+}
+
 async function run() {
-  if (running || !currentTool || files.length === 0) return;
   const tool = currentTool;
+  const input = tool ? inputFiles(tool) : [];
+  if (running || !tool || input.length === 0) return;
   const token = ++generation;
   const values = formValues();
   running = true;
@@ -248,15 +318,15 @@ async function run() {
   setProgress("Working…");
   let outcome;
   try {
-    if (tool.render) {
+    if (tool.render || tool.renderer) {
       const outputs = [];
       const errors = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const label = files.length > 1 ? `${file.name}: ` : "";
+      for (let i = 0; i < input.length; i++) {
+        const file = input[i];
+        const label = input.length > 1 ? `${file.name}: ` : "";
         try {
-          const rendered = await renderForColorCopy(file, values.mode, label, token);
-          setProgress(`${label}Building PDF…`);
+          const rendered = await renderFor(tool, file, values, label, token);
+          setProgress(`${label}Building the result…`);
           const r = await runTool(tool, [rendered], values);
           outputs.push(...r.outputs);
           errors.push(...r.errors);
@@ -266,7 +336,7 @@ async function run() {
       }
       outcome = { outputs, errors };
     } else {
-      outcome = await runTool(tool, files, values, (message) => setProgress(message));
+      outcome = await runTool(tool, input, values, (message) => setProgress(message), { recompressJpeg });
     }
   } catch (error) {
     console.warn("[ForceDark] PDF tool failed:", error);
@@ -309,6 +379,7 @@ function showResults(tool, { outputs, errors }) {
   }
   for (const output of outputs) {
     const card = el("div", { className: "result" }, el("h3", { text: output.source || tool.title }));
+    for (const note of output.notes || []) card.append(el("p", { className: "note", text: note }));
     for (const warning of output.warnings || []) card.append(el("p", { className: "warning", text: `Warning: ${warning}` }));
     const list = el("ul");
     for (const file of output.files) {
@@ -352,10 +423,22 @@ clearButton.addEventListener("click", () => {
   if (!running) clearFiles();
 });
 optionsForm.addEventListener("submit", (event) => event.preventDefault());
-window.addEventListener("hashchange", () => {
-  const tool = toolFromHash(location.hash);
-  if (tool && tool !== currentTool) selectTool(tool);
+backLink.addEventListener("click", () => {
+  if (running) return;
+  if (location.hash) location.hash = "";
+  else showGrid();
 });
+optionsForm.addEventListener("input", updateControls);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && currentTool && !running && !(event.target instanceof HTMLTextAreaElement)) backLink.click();
+});
+function route() {
+  const tool = toolFromHash(location.hash);
+  if (tool) {
+    if (tool !== currentTool) selectTool(tool);
+  } else if (currentTool) showGrid();
+}
+window.addEventListener("hashchange", route);
 
 buildToolList();
-selectTool(toolFromHash(location.hash) || getTool("merge"));
+route();

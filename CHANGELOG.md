@@ -10,7 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **PDF Tools is now a card grid.** Pick a tool from a page of cards (light and dark themes, works down to phone width), then use it and go back. New tools, all offline in the tab: Compress PDF (real savings only; it tells you when a PDF cannot shrink), PDF to Images (JPG or PNG), Organize Pages (keep, delete, reorder or rotate pages), Encrypt PDF (AES-256 password), Decrypt PDF (needs the password; opens AES-256, AES-128 and RC4 files) and HTML to PDF (no scripts, nothing loaded from the internet; pages become pictures). Share Files is shown as "Coming soon": it would need a server or new permissions. Page numbers, strip metadata and the dark/sepia/grayscale copy are still there as cards.
 - **Opt-in counts of which features you use and where**: if you have turned the usage report on, it now also says which features you used and where, as counts per day, grouped into a few fixed places (Google Docs, Google Sheets, Google Slides, web PDF, local PDF, local sheet, local document, other web pages, other). Never page addresses, document names or contents. People who opted in earlier are asked to confirm again, and nothing new is sent until they do. A report can now also be sent on a day you only use the side panel. Turning the report off still deletes everything held for your random ID.
+
+### Fixed
+- The dark, sepia or grayscale image copy in PDF Tools failed with "pdf.destroy is not a function" with the bundled PDF.js; it works again.
 
 ### Changed
 - The usage-report question is now the first thing a new install sees in the side panel (before the welcome card), and says why we ask. It is still off unless you turn it on, with "Turn on" and "No thanks" equally available, and you can change it any time in Options.

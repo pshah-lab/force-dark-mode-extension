@@ -68,8 +68,8 @@ function buildCard(tool) {
   const card = el("li", { className: tool.disabled ? "tool-card is-disabled" : "tool-card" });
   card.append(top, el("h3", { className: "card-title", text: title }), el("p", { className: "card-summary", text: tool.summary }));
   if (tool.disabled) {
-    card.append(el("span", { className: "coming-soon-label", text: "Coming soon" }),
-      el("p", { className: "coming-soon-note", text: tool.comingSoon }));
+    card.append(el("p", { className: "coming-soon-note", text: "Coming soon. It needs a server, so it stays off while this extension runs fully offline." }));
+    card.title = tool.comingSoon;
   } else {
     const link = el("a", { className: "open-link", href: `#${tool.id}`, text: "Open Tool ›" });
     link.dataset.tool = tool.id;

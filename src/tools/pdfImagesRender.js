@@ -64,7 +64,7 @@ export async function renderPdfToImages(pdfjsLib, { name, bytes, format, pages: 
     }
     return { name, images, totalPages: range.pages.length };
   } finally {
-    await pdf.destroy();
+    await loadingTask.destroy(); // pdf.js 6: the loading task owns destroy()
   }
 }
 

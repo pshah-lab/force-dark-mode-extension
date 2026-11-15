@@ -73,6 +73,6 @@ export async function renderColorCopyPages(pdfjsLib, { name, bytes, mode, onProg
     }
     return { name, pages, totalPages: total };
   } finally {
-    await pdf.destroy();
+    await loadingTask.destroy(); // pdf.js 6: the loading task owns destroy()
   }
 }

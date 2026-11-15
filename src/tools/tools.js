@@ -2,7 +2,7 @@
 // Everything runs in this tab. Files are held in memory only (never stored, never sent anywhere)
 // and are released when the page closes or the user clears them.
 import * as pdfjsLib from "../viewer/vendor/pdf.min.mjs";
-import { gridTools, getTool, toolFromHash, readValues, runTool, zipEntryNames, acceptsFile, skipMessage, needsInspection } from "./toolRegistry.js";
+import { gridTools, CATEGORIES, getTool, toolFromHash, readValues, runTool, zipEntryNames, acceptsFile, skipMessage, needsInspection } from "./toolRegistry.js";
 import { downloadBlob } from "./download.js";
 import { el, buildOptionFields, rawOptionValues, bindVisibility } from "./optionFields.js";
 import { renderColorCopyPages } from "./colorCopyRender.js";
@@ -25,6 +25,9 @@ const toolList = document.getElementById("tool-list");
 const gridView = document.getElementById("grid-view");
 const toolView = document.getElementById("tool-view");
 const backLink = document.getElementById("back-link");
+const searchBox = document.getElementById("tool-search");
+const filterBar = document.getElementById("category-filters");
+const noMatch = document.getElementById("no-match");
 const toolTitle = document.getElementById("tool-title");
 const toolDescription = document.getElementById("tool-description");
 const dropZone = document.getElementById("drop-zone");
@@ -82,8 +85,37 @@ function buildCard(tool) {
   return card;
 }
 
+let activeCategory = "ALL";
+
 function buildToolList() {
   toolList.replaceChildren(...gridTools().map(buildCard));
+  const chips = ["ALL", ...CATEGORIES].map((category) => {
+    const chip = el("button", { type: "button", className: "filter-chip", text: category === "ALL" ? "All" : category.charAt(0) + category.slice(1).toLowerCase() });
+    chip.dataset.category = category;
+    chip.setAttribute("aria-pressed", String(category === activeCategory));
+    chip.addEventListener("click", () => {
+      activeCategory = category;
+      applyFilter();
+    });
+    return chip;
+  });
+  filterBar.replaceChildren(...chips);
+}
+
+// Search words and the category chip decide which cards are visible; hidden cards keep their order.
+function applyFilter() {
+  const words = searchBox.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const tools = gridTools();
+  let shown = 0;
+  Array.from(toolList.children).forEach((card, i) => {
+    const tool = tools[i];
+    const text = `${tool.cardTitle || tool.title} ${tool.summary} ${tool.category}`.toLowerCase();
+    const match = (activeCategory === "ALL" || tool.category === activeCategory) && words.every((w) => text.includes(w));
+    card.hidden = !match;
+    if (match) shown++;
+  });
+  for (const chip of filterBar.children) chip.setAttribute("aria-pressed", String(chip.dataset.category === activeCategory));
+  noMatch.hidden = shown > 0;
 }
 
 function showGrid() {
@@ -115,12 +147,12 @@ function selectTool(tool) {
   fileInput.accept = ACCEPT[tool.accepts];
   fileInput.multiple = true;
   dropHint.textContent = tool.accepts === "images"
-    ? "Drop JPG or PNG images here or"
+    ? "Drop JPG or PNG images here"
     : tool.accepts === "html"
-      ? "Drop an .html file here or"
+      ? "Drop an .html file here"
       : tool.multiple
-        ? "Drop PDFs here or"
-        : "Drop one or more PDFs here (each is processed separately) or";
+        ? "Drop PDFs here"
+        : "Drop one or more PDFs here (each is processed separately)";
   if (previous && previous.accepts !== tool.accepts) clearFiles();
   else {
     generation++;
@@ -351,7 +383,7 @@ async function run() {
   const made = outcome.outputs.reduce((n, o) => n + o.files.length, 0);
   if (outcome.errors.length && made === 0) setProgress("Nothing was produced. See the messages below.", "error");
   else if (outcome.errors.length) setProgress(`Done, but ${outcome.errors.length} file${outcome.errors.length > 1 ? "s" : ""} failed.`, "error");
-  else setProgress(`Done. ${made} file${made > 1 ? "s" : ""} ready to download.`);
+  else setProgress(`Done. ${made} file${made > 1 ? "s" : ""} ready to download.`, "success");
 }
 
 function clearResults() {
@@ -429,6 +461,7 @@ backLink.addEventListener("click", () => {
   else showGrid();
 });
 optionsForm.addEventListener("input", updateControls);
+searchBox.addEventListener("input", applyFilter);
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && currentTool && !running && !(event.target instanceof HTMLTextAreaElement)) backLink.click();
 });

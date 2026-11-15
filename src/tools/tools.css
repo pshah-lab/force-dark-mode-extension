@@ -625,3 +625,252 @@ input:focus-visible {
     transform: none;
   }
 }
+
+/* ---------------------------------------------------------------- polish: hero, filters, centred work view */
+body {
+  background:
+    radial-gradient(1100px 420px at 50% -80px, var(--tools-glow), transparent 70%),
+    var(--tools-bg);
+  background-repeat: no-repeat;
+}
+
+:root {
+  --tools-glow: #ffe9d6;
+  --tools-go-from: #ff7a1a;
+  --tools-go-to: #f5333f;
+  --tools-ok-bg: #effaf3;
+  --tools-ok-border: #bfe8cc;
+  --tools-ok-text: #11743a;
+  --tools-info-bg: #fdf6ee;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tools-glow: #2a1d17;
+    --tools-ok-bg: #12261a;
+    --tools-ok-border: #245c38;
+    --tools-ok-text: #7fe0a2;
+    --tools-info-bg: #1d222b;
+  }
+}
+
+.hero {
+  margin: 8px 0 18px;
+  text-align: center;
+}
+
+.hero h2 {
+  margin: 0;
+  font-size: clamp(24px, 4vw, 34px);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.hero p {
+  margin: 8px 0 0;
+  color: var(--tools-muted);
+  font-size: 15px;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 18px;
+}
+
+.search {
+  flex: 0 1 300px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--tools-border);
+  border-radius: 999px;
+  background: var(--tools-surface);
+  color: var(--tools-text);
+  font: inherit;
+}
+
+.search:focus-visible {
+  outline: 2px solid var(--tools-accent);
+  outline-offset: 1px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-chip {
+  min-height: 34px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--tools-surface);
+  font-weight: 600;
+}
+
+.filter-chip[aria-pressed="true"] {
+  border-color: transparent;
+  background: var(--tools-accent);
+  color: #fff;
+}
+
+@media (prefers-color-scheme: dark) {
+  .filter-chip[aria-pressed="true"] {
+    color: #0f1115;
+  }
+}
+
+.no-match {
+  margin: 28px 0;
+  color: var(--tools-muted);
+  text-align: center;
+}
+
+/* Work view: centred title, one white panel, big drop area, full-width action button. */
+.workspace {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+}
+
+.tool-head {
+  margin: 4px 0 22px;
+  text-align: center;
+}
+
+.workspace h2 {
+  font-size: clamp(28px, 5vw, 40px);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.tool-description {
+  max-width: 620px;
+  margin: 8px auto 0;
+  font-size: 15px;
+}
+
+.work-card {
+  padding: 22px;
+  border-radius: 20px;
+  background: var(--tools-surface);
+  box-shadow: var(--tools-shadow);
+}
+
+.drop-zone {
+  flex-direction: column;
+  gap: 8px;
+  padding: 44px 16px;
+  border: 2px dashed var(--tools-border);
+  border-radius: 18px;
+  background: transparent;
+  text-align: center;
+}
+
+.drop-zone:hover,
+.drop-zone.dragging {
+  border-color: var(--tools-accent);
+}
+
+.drop-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #22b8ff, #0a74f0);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.drop-zone p {
+  color: var(--tools-text);
+  font-size: 18px;
+  font-weight: 650;
+}
+
+.file-list {
+  padding: 4px 16px;
+  border-radius: 12px;
+  background: var(--tools-info-bg);
+}
+
+.file-list li:last-child {
+  border-bottom: none;
+}
+
+.run-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+#run {
+  min-height: 52px;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(90deg, var(--tools-go-from), var(--tools-go-to));
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+#run:not(:disabled) {
+  border: none;
+  color: #fff;
+}
+
+#run:disabled {
+  background: var(--tools-chip-bg);
+  color: var(--tools-muted);
+}
+
+#run:focus-visible {
+  outline: 3px solid var(--tools-accent);
+  outline-offset: 2px;
+}
+
+#clear {
+  align-self: center;
+  border: none;
+  background: transparent;
+  color: var(--tools-muted);
+}
+
+.progress:not(:empty) {
+  padding: 12px 16px;
+  border: 1px solid var(--tools-border);
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.progress[data-tone="success"] {
+  border-color: var(--tools-ok-border);
+  background: var(--tools-ok-bg);
+  color: var(--tools-ok-text);
+}
+
+.progress[data-tone="error"] {
+  border-color: color-mix(in srgb, var(--tools-error) 50%, var(--tools-border));
+}
+
+@media (max-width: 640px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search {
+    flex-basis: auto;
+  }
+
+  .work-card {
+    padding: 14px;
+  }
+}

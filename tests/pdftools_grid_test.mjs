@@ -152,6 +152,9 @@ test("page markup is a card grid with a work view, back link, and accessible nam
   assert.match(html, /id="grid-view"/);
   assert.match(html, /id="tool-view"/);
   assert.match(html, /id="back-link"/);
+  assert.match(html, /id="tool-search"[^>]*aria-label="Search tools"/, "search box with an accessible name");
+  assert.match(html, /id="category-filters"[^>]*role="group"/, "category chips");
+  assert.match(html, /class="work-card"/, "work view panel");
   assert.match(html, /Back to all tools/);
   assert.match(html, /<h1[^>]*>PDF Tools<\/h1>/);
   assert.match(html, /name="viewport"/);
@@ -165,6 +168,8 @@ test("page markup is a card grid with a work view, back link, and accessible nam
   const js = read("src/tools/tools.js");
   assert.ok(!/\.innerHTML|insertAdjacentHTML|document\.write/.test(js), "no HTML string injection in tools.js");
   assert.match(js, /Open Tool/);
+  assert.match(js, /function applyFilter/, "search and category filter");
+  assert.match(js, /"success"/, "success banner tone");
   assert.match(js, /Coming soon/);
 });
 

@@ -17,35 +17,48 @@
 
     <main class="page">
       <section id="grid-view" aria-labelledby="grid-heading">
-        <h2 id="grid-heading" class="visually-hidden">All tools</h2>
+        <div class="hero">
+          <h2 id="grid-heading">Every PDF tool, right in this tab</h2>
+          <p>Pick a tool. Nothing is uploaded: files stay on your device.</p>
+        </div>
+        <div class="filter-bar">
+          <input id="tool-search" class="search" type="search" placeholder="Search tools" aria-label="Search tools" autocomplete="off" />
+          <div id="category-filters" class="filters" role="group" aria-label="Filter by category"></div>
+        </div>
         <ul id="tool-list" class="tool-grid"></ul>
+        <p id="no-match" class="no-match" hidden>No tools match. Try another word or choose All.</p>
       </section>
 
       <section id="tool-view" class="workspace" aria-labelledby="tool-title" hidden>
         <button id="back-link" type="button" class="back-link">← Back to all tools</button>
-        <h2 id="tool-title" tabindex="-1">Choose a tool</h2>
-        <p id="tool-description" class="tool-description"></p>
-
-        <div id="drop-zone" class="drop-zone">
-          <p id="drop-hint">Drop files here or</p>
-          <label class="file-button">
-            Choose files
-            <input id="file-input" type="file" />
-          </label>
+        <div class="tool-head">
+          <h2 id="tool-title" tabindex="-1">Choose a tool</h2>
+          <p id="tool-description" class="tool-description"></p>
         </div>
 
-        <ul id="file-list" class="file-list" aria-label="Chosen files"></ul>
-        <div id="inspect" class="inspect" hidden></div>
+        <div class="work-card">
+          <div id="drop-zone" class="drop-zone">
+            <div class="drop-icon" aria-hidden="true">↑</div>
+            <p id="drop-hint">Drop files here</p>
+            <label class="file-button">
+              Choose files
+              <input id="file-input" type="file" />
+            </label>
+          </div>
 
-        <form id="options" class="options" novalidate></form>
+          <ul id="file-list" class="file-list" aria-label="Chosen files"></ul>
+          <div id="inspect" class="inspect" hidden></div>
 
-        <div class="run-row">
-          <button id="run" type="button" disabled>Run</button>
-          <button id="clear" type="button">Clear files</button>
-          <span id="progress" class="progress" role="status" aria-live="polite"></span>
+          <form id="options" class="options" novalidate></form>
+
+          <div class="run-row">
+            <button id="run" type="button" disabled>Run</button>
+            <button id="clear" type="button">Clear files</button>
+            <span id="progress" class="progress" role="status" aria-live="polite"></span>
+          </div>
+
+          <div id="results" class="results" aria-live="polite"></div>
         </div>
-
-        <div id="results" class="results" aria-live="polite"></div>
       </section>
 
       <!-- Namespace source for the HTML to PDF renderer; never shown. -->

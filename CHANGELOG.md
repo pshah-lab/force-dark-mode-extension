@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Popup button "PDF tools ↗" that opens the separate PDF Tools website in a new tab (one fixed https link in `src/shared/links.js`; no new permissions, nothing is sent).
+
+### Added
 - **Opt-in counts of which features you use and where**: if you have turned the usage report on, it now also says which features you used and where, as counts per day, grouped into a few fixed places (Google Docs, Google Sheets, Google Slides, web PDF, local PDF, local sheet, local document, other web pages, other). Never page addresses, document names or contents. People who opted in earlier are asked to confirm again, and nothing new is sent until they do. A report can now also be sent on a day you only use the side panel. Turning the report off still deletes everything held for your random ID.
 
 ### Removed

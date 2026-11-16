@@ -557,9 +557,11 @@ const ALLOW_UNSCANNED = {};
 const NETWORK_PATH = "src/background/network.js";
 const USAGE_PATH = "src/background/usageSender.js";
 const REPORT_PATH = "src/shared/siteReport.js";
+const LINKS_PATH = "src/shared/links.js";
 const EGRESS_ALLOWED = {
   [NETWORK_PATH]: "the only fetch(): JSON POST, credentials omitted, no referrer; see the dedicated egress tests",
   [USAGE_PATH]: "declares the usage-report and delete endpoints; sends only through postJson; see the dedicated egress tests",
+  [LINKS_PATH]: "holds the one https link to the separate PDF Tools website; opened in a new tab only; see the dedicated link test",
   [REPORT_PATH]: "declares the broken-site report endpoint and what a report may contain; see the dedicated egress tests",
 };
 const ENDPOINT_FILES = [USAGE_PATH, REPORT_PATH];
@@ -905,7 +907,7 @@ test("stripComments keeps string contents and drops real comments", () => {
 });
 
 test("EGRESS_ALLOWED exempts exactly the network file and the endpoint files", () => {
-  assert.deepStrictEqual(Object.keys(EGRESS_ALLOWED).sort(), [NETWORK_PATH, ...ENDPOINT_FILES].sort());
+  assert.deepStrictEqual(Object.keys(EGRESS_ALLOWED).sort(), [NETWORK_PATH, ...ENDPOINT_FILES, LINKS_PATH].sort());
 });
 
 test("fetch is called in exactly one src file: network.js", () => {
@@ -932,6 +934,13 @@ test("every http(s) URL in src/ is one of the declared endpoints, and only in th
   for (const rel of srcJsFiles()) {
     const code = fs.readFileSync(path.join(rootDir, rel), "utf8");
     const urls = code.match(/https?:\/\/[^\s"'`)]+/g) || [];
+    if (rel === LINKS_PATH) {
+      // The one outbound link to the separate PDF Tools site: a single https URL with no query or fragment.
+      assert.strictEqual(urls.length, 1, `${rel} must contain exactly one URL`);
+      const link = new URL(urls[0]);
+      assert.ok(link.protocol === "https:" && !link.search && !link.hash, `${rel} link must be plain https`);
+      continue;
+    }
     if (!ENDPOINT_FILES.includes(rel)) {
       assert.deepStrictEqual(urls, [], `${rel} must not contain URLs`);
       continue;

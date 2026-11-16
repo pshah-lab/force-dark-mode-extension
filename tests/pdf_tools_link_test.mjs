@@ -47,10 +47,30 @@ test("no extension file references the removed tools or convert code", () => {
   }
 });
 
-test("the popup no longer opens an in-extension tools page", () => {
-  assert.ok(!/open-pdf-tools/.test(read("src/popup/popup.html")));
+test("the popup links to the external PDF Tools site, not an in-extension page", () => {
   assert.ok(!/getURL\("src\/tools\//.test(read("src/popup/popup.js")));
+  assert.ok(/id="open-pdf-tools"/.test(read("src/popup/popup.html")));
+  assert.ok(/<script src="\.\.\/shared\/links\.js"><\/script>/.test(read("src/popup/popup.html")));
+  assert.ok(/chrome\.tabs\.create\(\{ url: ExternalLinks\.PDF_TOOLS_URL \}\)/.test(read("src/popup/popup.js")));
 });
+
+test("links.js holds exactly one https URL: origin and path only, no query or fragment", () => {
+  const urls = read("src/shared/links.js").match(/https?:\/\/[^\s"'`)]+/g) || [];
+  assert.strictEqual(urls.length, 1);
+  const u = new URL(urls[0]);
+  assert.strictEqual(u.protocol, "https:");
+  assert.strictEqual(u.search, "");
+  assert.strictEqual(u.hash, "");
+  const { PDF_TOOLS_URL } = require_links();
+  assert.strictEqual(PDF_TOOLS_URL, urls[0]);
+});
+
+function require_links() {
+  const src = read("src/shared/links.js");
+  const m = { exports: {} };
+  new Function("module", "window", src)(m, undefined);
+  return m.exports;
+}
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

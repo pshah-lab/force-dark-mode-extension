@@ -24,8 +24,7 @@ Unlike crude global inverters that turn photos, videos, and layouts into neon ne
 - **Layout-Safe CSS Override Engine**: Recolors backgrounds, typography, forms, and borders with contrast-tested CSS custom properties while preserving media elements.
 - **Smart Logo Inversion**: Selectively inverts dark/black logos on dark backgrounds for crystal-clear readability.
 - **Built-in Offline Dark PDF & Document Reader**: Render online and local PDF files locally using bundled PDF.js with saturation-aware pixel conversion. Also supports Markdown (`.md`), Plain Text (`.txt`), and RTF.
-- **Export & convert (offline)**: in the document viewer, download the open file as another format: PDF to TXT, Markdown or PNG pages; DOCX/PPTX to TXT, Markdown or HTML; XLSX to CSV or JSON; CSV to XLSX; Markdown/TXT/RTF to HTML. Everything is converted on your device.
-- **PDF Tools (offline)**: a PDF Tools page (side panel button) and a Tools control in the viewer (works on PDFs opened from a URL or with Open file; the data is read from the already-loaded document): merge, split, extract/remove/reorder/rotate pages, images to PDF, page numbers, text watermark, strip metadata, and dark/sepia/grayscale image copies of a PDF (text not selectable, max 50 pages). Everything runs on your device; encrypted PDFs are not supported.
+- **PDF tools and file conversion**: no longer part of the extension. Merging, splitting and other PDF tools, and exporting a file to another format, are moving to a separate website.
 - **Local Spreadsheet Viewer**: Open Excel (`.xlsx`) and CSV files as a read-only dark grid with sheet tabs, entirely on your device. Legacy `.xls` files must be converted to `.xlsx` first.
 - **Themes**: Eight built-in color themes chosen from the popup, ready-made settings for 20 popular sites, and a theme editor in Options with a live preview, a contrast check and JSON import/export.
 - **Per-Site Custom CSS**: Add your own CSS for a site in Options. It is validated before use and cannot introduce a URL.
@@ -164,4 +163,3 @@ Distributed under the **MIT License**. See [LICENSE](LICENSE) for more informati
 
 ### Third-party code
 - [PDF.js](https://github.com/mozilla/pdf.js) (Apache-2.0), bundled in `src/viewer/vendor/` for rendering PDFs.
-- [pdf-lib](https://github.com/Hopding/pdf-lib) 1.17.1 (MIT, Copyright (c) 2019 Andrew Dillon), bundled at `src/viewer/vendor/pdf-lib.min.mjs` (licence: `src/viewer/vendor/pdf-lib.LICENSE.txt`) for the PDF tools. It embeds a tslib Apache-2.0 notice banner.

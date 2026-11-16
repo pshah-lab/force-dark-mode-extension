@@ -30,7 +30,6 @@ KEY FEATURES
 ✦ CSS Engine: recolors backgrounds, text, forms, and borders while keeping images, videos, and canvas untouched.
 ✦ Invert Engine: protected inversion for graphics-heavy pages and web apps.
 ✦ Document Reader: read PDFs and everyday documents in a built-in dark reader. Files are processed on your device.
-✦ PDF Tools: merge, split, reorder, rotate, watermark, number pages and more, all on your device. Encrypted PDFs are not supported.
 ✦ Per-Site Settings: choose a theme, background color, brightness, contrast, and sepia for each site.
 ✦ No White Flashes: dark mode is applied as the page starts loading.
 ✦ Side Panel: click the toolbar icon to open the controls beside the page. It stays open and follows the site you are on.

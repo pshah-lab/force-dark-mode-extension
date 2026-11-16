@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Opt-in counts of which features you use and where**: if you have turned the usage report on, it now also says which features you used and where, as counts per day, grouped into a few fixed places (Google Docs, Google Sheets, Google Slides, web PDF, local PDF, local sheet, local document, other web pages, other). Never page addresses, document names or contents. People who opted in earlier are asked to confirm again, and nothing new is sent until they do. A report can now also be sent on a day you only use the side panel. Turning the report off still deletes everything held for your random ID.
 
+### Removed
+- **PDF Tools and Export & convert are no longer part of the extension.** They move to a separate website. The extension no longer has the PDF Tools page, the "PDF tools" button in the side panel, or the Tools and Export menus in the document viewer, and it no longer bundles pdf-lib. The document viewer keeps everything for reading: PDFs (Smart Dark, Invert, Sepia, Original), Word, PowerPoint, Markdown, TXT and RTF files, and the spreadsheet viewer for XLSX and CSV. No permission changes.
+
 ### Changed
 - The usage-report question is now the first thing a new install sees in the side panel (before the welcome card), and says why we ask. It is still off unless you turn it on, with "Turn on" and "No thanks" equally available, and you can change it any time in Options.
 

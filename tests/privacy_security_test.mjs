@@ -45,27 +45,6 @@ console.log("1. Network Isolation & Egress Verification");
 
 // Single source of truth for the egress scan; the exhaustive src/ walk in section 8 reuses it.
 const EGRESS_SCANNED_FILES = [
-  "src/viewer/pdftools/ranges.js",
-  "src/viewer/pdftools/result.js",
-  "src/viewer/pdftools/loadPdf.js",
-  "src/viewer/pdftools/pageTools.js",
-  "src/viewer/pdftools/imagesToPdf.js",
-  "src/viewer/pdftools/stampTools.js",
-  "src/viewer/pdftools/stripMetadata.js",
-  "src/viewer/pdftools/pixelModes.js",
-  "src/viewer/pdftools/rasterExport.js",
-  "src/viewer/pdftools/pdfCrypto.js",
-  "src/viewer/pdftools/encryptTools.js",
-  "src/viewer/pdftools/compressTools.js",
-  "src/tools/htmlRender.js",
-  "src/tools/pdfImagesRender.js",
-  "src/tools/toolRegistry.js",
-  "src/tools/tools.js",
-  "src/tools/download.js",
-  "src/tools/lazyBytes.js",
-  "src/tools/viewerToolMenu.js",
-  "src/tools/optionFields.js",
-  "src/tools/colorCopyRender.js",
   "src/background/serviceWorker.js",
   "src/background/siteReportSender.js",
   "src/background/usageMessages.js",
@@ -106,13 +85,8 @@ const EGRESS_SCANNED_FILES = [
   "src/viewer/spreadsheet/spreadsheetView.js",
   "src/viewer/spreadsheet/xlsxParser.js",
   "src/viewer/spreadsheet/xlsxStyles.js",
-  "src/viewer/convert/csvWriter.js",
-  "src/viewer/convert/docExport.js",
-  "src/viewer/convert/exportFormats.js",
-  "src/viewer/convert/pdfExport.js",
-  "src/viewer/convert/xlsxWriter.js",
-  "src/viewer/convert/zipWriter.js",
   "src/viewer/usageFeatures.js",
+  "src/viewer/documentFormats.js",
 ];
 
 test("zero outbound network calls in extension core code", () => {

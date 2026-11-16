@@ -1,9 +1,9 @@
-// tests/usage_viewer_features_test.mjs — viewer/export feature keys and the viewer's usage hooks.
+// tests/usage_viewer_features_test.mjs — viewer feature keys and the viewer's usage hooks.
 import assert from "assert";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { detectDocumentKind, getExportFormats } from "../src/viewer/convert/exportFormats.js";
+import { detectDocumentKind } from "../src/viewer/documentFormats.js";
 import { FEATURE_KEYS, SURFACES } from "../src/shared/usageReport.js";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -36,7 +36,7 @@ try {
   console.error(`  ✗ import src/viewer/usageFeatures.js: ${err.message}`);
   failed++;
 }
-const { viewerFeatureKey, exportFeatureKey, viewerSurface, pdfSourceKind } = helpers;
+const { viewerFeatureKey, viewerSurface, pdfSourceKind } = helpers;
 
 // ---- Pure helpers -------------------------------------------------------
 
@@ -63,42 +63,6 @@ await test("viewerFeatureKey returns null for unknown kinds", () => {
   for (const kind of [undefined, null, "", "doc", "zip", "toString", "__proto__", "constructor", "PDF", 5, {}]) {
     assert.strictEqual(viewerFeatureKey(kind), null, String(kind));
   }
-});
-
-await test("every (kind, format) from getExportFormats maps to a FEATURE_KEYS entry", () => {
-  const seen = new Set();
-  for (const kind of KINDS) {
-    const formats = getExportFormats(kind);
-    assert.ok(formats.length > 0, `${kind} has export formats`);
-    for (const format of formats) {
-      const key = exportFeatureKey(kind, format.id);
-      assert.ok(typeof key === "string" && FEATURE_KEYS.includes(key), `${kind}/${format.id} -> ${key}`);
-      assert.ok(key.startsWith("export_"), key);
-      seen.add(key);
-    }
-  }
-  const exportKeys = FEATURE_KEYS.filter((k) => k.startsWith("export_"));
-  assert.deepStrictEqual([...seen].sort(), [...exportKeys].sort(), "every export_* key is reachable");
-});
-
-await test("exportFeatureKey known values", () => {
-  assert.strictEqual(exportFeatureKey("pdf", "txt"), "export_pdf_txt");
-  assert.strictEqual(exportFeatureKey("pdf", "png"), "export_pdf_png");
-  assert.strictEqual(exportFeatureKey("xlsx", "csv"), "export_xlsx_csv");
-  assert.strictEqual(exportFeatureKey("markdown", "html"), "export_md_html");
-  assert.strictEqual(exportFeatureKey("text", "html"), "export_txt_html");
-  assert.strictEqual(exportFeatureKey("csv", "xlsx"), "export_csv_xlsx");
-});
-
-await test("zip outputs count under the chosen format key", () => {
-  assert.strictEqual(exportFeatureKey("xlsx", "zip"), "export_xlsx_csv");
-  assert.strictEqual(exportFeatureKey("pdf", "zip"), "export_pdf_png");
-});
-
-await test("exportFeatureKey returns null for unsupported combinations", () => {
-  const bad = [["pdf", "html"], ["docx", "png"], ["csv", "csv"], ["nope", "txt"], ["toString", "txt"],
-    ["pdf", "__proto__"], [undefined, undefined], [null, "txt"], ["docx", "zip"]];
-  for (const [kind, ext] of bad) assert.strictEqual(exportFeatureKey(kind, ext), null, `${kind}/${ext}`);
 });
 
 await test("viewerSurface maps every document kind and both sources to a fixed surface", () => {
@@ -176,7 +140,7 @@ function callArgs(src, callee) {
 await test("viewer.js imports the helpers from usageFeatures.js", () => {
   const m = viewerSrc.match(/import\s*\{([^}]*)\}\s*from\s*"\.\/usageFeatures\.js";/);
   assert.ok(m, "import from ./usageFeatures.js");
-  assert.ok(/\bviewerFeatureKey\b/.test(m[1]) && /\bexportFeatureKey\b/.test(m[1]));
+  assert.ok(/\bviewerFeatureKey\b/.test(m[1]));
 });
 
 await test("reportFeature sends only {type, key, surface} inside try/catch and swallows rejections", () => {
@@ -190,9 +154,9 @@ await test("reportFeature sends only {type, key, surface} inside try/catch and s
 
 await test("reportFeature calls pass only a helper result, never a name or file", () => {
   const calls = callArgs(viewerSrc, "reportFeature").filter((c) => c.args !== "key, surface");
-  assert.ok(calls.length >= 5, `expected open + export calls, found ${calls.length}`);
+  assert.ok(calls.length >= 5, `expected one call per open path, found ${calls.length}`);
   for (const { args } of calls) {
-    assert.ok(/^(viewerFeatureKey|exportFeatureKey)\(/.test(args.trim()), `reportFeature(${args})`);
+    assert.ok(/^viewerFeatureKey\(/.test(args.trim()), `reportFeature(${args})`);
     const surfaceCalls = callArgs(args, "viewerSurface");
     assert.strictEqual(surfaceCalls.length, 1, `reportFeature(${args}) passes one viewerSurface(...) result`);
     assert.ok(/,\s*viewerSurface\([^]*\)\s*$/.test(args), `reportFeature(${args}): surface is the last argument`);
@@ -210,9 +174,9 @@ await test("open paths report after success", () => {
     assert.ok(reports.length >= 1, `${fn} reports`);
     for (const r of reports) {
       const before = body.slice(0, r.index);
-      const lastExport = before.lastIndexOf("setExportSource(");
-      assert.ok(lastExport >= 0, `${fn} reports after setExportSource`);
-      assert.ok(!/\breturn\b/.test(before.slice(lastExport)), `${fn}: no early return between success and report`);
+      const lastShow = before.lastIndexOf("showPanel(");
+      assert.ok(lastShow >= 0, `${fn} reports after showing the document`);
+      assert.ok(!/\breturn\b/.test(before.slice(lastShow)), `${fn}: no early return between success and report`);
     }
   }
   const office = functionBody("openOfficeFile");
@@ -239,21 +203,10 @@ await test("PDF open counts only from file-open entry points, not re-renders", (
   }
 });
 
-await test("re-render and conversion helpers never report", () => {
-  for (const fn of ["rerenderSpreadsheet", "convertAndDownload", "exportPdfPages", "downloadBlob", "downloadExport", "openPdfFallback"]) {
+await test("re-render and fallback helpers never report", () => {
+  for (const fn of ["rerenderSpreadsheet", "openPdfFallback"]) {
     assert.ok(!/reportFeature/.test(functionBody(fn)), `${fn} must not report`);
   }
-});
-
-await test("runExport reports only after a successful, non-stale download", () => {
-  const body = functionBody("runExport");
-  const m = body.match(/reportFeature\(exportFeatureKey\(source\.kind,\s*formatId\),\s*viewerSurface\(source\.kind,\s*pdfSourceKind\(currentPdfSource\)\)\)/);
-  assert.ok(m, "runExport reports exportFeatureKey(source.kind, formatId) with the document's own surface");
-  const at = body.indexOf(m[0]);
-  assert.ok(at > body.indexOf("if (currentExport !== source) return;"), "after the stale check");
-  assert.ok(at > body.indexOf("if (done)"), "inside the done branch");
-  assert.ok(at < body.indexOf("catch (error)"), "not in the failure path");
-  assert.strictEqual(callArgs(body, "reportFeature").length, 1);
 });
 
 await test("viewer.js still has no .innerHTML", () => {

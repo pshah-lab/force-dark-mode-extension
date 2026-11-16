@@ -1,4 +1,4 @@
-// tests/pro_interest_test.mjs — the "Pro is coming" interest page and the single link to it from the Tools page.
+// tests/pro_interest_test.mjs — the "Pro is coming" interest page on the website.
 import fs from "fs";
 import path from "path";
 import assert from "assert";
@@ -52,25 +52,6 @@ test("pro.html says coming soon and not final", () => {
 
 test("pro.html is in the sitemap with the right loc", () => {
   assert.ok(read("docs/sitemap.xml").includes(`<loc>${PRO_URL}</loc>`));
-});
-
-console.log("\nTools page link");
-
-test("tools.html has exactly one link to the pro page, opened safely", () => {
-  const html = read("src/tools/tools.html");
-  const anchors = [...html.matchAll(/<a\b[^>]*>/g)].map((m) => m[0]);
-  const pro = anchors.filter((a) => a.includes(PRO_URL));
-  assert.strictEqual(pro.length, 1);
-  assert.ok(/target="_blank"/.test(pro[0]));
-  assert.ok(/rel="[^"]*noopener[^"]*"/.test(pro[0]));
-  assert.ok(html.includes("Pro is coming: tell us what you'd want ↗") || html.includes("Pro is coming: tell us what you&#39;d want ↗"));
-});
-
-test("tools.html has no other external URL, script src or form action", () => {
-  const html = read("src/tools/tools.html");
-  const urls = html.match(/https?:\/\/[^\s"'<>]+/g) || [];
-  assert.deepStrictEqual(urls, [PRO_URL]);
-  assert.ok(!/<form[^>]*\saction=/i.test(html));
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

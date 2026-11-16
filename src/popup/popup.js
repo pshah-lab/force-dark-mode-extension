@@ -61,7 +61,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const resetFiltersButton = document.getElementById("reset-filters");
   const openPdfViewerButton = document.getElementById("open-pdf-viewer");
   const openDocumentViewerButton = document.getElementById("open-document-viewer");
-  const openPdfToolsButton = document.getElementById("open-pdf-tools");
   const themeSelect = document.getElementById("theme-select");
   const radios = document.querySelectorAll('input[name="engine"]');
   const mediaControl = document.getElementById("media-control");
@@ -187,10 +186,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     chrome.tabs.create({
       url: chrome.runtime.getURL("src/viewer/viewer.html"),
     });
-  };
-
-  openPdfToolsButton.onclick = () => {
-    chrome.tabs.create({ url: chrome.runtime.getURL("src/tools/tools.html") });
   };
 
   function setUnavailable(text = "Unavailable on this page") {

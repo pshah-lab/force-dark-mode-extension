@@ -7,28 +7,8 @@ import { parseCsv } from "./spreadsheet/csvParser.js";
 import { isMemoryError } from "./spreadsheet/errors.js";
 import { renderSpreadsheet } from "./spreadsheet/spreadsheetRenderer.js";
 import { MAX_CSV_BYTES } from "./spreadsheet/spreadsheetLimits.js";
-import { detectDocumentKind, getExportFormats, exportFileName, EXPORT_MIME_TYPES } from "./convert/exportFormats.js";
-import {
-  docxToText,
-  docxToMarkdown,
-  docxToHtml,
-  pptxToText,
-  pptxToMarkdown,
-  pptxToHtml,
-  markdownToHtml,
-  plainTextToHtml,
-  rtfToPlainText,
-} from "./convert/docExport.js";
-import { hasExtractableText, pdfPagesToText, pdfPagesToMarkdown, parsePageRange, pngRenderScale } from "./convert/pdfExport.js";
-import { readValues, runTool } from "../tools/toolRegistry.js";
-import { VIEWER_TOOLS, HANDOFF_TOOLS, toolsPagePath, viewerToolsState } from "../tools/viewerToolMenu.js";
-import { el, buildOptionFields, rawOptionValues } from "../tools/optionFields.js";
-import { createLazyBytes, createHeldBytes, READING_MESSAGE } from "../tools/lazyBytes.js";
-import { renderColorCopyPages } from "../tools/colorCopyRender.js";
-import { sheetToMatrix, toCsv, workbookToJson } from "./convert/csvWriter.js";
-import { createXlsx } from "./convert/xlsxWriter.js";
-import { createZip } from "./convert/zipWriter.js";
-import { viewerFeatureKey, exportFeatureKey, viewerSurface, pdfSourceKind } from "./usageFeatures.js";
+import { detectDocumentKind, rtfToPlainText } from "./documentFormats.js";
+import { viewerFeatureKey, viewerSurface, pdfSourceKind } from "./usageFeatures.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = chrome.runtime.getURL(
   "src/viewer/vendor/pdf.worker.min.mjs"
@@ -76,19 +56,6 @@ const fontSizeInput = document.getElementById("font-size");
 const contrastInput = document.getElementById("contrast");
 const openFileButton = document.getElementById("open-file");
 const fileInput = document.getElementById("file-input");
-const exportFormatInput = document.getElementById("export-format");
-const exportPagesInput = document.getElementById("export-pages");
-const exportButton = document.getElementById("export-button");
-const exportStatus = document.getElementById("export-status");
-const toolsToolInput = document.getElementById("tools-tool");
-const toolsRunButton = document.getElementById("tools-run");
-const toolsStatus = document.getElementById("tools-status");
-const toolsMoreList = document.getElementById("tools-more-list");
-const toolsPanel = document.getElementById("tools-panel");
-const toolsDescription = document.getElementById("tools-description");
-const toolsOptions = document.getElementById("tools-options");
-const toolsInspect = document.getElementById("tools-inspect");
-const toolsMessages = document.getElementById("tools-messages");
 
 let currentObjectUrl = "";
 let currentPdfSource = null;
@@ -100,16 +67,6 @@ let rerenderDebounceTimer = null;
 let spreadsheetRerenderTimer = null;
 // Parsed workbook + tab state, kept so colour/mode changes can re-render the grid.
 let currentSpreadsheet = null;
-// What the Export control converts: { kind, name, data } for the open document, or null.
-let currentExport = null;
-let exportInProgress = false;
-// What the Tools control works on: { name, pdf, bytes } for the open PDF, or null.
-let toolsSource = null;
-let toolsRunning = false;
-// Bumps on file change, tool switch and each run, so stale results and downloads are dropped.
-let toolsGeneration = 0;
-// Set when a running tool was dropped because the open document was re-opened or replaced.
-let toolsCancelNoticePending = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const settings = await getViewerSettings();
@@ -128,17 +85,6 @@ function bindControls() {
   openFileButton.onclick = () => {
     fileInput.click();
   };
-
-  exportFormatInput.onchange = updateExportControls;
-  exportButton.onclick = runExport;
-
-  toolsToolInput.onchange = () => {
-    toolsCancelNoticePending = false;
-    selectViewerTool();
-  };
-  toolsRunButton.onclick = runViewerTool;
-  toolsOptions.onsubmit = (event) => event.preventDefault();
-  buildMoreToolsList();
 
   fileInput.onchange = () => {
     const [file] = fileInput.files || [];
@@ -174,7 +120,6 @@ async function openLocalFile(file) {
   revokeCurrentObjectUrl();
   currentPdfSource = null;
   currentSpreadsheet = null;
-  clearExportSource();
   renderGeneration += 1;
 
   if (isPdfFile(file) || isSpreadsheetFile(file) || isReadableDocument(file) || isOfficeDocument(file)) {
@@ -225,7 +170,6 @@ async function openPdf(source, name, fallbackSource = source, { countOpen = fals
   pdfStatus.textContent = "Loading PDF...";
   pdfPages.replaceChildren();
   currentPdf = null;
-  clearExportSource();
   pdfFrame.removeAttribute("src");
 
   try {
@@ -234,7 +178,6 @@ async function openPdf(source, name, fallbackSource = source, { countOpen = fals
 
     if (generation !== renderGeneration) return;
     currentPdf = pdf;
-    setExportSource("pdf", name, pdf);
     if (countOpen) reportFeature(viewerFeatureKey("pdf"), viewerSurface("pdf", pdfSourceKind(source)));
 
     pdfStatus.textContent = `Rendering ${pdf.numPages} page${pdf.numPages === 1 ? "" : "s"}...`;
@@ -302,7 +245,6 @@ window.addEventListener("keydown", (event) => {
 });
 
 function openPdfFallback(source, name) {
-  clearExportSource();
   if (typeof source === "string" && !isSafeDocumentUrl(source)) {
     showEmptyState("Blocked unsafe document source");
     return;
@@ -324,7 +266,6 @@ function openTextDocument(text, name) {
   showPanel("document");
   documentName.textContent = name;
   const kind = detectDocumentKind(name) || "text";
-  setExportSource(kind, name, text);
   if (isMarkdownName(name)) {
     renderMarkdownSafely(text, documentPanel);
   } else {
@@ -408,7 +349,6 @@ async function openOfficeFile(file) {
 
     showPanel("document");
     renderDocxBlocksSafely(docxResult, documentPanel);
-    setExportSource("docx", file.name, docxResult);
     reportFeature(viewerFeatureKey("docx"), viewerSurface("docx", "file"));
     return;
   }
@@ -444,7 +384,6 @@ async function openOfficeFile(file) {
 
   showPanel("document");
   renderPptxSlidesSafely(result, documentPanel);
-  setExportSource("pptx", file.name, result);
   reportFeature(viewerFeatureKey("pptx"), viewerSurface("pptx", "file"));
 }
 
@@ -515,7 +454,6 @@ async function openSpreadsheetFile(file) {
   showPanel("spreadsheet");
   currentSpreadsheet = { workbook, state: { selected: 0 } };
   renderSpreadsheet(spreadsheetPanel, workbook, getCurrentSettings(), currentSpreadsheet.state);
-  setExportSource(isCsv ? "csv" : "xlsx", file.name, workbook);
   reportFeature(viewerFeatureKey(isCsv ? "csv" : "xlsx"), viewerSurface(isCsv ? "csv" : "xlsx", "file"));
 }
 
@@ -560,7 +498,6 @@ function onColorInput() {
 
 function showEmptyState(message) {
   showPanel("empty");
-  clearExportSource();
   documentName.textContent = message;
   emptyStateHeading.textContent = message;
   emptyStateDescription.hidden = true;
@@ -1265,73 +1202,6 @@ function revokeCurrentObjectUrl() {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Export: converts the open document locally and downloads the result.
-// Nothing leaves the browser: conversion runs in this page and the file is
-// handed to the browser's own download via a short-lived object URL.
-
-const NO_TEXT_MESSAGE = "No selectable text found; scanned PDFs are not supported.";
-
-function setExportStatus(message, tone = "info") {
-  exportStatus.textContent = message;
-  exportStatus.dataset.tone = tone;
-}
-
-function setExportSource(kind, name, data) {
-  currentExport = { kind, name, data };
-  const formats = getExportFormats(kind);
-  const options = formats.map((format) => {
-    const option = document.createElement("option");
-    option.value = format.id;
-    option.textContent = format.label;
-    return option;
-  });
-  if (options.length === 0) {
-    clearExportSource();
-    return;
-  }
-  exportFormatInput.replaceChildren(...options);
-  exportFormatInput.disabled = false;
-  setExportStatus("");
-  updateExportControls();
-  // PDFs: held Open-file bytes, else the loaded document's own data, read only when a tool runs.
-  const held = currentPdfBytes();
-  setToolsSource(kind, name, kind === "pdf" ? (held ? createHeldBytes(held) : createLazyBytes(() => data.getData())) : null);
-}
-
-function clearExportSource() {
-  currentExport = null;
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = "Open a file first";
-  exportFormatInput.replaceChildren(placeholder);
-  exportFormatInput.disabled = true;
-  exportPagesInput.hidden = true;
-  exportButton.disabled = true;
-  setExportStatus("");
-  clearToolsSource();
-}
-
-function updateExportControls() {
-  const isPng = currentExport?.kind === "pdf" && exportFormatInput.value === "png";
-  exportPagesInput.hidden = !(isPng && currentExport.data.numPages > 1);
-  exportButton.disabled = !currentExport || exportInProgress || !exportFormatInput.value;
-}
-
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = filename;
-  link.rel = "noopener";
-  link.hidden = true;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  // Give the browser time to start the download before releasing the blob.
-  setTimeout(() => URL.revokeObjectURL(url), 10000);
-}
-
 // Opt-in usage count: sends only an allow-listed key and a fixed surface string. Best effort, never awaited.
 function reportFeature(key, surface) {
   if (!key) return;
@@ -1341,380 +1211,4 @@ function reportFeature(key, surface) {
   } catch {
     // Counting must never affect the viewer.
   }
-}
-
-function downloadExport(content, name, ext) {
-  downloadBlob(new Blob([content], { type: EXPORT_MIME_TYPES[ext] }), exportFileName(name, ext));
-}
-
-async function runExport() {
-  const source = currentExport;
-  const formatId = exportFormatInput.value;
-  if (!source || !formatId || exportInProgress) return;
-
-  exportInProgress = true;
-  updateExportControls();
-  setExportStatus("Converting…");
-  try {
-    const done = await convertAndDownload(source, formatId);
-    if (currentExport !== source) return;
-    if (done) {
-      const data = source.data;
-      const truncated = !!data && (data.truncated === true || (Array.isArray(data.sheets) && data.sheets.some((sheet) => sheet.truncated)));
-      setExportStatus(truncated ? "Downloaded. The preview was truncated, so the export is too." : "Downloaded.");
-      reportFeature(exportFeatureKey(source.kind, formatId), viewerSurface(source.kind, pdfSourceKind(currentPdfSource)));
-    }
-  } catch (error) {
-    console.warn("[ForceDark] Export failed:", error);
-    if (currentExport === source) {
-      setExportStatus(isOutOfMemoryError(error) ? "Not enough memory to export this file." : "Export failed for this file.", "error");
-    }
-  } finally {
-    exportInProgress = false;
-    updateExportControls();
-  }
-}
-
-// Returns true when a download was started, false when it stopped with a message.
-async function convertAndDownload(source, formatId) {
-  const { kind, name, data } = source;
-
-  if (kind === "pdf") {
-    if (formatId === "png") return exportPdfPages(source);
-    const pages = await extractPdfText(source);
-    if (!pages) return false;
-    if (!hasExtractableText(pages)) {
-      setExportStatus(NO_TEXT_MESSAGE, "error");
-      return false;
-    }
-    if (formatId === "txt") downloadExport(pdfPagesToText(pages), name, "txt");
-    else downloadExport(pdfPagesToMarkdown(pages), name, "md");
-    return true;
-  }
-
-  if (kind === "docx" || kind === "pptx") {
-    const isDocx = kind === "docx";
-    if (formatId === "txt") downloadExport(isDocx ? docxToText(data) : pptxToText(data), name, "txt");
-    else if (formatId === "md") downloadExport(isDocx ? docxToMarkdown(data) : pptxToMarkdown(data), name, "md");
-    else downloadExport(isDocx ? docxToHtml(data, name) : pptxToHtml(data, name), name, "html");
-    return true;
-  }
-
-  if (kind === "xlsx") {
-    if (formatId === "json") {
-      downloadExport(workbookToJson(data), name, "json");
-      return true;
-    }
-    const sheets = data.sheets || [];
-    if (sheets.length === 1) {
-      downloadExport(toCsv(sheetToMatrix(sheets[0])), name, "csv");
-      return true;
-    }
-    const used = new Set();
-    const entries = sheets.map((sheet, index) => {
-      let entryName = exportFileName(`${sheet.name || `Sheet${index + 1}`}.csv`, "csv");
-      for (let n = 2; used.has(entryName.toLowerCase()); n += 1) {
-        entryName = exportFileName(`${sheet.name || "Sheet"}-${n}.csv`, "csv");
-      }
-      used.add(entryName.toLowerCase());
-      return { name: entryName, data: toCsv(sheetToMatrix(sheet)) };
-    });
-    downloadExport(createZip(entries), name, "zip");
-    return true;
-  }
-
-  if (kind === "csv") {
-    const sheetName = String(name).replace(/\.[^.]*$/, "") || "Sheet1";
-    downloadExport(createXlsx([{ name: sheetName, rows: sheetToMatrix(data.sheets[0]) }]), name, "xlsx");
-    return true;
-  }
-
-  // Markdown, plain text and RTF all export to standalone HTML.
-  if (kind === "markdown") downloadExport(markdownToHtml(data, name), name, "html");
-  else if (kind === "rtf") downloadExport(plainTextToHtml(rtfToPlainText(data), name), name, "html");
-  else downloadExport(plainTextToHtml(data, name), name, "html");
-  return true;
-}
-
-async function extractPdfText(source) {
-  const pdf = source.data;
-  const pages = [];
-  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
-    if (currentExport !== source) return null;
-    setExportStatus(`Reading text ${pageNumber}/${pdf.numPages}…`);
-    const page = await pdf.getPage(pageNumber);
-    const content = await page.getTextContent();
-    pages.push({ items: content.items });
-  }
-  return pages;
-}
-
-async function renderPdfPageToPng(pdf, pageNumber) {
-  const page = await pdf.getPage(pageNumber);
-  const base = page.getViewport({ scale: 1 });
-  const viewport = page.getViewport({ scale: pngRenderScale(base.width, base.height) });
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.floor(viewport.width));
-  canvas.height = Math.max(1, Math.floor(viewport.height));
-  const context = canvas.getContext("2d", { alpha: false });
-  // Original page colors on a white sheet, like the printed document.
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  try {
-    await page.render({ canvasContext: context, viewport }).promise;
-    const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-    if (!blob) throw new Error("PNG encoding failed");
-    return new Uint8Array(await blob.arrayBuffer());
-  } finally {
-    canvas.width = 0;
-    canvas.height = 0;
-  }
-}
-
-async function exportPdfPages(source) {
-  const pdf = source.data;
-  const range = parsePageRange(exportPagesInput.hidden ? "" : exportPagesInput.value, pdf.numPages);
-  if (range.error) {
-    setExportStatus(range.error, "error");
-    return false;
-  }
-
-  const pad = String(pdf.numPages).length;
-  const images = [];
-  for (const [index, pageNumber] of range.pages.entries()) {
-    if (currentExport !== source) return false;
-    setExportStatus(`Rendering page ${index + 1}/${range.pages.length}…`);
-    images.push({ pageNumber, bytes: await renderPdfPageToPng(pdf, pageNumber) });
-  }
-
-  if (images.length === 1) {
-    const suffix = pdf.numPages > 1 ? `-page-${images[0].pageNumber}` : "";
-    downloadBlob(new Blob([images[0].bytes], { type: EXPORT_MIME_TYPES.png }), exportFileName(source.name, "png", suffix));
-    return true;
-  }
-
-  const entries = images.map(({ pageNumber, bytes }) => ({
-    name: exportFileName(source.name, "png", `-page-${String(pageNumber).padStart(pad, "0")}`),
-    data: bytes,
-  }));
-  downloadBlob(new Blob([createZip(entries)], { type: EXPORT_MIME_TYPES.zip }), exportFileName(source.name, "zip", "-pages"));
-  return true;
-}
-
-// ---------------------------------------------------------------------------
-// PDF tools: runs a single-file tool from the Tools page registry on the open PDF
-// and downloads the result. Bytes come from the viewer's held file (Open file) or,
-// for a PDF opened by URL, lazily from the loaded PDF.js document when a tool runs
-// (PDF.js may finish loading it from the address it was opened from). No fetch of
-// our own; nothing is stored or sent anywhere. Multi-file tools open the Tools page
-// in a new tab.
-
-const TOOLS_CANCELLED_MESSAGE = "Cancelled because the view changed.";
-
-function setToolsStatus(message, tone = "info") {
-  toolsStatus.textContent = message;
-  toolsStatus.dataset.tone = tone;
-}
-
-// A view setting change re-opens the PDF, which drops a running tool: say so instead of going quiet.
-function noteToolsCancelled() {
-  toolsCancelNoticePending = true;
-  setToolsStatus(TOOLS_CANCELLED_MESSAGE, "error");
-}
-
-function showToolsCancelNotice() {
-  if (toolsCancelNoticePending) setToolsStatus(TOOLS_CANCELLED_MESSAGE, "error");
-}
-
-// The open PDF's file data, held only for PDFs chosen with Open file.
-function currentPdfBytes() {
-  return currentPdfSource instanceof Uint8Array ? currentPdfSource : null;
-}
-
-function buildMoreToolsList() {
-  const items = HANDOFF_TOOLS.map((tool) => {
-    const link = el("a", { href: chrome.runtime.getURL(toolsPagePath(tool.id)), text: tool.title });
-    link.target = "_blank";
-    link.rel = "noopener";
-    return el("li", {}, link);
-  });
-  toolsMoreList.replaceChildren(...items);
-}
-
-function setToolsSource(kind, name, getBytes) {
-  if (toolsRunning) noteToolsCancelled();
-  toolsGeneration += 1;
-  const state = viewerToolsState(kind);
-  if (!state.enabled) {
-    toolsSource = null;
-    showToolsPlaceholder(state);
-    showToolsCancelNotice();
-    return;
-  }
-  toolsSource = { name, getBytes };
-  const options = VIEWER_TOOLS.map((tool) => el("option", { value: tool.id, text: tool.title }));
-  toolsToolInput.replaceChildren(el("option", { value: "", text: "Choose a tool" }), ...options);
-  toolsToolInput.value = "";
-  toolsToolInput.disabled = false;
-  setToolsTitle("");
-  selectViewerTool();
-  showToolsCancelNotice();
-  toolsCancelNoticePending = false;
-}
-
-function clearToolsSource() {
-  if (toolsRunning) noteToolsCancelled();
-  toolsGeneration += 1;
-  toolsSource = null;
-  showToolsPlaceholder(viewerToolsState(null, false));
-  showToolsCancelNotice();
-}
-
-function setToolsTitle(title) {
-  // A disabled select shows no tooltip in some browsers, so the label carries it too.
-  toolsToolInput.title = title;
-  if (toolsToolInput.parentElement) toolsToolInput.parentElement.title = title;
-}
-
-function showToolsPlaceholder(state) {
-  toolsToolInput.replaceChildren(el("option", { value: "", text: state.placeholder }));
-  toolsToolInput.disabled = true;
-  setToolsTitle(state.title);
-  resetToolsPanel();
-  toolsPanel.hidden = true;
-  setToolsStatus("");
-  updateToolsControls();
-}
-
-function resetToolsPanel() {
-  toolsDescription.textContent = "";
-  toolsOptions.replaceChildren();
-  toolsInspect.hidden = true;
-  toolsInspect.replaceChildren();
-  toolsMessages.replaceChildren();
-}
-
-function selectedViewerTool() {
-  return VIEWER_TOOLS.find((tool) => tool.id === toolsToolInput.value) || null;
-}
-
-function updateToolsControls() {
-  toolsRunButton.disabled = !toolsSource || toolsRunning || !selectedViewerTool();
-}
-
-function selectViewerTool() {
-  toolsGeneration += 1;
-  const tool = selectedViewerTool();
-  resetToolsPanel();
-  setToolsStatus("");
-  if (!tool || !toolsSource) {
-    toolsPanel.hidden = true;
-    updateToolsControls();
-    return;
-  }
-  // The registry's description is the Tools page copy (image-only notice, 50-page cap, Info/XMP only).
-  toolsDescription.textContent = tool.description;
-  toolsOptions.replaceChildren(...buildOptionFields(tool, "viewer-tool-opt-"));
-  toolsPanel.hidden = false;
-  updateToolsControls();
-  if (typeof tool.inspect === "function") showToolsInspection(tool, toolsSource, toolsGeneration);
-}
-
-// Strip metadata: show what was found before running.
-async function showToolsInspection(tool, source, token) {
-  let blocks;
-  try {
-    const found = await tool.inspect(await source.getBytes());
-    if (found.length === 0) {
-      blocks = [el("p", { text: "No Info fields or XMP metadata found." })];
-    } else {
-      const list = el("dl");
-      for (const entry of found) list.append(el("dt", { text: entry.field }), el("dd", { text: entry.value }));
-      blocks = [el("h3", { text: `Found in ${source.name}` }), list];
-    }
-  } catch (error) {
-    blocks = [el("p", { className: "error", text: String((error && error.message) || error).replace(/^this file/, source.name) })];
-  }
-  if (token !== toolsGeneration || source !== toolsSource) return;
-  toolsInspect.replaceChildren(...blocks);
-  toolsInspect.hidden = false;
-}
-
-async function runViewerTool() {
-  const source = toolsSource;
-  const tool = selectedViewerTool();
-  if (!source || !tool || toolsRunning) return;
-  const values = readValues(tool, rawOptionValues(tool, toolsOptions));
-  const token = ++toolsGeneration;
-  const isCurrent = () => token === toolsGeneration && source === toolsSource;
-
-  toolsRunning = true;
-  toolsCancelNoticePending = false;
-  updateToolsControls();
-  toolsInspect.hidden = true;
-  toolsMessages.replaceChildren();
-  setToolsStatus("Working…");
-  let outcome;
-  try {
-    setToolsStatus(READING_MESSAGE);
-    const bytes = await source.getBytes();
-    if (!isCurrent()) throw STALE_RUN;
-    setToolsStatus("Working…");
-    if (tool.render) {
-      // Its own PDF.js document from the held bytes, destroyed when done; pages cleaned up as it goes.
-      const rendered = await renderColorCopyPages(pdfjsLib, {
-        name: source.name,
-        bytes,
-        mode: values.mode,
-        onProgress: (message) => setToolsStatus(message),
-        isCurrent,
-      });
-      if (isCurrent()) {
-        setToolsStatus("Building PDF…");
-        outcome = await runTool(tool, [rendered], values);
-      }
-    } else {
-      outcome = await runTool(tool, [{ name: source.name, bytes }], values, (message) => {
-        if (isCurrent()) setToolsStatus(message);
-      });
-    }
-  } catch (error) {
-    if (error !== STALE_RUN) console.warn("[ForceDark] PDF tool failed:", error);
-    const message = error === STALE_RUN ? "" : isOutOfMemoryError(error)
-      ? "Not enough memory to run this tool on this file."
-      : String((error && error.message) || error);
-    outcome = { outputs: [], errors: [{ name: source.name, message }] };
-  } finally {
-    toolsRunning = false;
-    updateToolsControls();
-  }
-  // The document was re-opened (view setting change) or replaced: drop the result and say so.
-  if (toolsSource !== source) {
-    noteToolsCancelled();
-    return;
-  }
-  // Another tool or another run since this one started: drop the result, no download.
-  if (token !== toolsGeneration) return;
-  showViewerToolOutcome(outcome);
-}
-
-const STALE_RUN = Symbol("stale-run");
-
-function showViewerToolOutcome({ outputs, errors }) {
-  const messages = [];
-  const warnings = outputs.flatMap((output) => output.warnings || []);
-  for (const warning of warnings) messages.push(el("p", { className: "warning", text: `Warning: ${warning}` }));
-  for (const error of errors) messages.push(el("p", { className: "error", text: error.message }));
-  toolsMessages.replaceChildren(...messages);
-
-  const files = outputs.flatMap((output) => output.files);
-  if (files.length === 0) {
-    setToolsStatus("Nothing was produced. See the message below.", "error");
-    return;
-  }
-  for (const file of files) {
-    downloadBlob(new Blob([file.bytes], { type: file.mime || "application/pdf" }), file.name);
-  }
-  const what = files.length === 1 ? files[0].name : `${files.length} files`;
-  setToolsStatus(warnings.length ? `Downloaded ${what}. See the warnings below.` : `Downloaded ${what}.`);
 }

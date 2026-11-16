@@ -10,13 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Popup button "PDF tools ↗" that opens the separate PDF Tools website in a new tab (one fixed https link in `src/shared/links.js`; no new permissions, nothing is sent).
-
-### Added
 - **Opt-in counts of which features you use and where**: if you have turned the usage report on, it now also says which features you used and where, as counts per day, grouped into a few fixed places (Google Docs, Google Sheets, Google Slides, web PDF, local PDF, local sheet, local document, other web pages, other). Never page addresses, document names or contents. People who opted in earlier are asked to confirm again, and nothing new is sent until they do. A report can now also be sent on a day you only use the side panel. Turning the report off still deletes everything held for your random ID.
-
-### Removed
-- **PDF Tools and Export & convert are no longer part of the extension.** They move to a separate website. The extension no longer has the PDF Tools page, the "PDF tools" button in the side panel, or the Tools and Export menus in the document viewer, and it no longer bundles pdf-lib. The document viewer keeps everything for reading: PDFs (Smart Dark, Invert, Sepia, Original), Word, PowerPoint, Markdown, TXT and RTF files, and the spreadsheet viewer for XLSX and CSV. No permission changes.
 
 ### Changed
 - The usage-report question is now the first thing a new install sees in the side panel (before the welcome card), and says why we ask. It is still off unless you turn it on, with "Turn on" and "No thanks" equally available, and you can change it any time in Options.
@@ -26,22 +20,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.0] - 2026-11-15
 
 ### Added
-- **PDF Tools page**, opened from a new "PDF tools" button in the side panel: merge, split, extract pages, remove pages, reorder pages, rotate pages, images to PDF (JPG/PNG), page numbers, text watermark, strip metadata (Info fields and XMP metadata only), and dark, sepia or grayscale image copies of a PDF (image-only: the text is not selectable; at most 50 pages).
-- **Tools control in the document viewer**, beside Export, for the single-file tools, on any PDF open in the viewer, whether chosen with Open file or opened from a URL. For a PDF opened from a URL, a tool reads the PDF's data from the viewer's own already-loaded document when you run it (or select Strip metadata). The extension adds no network request of its own; PDF.js may finish loading the PDF from the same address it was opened from. Nothing is sent anywhere.
-- A small "Pro is coming" link in the PDF Tools page opens an interest page on the website; the extension sends nothing.
-- Everything runs on your device. No new permissions and no network use.
-- **PDF Tools is now a card grid.** Pick a tool from a page of cards (light and dark themes, works down to phone width), then use it and go back. New tools, all offline in the tab: Compress PDF (real savings only; it tells you when a PDF cannot shrink), PDF to Images (JPG or PNG), Organize Pages (keep, delete, reorder or rotate pages), Encrypt PDF (AES-256 password), Decrypt PDF (needs the password; opens AES-256, AES-128 and RC4 files) and HTML to PDF (no scripts, nothing loaded from the internet; pages become pictures). Share Files is shown as "Coming soon": it would need a server or new permissions. Page numbers, strip metadata and the dark/sepia/grayscale copy are still there as cards.
-- **Opt-in feature counts in the usage report**: if you have turned the usage report on, it now also says which viewer and export features you used, as counts per day (for example PDF viewer opens or PDF-to-text exports). Never file names, contents, sizes, page counts or sites. People who opted in with versions 2.0 to 2.2 are asked to confirm again, and nothing new is sent until they do. Turning the report off still deletes everything held for your random ID.
-- **Export & convert in the document viewer**: an Export menu downloads the open file in another format, converted entirely on your device. PDF to TXT, Markdown or PNG pages (single page or a zip, with a page range; scanned PDFs without text are reported, not converted); DOCX and PPTX to TXT, Markdown or HTML; XLSX to CSV or JSON; CSV to XLSX; Markdown, TXT and RTF to HTML. Exports follow what the viewer shows, so its size limits apply. No new permissions and no network use.
+- **"PDF tools ↗" button in the popup** that opens the separate PDF Tools website in a new tab. PDF editing and conversion (merge, split, compress, rotate, PDF to images, encrypt and more) live there and run in your browser tab; the extension itself adds no network request and no permission. The link is one fixed address in `src/shared/links.js`.
+- **Opt-in feature counts in the usage report**: if you have turned the usage report on, it now also says which viewer features you used, as counts per day (for example PDF viewer opens). Never file names, contents, sizes, page counts or sites. People who opted in with versions 2.0 to 2.2 are asked to confirm again, and nothing new is sent until they do. Turning the report off still deletes everything held for your random ID.
 
 ### Fixed
-- The dark, sepia or grayscale image copy in PDF Tools failed with "pdf.destroy is not a function" with the bundled PDF.js; it works again.
 - **Printing and Save as PDF** no longer carry dark mode onto paper: the engines switch off while the page prints and back on afterwards, and the document viewer prints PDFs from untouched white page copies (Cmd/Ctrl+P).
-
-### Notes
-- Compress PDF only reports savings it really made; already-compact PDFs come back unchanged. Decrypt PDF cannot open encrypted files that use compressed object streams, and cannot recover a lost password. HTML to PDF makes picture pages (text is not selectable). Share Files is shown as coming soon.
-- Watermark and page-number text supports only the standard Latin character set; other characters are replaced with "?" and a warning is shown.
-- Bundles pdf-lib 1.17.1 (MIT), about 0.5 MB of code, adding about 0.23 MB to the zipped package.
 
 ---
 

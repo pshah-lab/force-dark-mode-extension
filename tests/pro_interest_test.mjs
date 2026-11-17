@@ -60,6 +60,7 @@ test("side panel links to the Pro interest page with a plain, untracked link", (
   assert.ok(m, "pro-interest-link anchor exists");
   assert.ok(m[0].includes(`href="${PRO_URL}"`), "href is the fixed Pro page URL");
   assert.ok(/target="_blank"/.test(m[0]) && /rel="noopener noreferrer"/.test(m[0]), "opens in a new tab safely");
+  assert.ok(/class="pro-cta"/.test(m[0]), "styled as the prominent call to action");
   for (const f of ["src/popup/popup.js", "src/shared/usageReport.js"]) {
     if (fs.existsSync(path.join(rootDir, f))) assert.ok(!/pro-interest/.test(read(f)), `${f} must not count or handle clicks on the Pro link`);
   }

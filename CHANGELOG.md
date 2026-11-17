@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.5] - 2026-11-17
+
+### Added
+- A small link at the bottom of the side panel to the "Pro is coming" page, where you can tell us which features you would pay for. It is a plain link: nothing is counted or sent when you see or click it, and the core extension stays free.
+
 ---
 
 ## [2.3.0] - 2026-11-15

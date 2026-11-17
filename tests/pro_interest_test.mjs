@@ -54,5 +54,16 @@ test("pro.html is in the sitemap with the right loc", () => {
   assert.ok(read("docs/sitemap.xml").includes(`<loc>${PRO_URL}</loc>`));
 });
 
+test("side panel links to the Pro interest page with a plain, untracked link", () => {
+  const html = read("src/popup/popup.html");
+  const m = html.match(/<a id="pro-interest-link"[^>]*>/);
+  assert.ok(m, "pro-interest-link anchor exists");
+  assert.ok(m[0].includes(`href="${PRO_URL}"`), "href is the fixed Pro page URL");
+  assert.ok(/target="_blank"/.test(m[0]) && /rel="noopener noreferrer"/.test(m[0]), "opens in a new tab safely");
+  for (const f of ["src/popup/popup.js", "src/shared/usageReport.js"]) {
+    if (fs.existsSync(path.join(rootDir, f))) assert.ok(!/pro-interest/.test(read(f)), `${f} must not count or handle clicks on the Pro link`);
+  }
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

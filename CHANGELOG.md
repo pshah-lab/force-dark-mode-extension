@@ -20,7 +20,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.0] - 2026-11-15
 
 ### Added
-- **"PDF tools ↗" button in the popup** that opens the separate PDF Tools website in a new tab. PDF editing and conversion (merge, split, compress, rotate, PDF to images, encrypt and more) live there and run in your browser tab; the extension itself adds no network request and no permission. The link is one fixed address in `src/shared/links.js`.
 - **Opt-in feature counts in the usage report**: if you have turned the usage report on, it now also says which viewer features you used, as counts per day (for example PDF viewer opens). Never file names, contents, sizes, page counts or sites. People who opted in with versions 2.0 to 2.2 are asked to confirm again, and nothing new is sent until they do. Turning the report off still deletes everything held for your random ID.
 
 ### Fixed

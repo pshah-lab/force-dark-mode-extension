@@ -100,8 +100,6 @@ These preferences are synchronized through your Google Chrome account using Goog
 The built-in Dark Document Viewer processes all PDF, TXT, Markdown, and RTF documents **100% locally on your machine** using local browser APIs and bundled client-side rendering engines (PDF.js). Your documents are never uploaded, analyzed, or sent to any remote server, and they are never part of a report or usage statistics.
 
 
-The extension does not edit, convert or export files. Its "PDF tools" button only opens a separate website in a new tab, which has its own privacy statement. The extension does not send that website anything: no file, page address or setting is passed to it.
-
 ---
 
 ## 4. Permissions

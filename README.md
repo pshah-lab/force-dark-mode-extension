@@ -24,7 +24,6 @@ Unlike crude global inverters that turn photos, videos, and layouts into neon ne
 - **Layout-Safe CSS Override Engine**: Recolors backgrounds, typography, forms, and borders with contrast-tested CSS custom properties while preserving media elements.
 - **Smart Logo Inversion**: Selectively inverts dark/black logos on dark backgrounds for crystal-clear readability.
 - **Built-in Offline Dark PDF & Document Reader**: Render online and local PDF files locally using bundled PDF.js with saturation-aware pixel conversion. Also supports Markdown (`.md`), Plain Text (`.txt`), and RTF.
-- **PDF tools and file conversion**: no longer part of the extension. Merging, splitting and other PDF tools, and exporting a file to another format, are moving to a separate website.
 - **Local Spreadsheet Viewer**: Open Excel (`.xlsx`) and CSV files as a read-only dark grid with sheet tabs, entirely on your device. Legacy `.xls` files must be converted to `.xlsx` first.
 - **Themes**: Eight built-in color themes chosen from the popup, ready-made settings for 20 popular sites, and a theme editor in Options with a live preview, a contrast check and JSON import/export.
 - **Per-Site Custom CSS**: Add your own CSS for a site in Options. It is validated before use and cannot introduce a URL.

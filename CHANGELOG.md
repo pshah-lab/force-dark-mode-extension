@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - A small link at the bottom of the side panel to the "Pro is coming" page, where you can tell us which features you would pay for. It is a plain link: nothing is counted or sent when you see or click it, and the core extension stays free.
 
+### Changed
+- The "Pro is coming" page on the website now lists dark mode ideas (schedules, saved profiles, encrypted settings sync, priority site fixes, document viewer extras) instead of PDF tools. It is still an idea list, not a commitment.
+
 ---
 
 ## [2.3.0] - 2026-11-15

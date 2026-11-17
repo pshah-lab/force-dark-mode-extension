@@ -8,8 +8,8 @@
     "The date and the extension version.",
     "Which engines you used that day (Auto, CSS, Invert).",
     "How many sites dark mode was applied on that day. A number only, never the sites.",
-    "Which viewer and export features you used, as counts per day (for example 'exported a PDF to text'). Never file names or contents.",
-    "Which features you used and where, as counts per day, grouped into a few fixed places such as Google Docs, Google Sheets, local PDF files or other web pages (for example 'exported a PDF to text, 2 times, on local PDF files'). This includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders. Never page addresses, document names or contents.",
+    "Which viewer features you used, as counts per day (for example 'opened the PDF viewer'). Never file names or contents.",
+    "Which features you used and where, as counts per day, grouped into a few fixed places such as Google Docs, Google Sheets, local PDF files or other web pages (for example 'opened the PDF viewer, 2 times, on local PDF files'). This includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders. Never page addresses, document names or contents.",
   ];
   const NOTE =
     "We never receive page addresses, which individual sites you visit, page content, or anything you type; only the fixed place categories above. Turn it off any time in Options: that stops reports and deletes what we hold for your ID.";
@@ -28,7 +28,7 @@
     reconfirm: {
       id: "reconfirm",
       title: "Usage report: please confirm",
-      intro: `You turned on the usage report in an earlier version. This version also counts where features were used, in fixed places only (never page addresses, document names or contents), on top of which viewer and export features were used, as counts per day (never file names or contents). Nothing new is sent until you confirm. If you keep it on, ${UPDATED}`,
+      intro: `You turned on the usage report in an earlier version. This version also counts where features were used, in fixed places only (never page addresses, document names or contents), on top of which viewer features were used, as counts per day (never file names or contents). Nothing new is sent until you confirm. If you keep it on, ${UPDATED}`,
       items: ITEMS,
       note: NOTE,
       yes: "Keep it on",

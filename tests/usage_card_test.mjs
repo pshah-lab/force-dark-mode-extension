@@ -26,7 +26,7 @@ const TOPICS = [
   [/Auto, CSS, Invert/, "the engine names"],
   [/how many sites/i, "how many sites"],
   [/number only, never the sites/i, "a number only, never the sites"],
-  [/viewer and export features you used/i, "which viewer and export features were used"],
+  [/viewer features you used/i, "which viewer features were used"],
   [/counts per day/i, "as counts per day"],
   [/Never file names or contents/i, "never file names or contents"],
   [/features you used and where/i, "which features were used and where"],
@@ -34,9 +34,9 @@ const TOPICS = [
   [/Never page addresses, document names or contents/i, "never page addresses, document names or contents"],
   [/how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders/i, "that page-load counts and the dark-mode, engine, theme and slider features are counted"],
 ];
-const SURFACE_ITEM = "Which features you used and where, as counts per day, grouped into a few fixed places such as Google Docs, Google Sheets, local PDF files or other web pages (for example 'exported a PDF to text, 2 times, on local PDF files'). This includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders. Never page addresses, document names or contents.";
+const SURFACE_ITEM = "Which features you used and where, as counts per day, grouped into a few fixed places such as Google Docs, Google Sheets, local PDF files or other web pages (for example 'opened the PDF viewer, 2 times, on local PDF files'). This includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders. Never page addresses, document names or contents.";
 const DAY_PHRASE = /each day you use dark mode, the side panel, the Options page or the document viewer/;
-const FEATURE_ITEM = "Which viewer and export features you used, as counts per day (for example 'exported a PDF to text'). Never file names or contents.";
+const FEATURE_ITEM = "Which viewer features you used, as counts per day (for example 'opened the PDF viewer'). Never file names or contents.";
 const allText = (c) => [c.title, c.intro, ...c.items, c.note, c.yes, c.no].join(" ");
 
 test("cardFor shows the ask card, the reconfirm card, or nothing", () => {
@@ -79,7 +79,7 @@ test("the copy is plain: never anonymous, says off by default, may be updated, n
   assert.ok(/Nothing new is sent until you confirm/i.test(USAGE_COPY.reconfirm.intro));
   const ri = USAGE_COPY.reconfirm.intro;
   assert.ok(/earlier version/i.test(ri) && !/version 2\.0/i.test(ri), "true for 2.0, 2.1 and 2.2 opt-ins");
-  assert.ok(/viewer and export features/i.test(ri) && /counts per day/i.test(ri), "reconfirm says features are counted");
+  assert.ok(/viewer features/i.test(ri) && /counts per day/i.test(ri), "reconfirm says features are counted");
   assert.ok(/also counts where features were used/i.test(ri) && /fixed places only/i.test(ri), "reconfirm says this version also counts where features were used, in fixed places only");
   assert.ok(/never page addresses/i.test(ri), "reconfirm repeats that page addresses are never sent");
 });

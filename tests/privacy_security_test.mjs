@@ -1040,8 +1040,8 @@ test("PRIVACY.md describes the 2.1.0 opt-in usage report truthfully and lists ex
   assert.ok(/surfaceUses/.test(section) && /a few fixed places/.test(section) && /Google Docs/.test(section), "must describe surfaceUses and the few fixed places");
   assert.ok(/never page addresses, document names or contents/i.test(section), "must say never page addresses, document names or contents");
   assert.ok(/This includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders\./.test(section), "must disclose page-load counts and the dark-mode, engine, theme and slider features");
-  assert.ok(/which features you used, as counts per day \(the viewer and export features, and the side panel, toggle, theme, slider and site CSS features\); never file names, contents or which sites/.test(section), "featureUses must name the viewer/export and the panel, toggle, theme, slider and site CSS features");
-  assert.ok(!/which viewer and export features you used, as counts per day/.test(section), "featureUses must not be described as viewer and export features only");
+  assert.ok(/which features you used, as counts per day \(the viewer features, and the side panel, toggle, theme, slider and site CSS features\); never file names, contents or which sites/.test(section), "featureUses must name the viewer/export and the panel, toggle, theme, slider and site CSS features");
+  assert.ok(!/which viewer features you used, as counts per day/.test(section), "featureUses must not be described as viewer features only");
   assert.ok(/people who opted in earlier are asked to confirm again/i.test(section) && /nothing new is sent/i.test(section), "earlier opt-ins are asked to confirm again, with no hard-coded version");
   assert.ok(!/surfaceUses`?\s*\((?:versions? )?after|versions? after 2\.3\.0|2\.3\.0 or earlier/i.test(section), "the surfaceUses text must not hard-code a release version");
   assert.ok(/Which individual sites you visit, page addresses[^.]*are never collected or sent; only a few fixed place categories/.test(section), "must use the precise never-collected sentence with the fixed-place qualifier");
@@ -1062,15 +1062,15 @@ test("the web privacy page and the store text cover the 2.1.0 usage report and d
   assert.ok(/<code>surfaceUses<\/code>/.test(html) && /a few fixed places/.test(html) && /never page addresses, document names or contents/i.test(html), "docs/privacy.html must list surfaceUses, fixed places and the never-page-addresses limit");
   assert.ok(/which features are used in which of a few fixed places \(counts only\)/.test(html), "docs/privacy.html purpose must include where-used counts");
   assert.ok(/This includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders\./.test(html), "docs/privacy.html must disclose page-load counts and the dark-mode, engine, theme and slider features");
-  assert.ok(/which features you used, as counts per day \(the viewer and export features, and the side panel, toggle, theme, slider and site CSS features\); never file names, contents or which sites/.test(html), "docs/privacy.html featureUses must name all counted feature groups");
-  assert.ok(!/which viewer and export features you used, as counts per day/.test(html), "docs/privacy.html featureUses must not be viewer and export only");
+  assert.ok(/which features you used, as counts per day \(the viewer features, and the side panel, toggle, theme, slider and site CSS features\); never file names, contents or which sites/.test(html), "docs/privacy.html featureUses must name all counted feature groups");
+  assert.ok(!/which viewer features you used, as counts per day/.test(html), "docs/privacy.html featureUses must not be viewer and export only");
   assert.ok(!/versions? after 2\.3\.0|2\.3\.0 or earlier/.test(html), "docs/privacy.html must not hard-code a release version for surfaceUses");
   assert.ok(/people who opted in earlier are asked to confirm again/i.test(html), "docs/privacy.html: earlier opt-ins are asked to confirm again");
   assert.ok(/Which individual sites you visit, page addresses[^.]*are never collected or sent; only a few fixed place categories/.test(html), "docs/privacy.html must use the precise never-collected sentence");
   const stats = fs.readFileSync(path.join(rootDir, "docs/stats.html"), "utf8");
   assert.ok(/Which individual sites you visit, page addresses, document names, file names and contents are never sent/.test(stats) && !/Nothing about sites, URLs or content is sent/.test(stats), "docs/stats.html must use the precise never-sent sentence");
   assert.ok(/the feature counts also cover the side panel, toggle, theme, slider and site CSS features: this includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders\./.test(stats), "docs/stats.html must disclose the non-viewer feature counts");
-  assert.ok(/which viewer and export features are used \(counts only\)/.test(html), "docs/privacy.html purpose must include viewer and export feature counts");
+  assert.ok(/which viewer features are used \(counts only\)/.test(html), "docs/privacy.html purpose must include viewer and export feature counts");
   const cws = fs.readFileSync(path.join(rootDir, "CHROMEWEBSTORE.md"), "utf8");
   const row = (name) => cws.split("\n").find((l) => l.startsWith(`| ${name}`)) || "";
   assert.ok(/\|\s*Yes/.test(row("User activity")), "User activity must be declared in CHROMEWEBSTORE.md");
@@ -1080,12 +1080,12 @@ test("the web privacy page and the store text cover the 2.1.0 usage report and d
   assert.ok(/each day you use dark mode, the side panel, the Options page or the document viewer/.test(cws) && /each day the user uses dark mode, the side panel, the Options page or the document viewer/.test(cws), "the store text must carry the new send-day phrase in both places");
   assert.ok(/a few fixed places/.test(cws) && /never page addresses, document names or contents/i.test(cws), "the store text must name the few fixed places and never page addresses");
   assert.strictEqual((cws.match(new RegExp(/This includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders\./.source, "g")) || []).length, 3, "all three store descriptions must disclose page-load counts and the dark-mode, engine, theme and slider features");
-  assert.strictEqual((cws.match(new RegExp(/which features you used, as counts per day \(the viewer and export features, and the side panel, toggle, theme, slider and site CSS features\); never file names, contents or which sites/.source, "g")) || []).length, 3, "all three store descriptions must name all counted feature groups");
-  assert.ok(!/which viewer and export features you used, as counts per day/.test(cws), "the store text must not describe the feature counts as viewer and export only");
+  assert.strictEqual((cws.match(new RegExp(/which features you used, as counts per day \(the viewer features, and the side panel, toggle, theme, slider and site CSS features\); never file names, contents or which sites/.source, "g")) || []).length, 3, "all three store descriptions must name all counted feature groups");
+  assert.ok(!/which viewer features you used, as counts per day/.test(cws), "the store text must not describe the feature counts as viewer and export only");
   assert.ok(!/never file names, contents or sites/.test(cws), "the store text must say 'never which sites', not a bare 'never ... sites' beside the fixed-place categories");
   assert.ok(/never file names, contents or which sites\. It also counts which features you used and where/.test(cws), "the store text must split the fixed-place sentence from the feature-count sentence");
   assert.ok(/which features are used in which of a few fixed places \(counts only\)/.test(row("User activity")), "User activity purpose must include where-used counts");
-  assert.ok(/which viewer and export features are used \(counts only\)/.test(row("User activity")), "User activity purpose must include viewer and export feature counts");
+  assert.ok(/which viewer features are used \(counts only\)/.test(row("User activity")), "User activity purpose must include viewer and export feature counts");
 });
 
 test("no public page or doc still says 2.1.0 has no usage report or sends only a broken-site report", () => {
@@ -1267,10 +1267,10 @@ test(".gitignore keeps backend docs tracked but ignores the backend node_modules
 test("the usage report purpose names viewer and export feature counts in the data inventory", () => {
   const inv = fs.readFileSync(path.join(rootDir, "documentation/privacy/data-inventory.md"), "utf8");
   const di10 = inv.split("\n").find((l) => l.startsWith("| **DI-10**")) || "";
-  assert.ok(/which viewer and export features are used \(counts only\)/.test(di10), "DI-10 purpose must include viewer and export feature counts");
+  assert.ok(/which viewer features are used \(counts only\)/.test(di10), "DI-10 purpose must include viewer and export feature counts");
   assert.ok(/which features are used in which of a few fixed places \(counts only\)/.test(di10), "DI-10 purpose must include where-used counts");
   assert.ok(/surfaceUses/.test(di10) && /never page addresses, document names or contents/i.test(di10), "DI-10 must list surfaceUses and the never-page-addresses limit");
-  assert.ok(/which features you used, as counts per day \(the viewer and export features, and the side panel, toggle, theme, slider and site CSS features\); never file names, contents or which sites/.test(di10) && /this includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders/.test(di10), "DI-10 must name all counted feature groups and the page-load counts");
+  assert.ok(/which features you used, as counts per day \(the viewer features, and the side panel, toggle, theme, slider and site CSS features\); never file names, contents or which sites/.test(di10) && /this includes how many pages dark mode was applied on, turning dark mode on or off, and changes to engine, theme or sliders/.test(di10), "DI-10 must name all counted feature groups and the page-load counts");
 });
 
 // Final summary

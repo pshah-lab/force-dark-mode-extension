@@ -259,7 +259,11 @@ test("daily_stats.sql rolls surface_counts up per day (summed, no install IDs, i
   assert.strictEqual(sql.split("and (e.value #>> '{}') ~ '^[0-9]{1,3}$'").length - 1, 2, "both rollups keep the integer guard");
   assert.ok(/'surfaceUses', surface_uses/.test(sql));
   assert.ok(/surface_uses = excluded\.surface_uses/.test(sql));
-  assert.ok(/insert into daily_stats \([^)]*\bsurface_uses\)/i.test(sql));
+  assert.ok(/insert into daily_stats \([^)]*\bsurface_uses\b[^)]*\)/i.test(sql));
+  assert.ok(/insert into daily_stats \([^)]*\bsurface_installs\)/i.test(sql), "surface_installs is rolled up too");
+  assert.ok(/alter table daily_stats add column if not exists surface_installs jsonb not null default '\{\}'/i.test(sql));
+  assert.ok(/'surfaceInstalls', surface_installs/.test(sql));
+  assert.ok(/count\(distinct hb\.install_id\)::int as n/.test(sql), "installs are counted, never listed");
   const rollup = sql.match(/create or replace function rollup_daily_stats[\s\S]*?\n\$\$;/i)[0];
   assert.ok(!/install_id\s+as|'install_id'|jsonb_agg\(\s*install_id/i.test(rollup), "never aggregates install ids");
 });

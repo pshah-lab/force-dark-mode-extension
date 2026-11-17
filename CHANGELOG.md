@@ -9,18 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- **Opt-in counts of which features you use and where**: if you have turned the usage report on, it now also says which features you used and where, as counts per day, grouped into a few fixed places (Google Docs, Google Sheets, Google Slides, web PDF, local PDF, local sheet, local document, other web pages, other). Never page addresses, document names or contents. People who opted in earlier are asked to confirm again, and nothing new is sent until they do. A report can now also be sent on a day you only use the side panel. Turning the report off still deletes everything held for your random ID.
-
-### Changed
-- The usage-report question is now the first thing a new install sees in the side panel (before the welcome card), and says why we ask. It is still off unless you turn it on, with "Turn on" and "No thanks" equally available, and you can change it any time in Options.
-
 ---
 
 ## [2.3.0] - 2026-11-15
 
 ### Added
-- **Opt-in feature counts in the usage report**: if you have turned the usage report on, it now also says which viewer features you used, as counts per day (for example PDF viewer opens). Never file names, contents, sizes, page counts or sites. People who opted in with versions 2.0 to 2.2 are asked to confirm again, and nothing new is sent until they do. Turning the report off still deletes everything held for your random ID.
+- **Opt-in counts of which features you use and where**: if you have turned the usage report on, it now also says which features you used and where, as counts per day, grouped into a few fixed places (Google Docs, Google Sheets, Google Slides, web PDF, local PDF, local sheet, local document, other web pages, other). Never page addresses, document names or contents. People who opted in earlier are asked to confirm again, and nothing new is sent until they do. A report can now also be sent on a day you only use the side panel. Turning the report off still deletes everything held for your random ID.
+
+### Changed
+- The usage-report question is now the first thing a new install sees in the side panel (before the welcome card), and says why we ask. It is still off unless you turn it on, with "Turn on" and "No thanks" equally available, and you can change it any time in Options.
 
 ### Fixed
 - **Printing and Save as PDF** no longer carry dark mode onto paper: the engines switch off while the page prints and back on afterwards, and the document viewer prints PDFs from untouched white page copies (Cmd/Ctrl+P).

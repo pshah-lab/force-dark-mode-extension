@@ -24,6 +24,9 @@ create table if not exists daily_stats (
 alter table daily_stats add column if not exists feature_uses jsonb not null default '{}';
 -- "<feature>__<surface>" -> uses summed over all of that day's reports (usage_v4.sql). Totals only, never per install.
 alter table daily_stats add column if not exists surface_uses jsonb not null default '{}';
+-- surface -> number of that day's installs that used any feature on that surface (counts only, no install IDs). Lets the
+-- owner dashboard tell many installs from one heavy install; an install is counted once per surface per day.
+alter table daily_stats add column if not exists surface_installs jsonb not null default '{}';
 
 alter table daily_stats enable row level security;
 
@@ -52,7 +55,7 @@ set search_path = public
 as $$
   with hb as (select * from heartbeats where day = p_day),
   first_seen as (select install_id, min(day) as first_day from heartbeats group by install_id)
-  insert into daily_stats (day, active, new_installs, returning_installs, site_reports, avg_sites, sites, versions, engines, themes, os, chrome, lang, feature_uses, surface_uses)
+  insert into daily_stats (day, active, new_installs, returning_installs, site_reports, avg_sites, sites, versions, engines, themes, os, chrome, lang, feature_uses, surface_uses, surface_installs)
   select p_day,
     (select count(*) from hb)::int,
     (select count(*) from hb join first_seen f using (install_id) where f.first_day = p_day)::int,
@@ -84,13 +87,20 @@ as $$
        from hb, jsonb_each(hb.surface_counts) e
        where hb.surface_counts is not null and jsonb_typeof(e.value) = 'number'
          and (e.value #>> '{}') ~ '^[0-9]{1,3}$'
-       group by 1) s)
+       group by 1) s),
+    (select coalesce(jsonb_object_agg(k, n), '{}'::jsonb) from (
+       select split_part(e.key, '__', 2) as k, count(distinct hb.install_id)::int as n
+       from hb, jsonb_each(hb.surface_counts) e
+       where hb.surface_counts is not null and jsonb_typeof(e.value) = 'number'
+         and split_part(e.key, '__', 2) in ('google_docs', 'google_sheets', 'google_slides', 'web_pdf', 'local_pdf',
+                                            'local_sheet', 'local_doc', 'web_other', 'other')
+       group by 1) i)
   on conflict (day) do update set
     active = excluded.active, new_installs = excluded.new_installs, returning_installs = excluded.returning_installs,
     site_reports = excluded.site_reports, avg_sites = excluded.avg_sites, sites = excluded.sites,
     versions = excluded.versions, engines = excluded.engines, themes = excluded.themes,
     os = excluded.os, chrome = excluded.chrome, lang = excluded.lang, feature_uses = excluded.feature_uses,
-    surface_uses = excluded.surface_uses
+    surface_uses = excluded.surface_uses, surface_installs = excluded.surface_installs
 $$;
 
 -- One-time backfill of every day that already has heartbeats (re-runnable).
@@ -108,7 +118,7 @@ as $$
         'day', to_char(day, 'YYYY-MM-DD'), 'active', active, 'newInstalls', new_installs, 'returning', returning_installs,
         'siteReports', site_reports, 'avgSites', avg_sites, 'sites', sites, 'versions', versions,
         'engines', engines, 'themes', themes, 'os', os, 'chrome', chrome, 'lang', lang, 'featureUses', feature_uses,
-        'surfaceUses', surface_uses) order by day)
+        'surfaceUses', surface_uses, 'surfaceInstalls', surface_installs) order by day)
       from (select * from daily_stats order by day desc limit 800) s), '[]'::jsonb),
     'topSites', coalesce((select jsonb_agg(jsonb_build_object(
         'site', site, 'reports', reports, 'days', days, 'lastDay', to_char(last_day, 'YYYY-MM-DD')) order by reports desc, site)

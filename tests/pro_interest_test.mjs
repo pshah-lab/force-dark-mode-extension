@@ -54,11 +54,11 @@ test("pro.html is in the sitemap with the right loc", () => {
   assert.ok(read("docs/sitemap.xml").includes(`<loc>${PRO_URL}</loc>`));
 });
 
-test("side panel links to the Pro interest page with a plain, untracked link", () => {
+test("side panel opens the Pro interest form with a plain, untracked link", () => {
   const html = read("src/popup/popup.html");
   const m = html.match(/<a id="pro-interest-link"[^>]*>/);
   assert.ok(m, "pro-interest-link anchor exists");
-  assert.ok(m[0].includes(`href="${PRO_URL}"`), "href is the fixed Pro page URL");
+  assert.ok(m[0].includes(`href="https://darkmode.pshah.fun/pro-form"`), "href is the fixed pro-form URL on our own site");
   assert.ok(/target="_blank"/.test(m[0]) && /rel="noopener noreferrer"/.test(m[0]), "opens in a new tab safely");
   assert.ok(/class="pro-cta"/.test(m[0]), "styled as the prominent call to action");
   for (const f of ["src/popup/popup.js", "src/shared/usageReport.js"]) {
@@ -71,6 +71,15 @@ test("pro.html links to the Google Form (plain link, no iframe) and privacy.html
   assert.ok(/<a href="https:\/\/docs\.google\.com\/forms\/d\/e\/[A-Za-z0-9_-]+\/viewform"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/.test(html), "form link");
   assert.ok(!/<iframe\b/i.test(html), "no iframe");
   assert.ok(/Pro Interest Survey/.test(read("docs/privacy.html")), "privacy.html discloses the form");
+});
+
+test("vercel.json forwards /pro-form to the Google Form (temporary redirect)", () => {
+  const cfg = JSON.parse(read("vercel.json"));
+  const r = (cfg.redirects || []).filter((x) => x.source === "/pro-form");
+  assert.strictEqual(r.length, 1);
+  assert.strictEqual(r[0].permanent, false);
+  const proHref = read("docs/pro.html").match(/href="(https:\/\/docs\.google\.com\/forms\/d\/e\/[A-Za-z0-9_-]+\/viewform)"/);
+  assert.ok(proHref && r[0].destination === proHref[1], "same form as the Pro page links to");
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

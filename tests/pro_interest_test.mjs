@@ -66,5 +66,12 @@ test("side panel links to the Pro interest page with a plain, untracked link", (
   }
 });
 
+test("pro.html links to the Google Form (plain link, no iframe) and privacy.html says so", () => {
+  const html = read("docs/pro.html");
+  assert.ok(/<a href="https:\/\/docs\.google\.com\/forms\/d\/e\/[A-Za-z0-9_-]+\/viewform"[^>]*target="_blank"[^>]*rel="noopener noreferrer"/.test(html), "form link");
+  assert.ok(!/<iframe\b/i.test(html), "no iframe");
+  assert.ok(/Pro Interest Survey/.test(read("docs/privacy.html")), "privacy.html discloses the form");
+});
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -642,3 +642,41 @@ body {
   font-size: 13px;
   cursor: pointer;
 }
+
+/* Pro interest call to action */
+.pro-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #3b6fe0, #8a5cf0);
+  color: #ffffff;
+  text-align: center;
+  text-decoration: none;
+  box-shadow: 0 2px 10px rgba(91, 110, 240, 0.35);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pro-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(91, 110, 240, 0.5);
+}
+
+.pro-cta:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.pro-cta-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.pro-cta-sub {
+  font-size: 12px;
+  opacity: 0.92;
+}

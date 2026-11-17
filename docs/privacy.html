@@ -239,6 +239,11 @@
           <strong>Moving to 2.1.0:</strong> version 2.1.0 does not send anything from a 2.0.0 opt-in until the person confirms the card described in section 1.2. If they confirm, they keep their random ID. If they decline, the extension asks the server to delete the data stored for that ID and then forgets the ID; if the request fails it is retried each time the browser starts the extension. The combined totals on the <a href="stats.html">usage statistics page</a> came from the 2.0.0 reports and stop being updated as people update.
         </p>
 
+        <h3>1.4 Pro Interest Survey (Website Only)</h3>
+        <p>
+          The Pro page on this website, and a "Pro is coming" button in the extension's side panel, link to a Google Form (the button goes through a forwarding link on this website) where you can choose which features you would pay for. This is a separate page on Google's service, not part of the extension: the extension itself does not connect to it, and we do not count who opens it. Google receives the answers you submit; the email address is optional. We use the answers only to decide what to build and to tell you if Pro launches, and we delete your email on request (see section 6).
+        </p>
+
         <h2>2. Local Storage &amp; Chrome Sync</h2>
         <p>
           ThemeSwitcher uses Chrome’s built-in <code>chrome.storage.sync</code> API solely to store your display preferences:

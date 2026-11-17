@@ -11,5 +11,12 @@
       "source": "/get",
       "destination": "/get.html"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/pro-form",
+      "destination": "https://docs.google.com/forms/d/e/1FAIpQLSeoP5gjLiHWMHqNdxr6Pue6ZM8cuFh8GgbaxfeBRk4XJ5kQCw/viewform",
+      "permanent": false
+    }
   ]
 }

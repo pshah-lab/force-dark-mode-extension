@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.5] - 2026-11-17
+
+### Added
+- A "Pro is coming" button in the side panel that opens a short Google Form (in a new tab, through a forwarding link on our website) where you can pick the features you would pay for. It is a plain link: the extension counts and sends nothing when you see or click it, and does not connect to Google itself, and the core extension stays free.
+
+### Changed
+- The "Pro is coming" page on the website now lists dark mode ideas (schedules, saved profiles, encrypted settings sync, priority site fixes, document viewer extras) instead of PDF tools. It also links to a short Google Form (opens in a new tab) where you can pick the features you would pay for; the extension itself does not connect to it. It is still an idea list, not a commitment.
+
 ---
 
 ## [2.3.0] - 2026-11-15

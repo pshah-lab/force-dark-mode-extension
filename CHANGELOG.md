@@ -9,6 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [2.3.6] - 2026-11-27
+
+### Changed
+- The popup's **Open file viewer** button is now **Open dark document viewer**, with a line underneath saying what it does: read PDF, Word, PowerPoint, Excel and text files in dark mode.
+
+### Fixed
+- **RTF files in the document viewer** no longer show the font table (for example "Helvetica;"), colour table or other metadata as text. Paragraph and line breaks are kept, and accented and Unicode characters (such as é and €) display correctly.
+
+---
+
 ## [2.3.5] - 2026-11-17
 
 ### Added

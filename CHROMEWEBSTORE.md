@@ -38,7 +38,7 @@ KEY FEATURES
 HOW TO USE IT
 1. Click the toolbar icon to open the side panel.
 2. Turn dark mode on or off and pick an engine, theme, or background for the site.
-3. Click "Open file viewer" (or press Alt+Shift+O) to read a PDF or document in dark mode.
+3. Click "Open dark document viewer" (or press Alt+Shift+O) to read a PDF or document in dark mode.
 
 PRIVACY
 • No third-party analytics, tracking pixels, or advertising. Settings sync through your Google Account (chrome.storage.sync). To avoid a white flash, sites where dark mode is on get one tiny flag in their own storage (__fdm_pre: "1" and a time, no personal data; the site can see it). Open source (MIT).
@@ -155,6 +155,7 @@ https://darkmode.pshah.fun/privacy.html
 
 | Version | Date       | Changes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | Status    |
 | :------ | :--------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------- |
+| 2.3.6   | 2026-11-27 | Popup button renamed to "Open dark document viewer" with a one-line description; RTF files no longer show the font table or other metadata as text. No permission or manifest changes beyond the version. | Ready to upload |
 | 2.3.0   | 2026-11-08 | Print/Save-as-PDF no longer carries dark mode. No permission or manifest changes. |
 | 2.2.0   | 2026-10-28 | No white flash on load (one small `__fdm_pre` flag in the site's own storage), iframe theming, per-site Photos & media and native-dark override, image dimming, Google Docs/Sheets dark canvas, PDF detection without ".pdf", Site CSS button and tutorial. No permission or manifest changes. |
 | 2.1.0   | 2026-10-17 | Side panel replaces the popup (adds the `sidePanel` permission, no host permissions); new Report this site as broken (user-confirmed, sends only the site's domain, engine, theme label and version); new optional usage report (off by default: random ID, day, version, engines used, count of sites darkened; deletable from Options), and 2.0.0 opt-ins are asked to confirm. | Ready to upload |

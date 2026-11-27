@@ -276,6 +276,14 @@ test("popup HTML references valid popup.js and popup.css", () => {
   assert.ok(popupHtml.includes('id="open-document-viewer"'));
 });
 
+test("popup document viewer button says it opens documents in dark mode", () => {
+  const popupHtml = fs.readFileSync(path.join(rootDir, "src/popup/popup.html"), "utf8");
+  const button = popupHtml.match(/<button id="open-document-viewer"[\s\S]*?<\/button>/)?.[0] ?? "";
+  assert.ok(button.includes("Open dark document viewer"));
+  assert.ok(button.includes("Read PDF, Word, PowerPoint, Excel &amp; text files in dark mode"));
+  assert.ok(!popupHtml.includes("Open file viewer"));
+});
+
 test("options HTML references valid options.js and options.css", () => {
   const optionsHtml = fs.readFileSync(path.join(rootDir, "src/options/options.html"), "utf8");
   assert.ok(optionsHtml.includes('src="options.js"'));

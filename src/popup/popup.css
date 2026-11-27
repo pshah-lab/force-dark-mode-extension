@@ -338,6 +338,17 @@ body {
   text-align: left;
 }
 
+.doc-btn-title {
+  display: block;
+}
+
+.doc-btn-sub {
+  display: block;
+  margin-top: 2px;
+  color: #9aa0a6;
+  font-size: 11px;
+}
+
 .document-tools button:hover {
   border-color: #8ab4f8;
   background: #1b2230;

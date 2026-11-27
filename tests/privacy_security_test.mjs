@@ -280,7 +280,7 @@ testAsync("exportSettingsJson exports sanitized JSON payload (Portability)", asy
   const exportedString = await storageModule.exportSettingsJson();
   const parsed = JSON.parse(exportedString);
 
-  assert.strictEqual(parsed.version, "2.3.5");
+  assert.strictEqual(parsed.version, "2.3.6");
   assert.ok(parsed.exportDate);
   assert.ok(parsed.settings["wikipedia.org"]);
   assert.strictEqual(parsed.settings["wikipedia.org"].engine, "css");
